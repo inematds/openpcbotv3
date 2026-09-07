@@ -11,7 +11,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      - run: mkdir -p _site && cp -r guia _site/ && touch _site/.nojekyll
       - uses: actions/upload-pages-artifact@v3
-        with: { path: '.' }
+        with: { path: '_site' }
       - id: deployment
         uses: actions/deploy-pages@v4
