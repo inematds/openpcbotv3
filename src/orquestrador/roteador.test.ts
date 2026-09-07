@@ -49,3 +49,25 @@ describe('agente CLI', () => {
     expect(interpretarSaidaCli('texto solto')).toEqual({ texto: 'texto solto' });
   });
 });
+
+describe('promptDe do job de agente', () => {
+  it('lê a EntradaAgente do input, registra custo e grava sessão com o chatId certo', async () => {
+    const { default: Database } = await import('better-sqlite3');
+    const { aplicarMigrations } = await import('../db/migrations.js');
+    const { RegistroCusto } = await import('../custo/registro.js');
+    const { Sessoes, criarPromptDe } = await import('./agente-cli.js');
+    const db = new Database(':memory:');
+    aplicarMigrations(db, () => 1);
+    const sessoes = new Sessoes(db, () => 1);
+    const registro = new RegistroCusto(db, () => 1);
+    const promptDe = criarPromptDe({ sessoes, registro, claudeBin: 'claude' });
+    const entrada = { chatId: '77', canal: 'http', texto: 'conta linhas', agente: 'lead', traceId: 't' };
+    const ctx = await promptDe({ id: 9, fila: 'agente', kind: 'agent', tarefa: 'agente:lead', input: JSON.stringify(entrada), prioridade: 0, status: 'running', tentativas: 1, max_tentativas: 1, lease_ate: null, lease_owner: 'w', disponivel_em: 0, idem_key: null, flow_ref: null, chat_id: null, motor: null, modelo: null, esforco: null, resultado: null, erro: null, notificado_em: null, criado_em: 1, iniciado_em: 1, terminado_em: null });
+    expect(ctx.prompt).toContain('conta linhas');
+    expect(ctx.perfil.motor).toBe('claude');
+    const texto = ctx.interpretarSaida!('{"result":"419","session_id":"sess-1","total_cost_usd":0.03}');
+    expect(texto).toBe('419');
+    expect(sessoes.obter('77', 'lead')).toBe('sess-1');
+    expect(registro.hoje()).toMatchObject({ chamadas: 1, custoUsd: 0.03 });
+  });
+});

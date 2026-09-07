@@ -121,11 +121,12 @@ export function criarPromptDe(o: { sessoes: Sessoes; registro: RegistroCusto; cl
       timeoutMs: TIMEOUT_AGENTE_MS,
       interpretarSaida: (bruto: string): string => {
         const s = interpretarSaidaCli(bruto);
-        if (s.sessionId && !e.somenteLeitura) o.sessoes.gravar(e.chatId, agente.id, s.sessionId);
+        if (!e.chatId) throw new Error('EntradaAgente sem chatId — input do job malformado');
         o.registro.gravar({
           traceId: e.traceId, provedor: 'claude-cli', modelo: job.modelo ?? agente.modelo, tier: 'premium', agente: agente.id, jobId: job.id, chatId: e.chatId,
           tokensIn: s.tokensIn ?? 0, tokensOut: s.tokensOut ?? 0, custoUsd: s.custoUsd ?? 0, latenciaMs: Date.now() - t0, ok: true, motivoTier: 'agente CLI',
         });
+        if (s.sessionId && !e.somenteLeitura) o.sessoes.gravar(e.chatId, agente.id, s.sessionId);
         return s.texto;
       },
     };

@@ -109,7 +109,7 @@ export class Orquestrador {
       fila: consultas.length ? 'io' : 'agente',
       kind: consultas.length ? 'function' : 'agent',
       tarefa: consultas.length ? 'agente-lead' : `agente:${agente}`,
-      input: JSON.stringify({ entrada, consultas, origem: m }),
+      input: consultas.length ? JSON.stringify({ entrada, consultas }) : JSON.stringify(entrada),
       chat_id: numOuNull(m.chatId), max_tentativas: 1, flow_ref: `${m.canal}:${m.chatId}`,
     });
     const fila = app.fila.listar({ fila: 'agente', status: 'queued' }).length;
