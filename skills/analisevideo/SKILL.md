@@ -1,0 +1,1 @@
+/home/nmaldaner/projetos/analisevideo/SKILL.md

@@ -1,0 +1,13 @@
+# USD por 1M tokens. Ollama = 0. OpenRouter devolve o custo real em `usage.cost`
+# (usado quando presente); esta tabela cobre o resto.
+modelos:
+  anthropic/claude-haiku-4.5: { in: 1, out: 5, cache: 0.1 }
+  anthropic/claude-sonnet-5:  { in: 3, out: 15, cache: 0.3 }
+  anthropic/claude-opus-5:    { in: 15, out: 75, cache: 1.5 }
+  claude-haiku-4-5-20251001:  { in: 1, out: 5, cache: 0.1 }
+  claude-sonnet-5:            { in: 3, out: 15, cache: 0.3 }
+  claude-opus-5:              { in: 15, out: 75, cache: 1.5 }
+tiers:
+  local:   { provedor: ollama,     modelo: "qwen3.8:27b" }
+  barato:  { provedor: openrouter, modelo: anthropic/claude-haiku-4.5 }
+  premium: { provedor: openrouter, modelo: anthropic/claude-sonnet-5 }

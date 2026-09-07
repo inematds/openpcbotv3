@@ -1,0 +1,5 @@
+# Orçamento mensal (decisão 2 do plano — default até você definir).
+# ORCAMENTO_MENSAL_USD no .env sobrescreve `mensal_usd`.
+mensal_usd: 50
+aviso_pct: 70
+trava_pct: 100

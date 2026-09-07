@@ -1,0 +1,13 @@
+# Registry de papéis do Ollama (plano §4.3). MESMAS tags do v2 (.env OLLAMA_MODEL /
+# OLLAMA_ROUTER_MODEL) para um único modelo residente servir os dois bots.
+papeis:
+  roteador: { modelo: llama3.2, keep_alive: 10m }
+  geral:    { modelo: "qwen3.8:27b", keep_alive: -1, residente: true }
+  embed:    { modelo: bge-m3, keep_alive: 10m }
+  pesado:   { modelo: "llama3.1:70b", ativo: false }   # desligado na coexistência (42 GB)
+# GB disponíveis mínimos para carregar um modelo GRANDE que não está residente.
+piso_ram_gb: 40
+# Nunca descarregar modelo que este processo não carregou (pode ser do v2).
+descarregar_alheios: false
+probe_segundos: 60
+latencia_alerta_ms: 5000

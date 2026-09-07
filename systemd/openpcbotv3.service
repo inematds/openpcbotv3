@@ -1,0 +1,28 @@
+# Unit de USUÁRIO (~/.config/systemd/user/openpcbotv3.service).
+# Instalar: bash scripts/instalar-servico.sh
+[Unit]
+Description=openpcbot v3 — assistente pessoal (fila + Ollama + custo)
+After=network-online.target ollama.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/projetos/openpcbotv3
+# ~/.local/bin entra no PATH: `claude` e `yt-dlp` do usuário não existem para o systemd --user sem isto.
+Environment=PATH=%h/.local/bin:%h/.npm-global/bin:/usr/local/bin:/usr/bin:/bin
+Environment=NODE_ENV=production
+# Keys compartilhadas vêm do .env do v2 em runtime (carregarEnv); aqui só o do v3.
+EnvironmentFile=-%h/projetos/openpcbotv3/.env
+ExecStart=/usr/bin/node --max-old-space-size=1024 dist/index.js
+Restart=on-failure
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=120
+# Teto de memória do PROCESSO (garantia de não faltar RAM na máquina):
+# o próprio bot é pequeno; os `claude -p` são filhos e contam aqui também.
+MemoryHigh=1536M
+MemoryMax=2G
+# Um `claude -p` por vez (lane agente concorrência 1) cabe com folga em 2G.
+
+[Install]
+WantedBy=default.target

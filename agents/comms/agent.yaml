@@ -1,0 +1,13 @@
+name: Comms
+description: All human communication -- email, Slack, WhatsApp, YouTube comments, Skool inbox, LinkedIn DMs
+
+telegram_bot_token_env: COMMS_BOT_TOKEN
+
+model: claude-opus-5
+
+obsidian:
+  vault: /home/nmaldaner/vault
+  folders:
+    - inbox/
+  read_only:
+    - daily/

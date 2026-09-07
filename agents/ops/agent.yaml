@@ -1,0 +1,13 @@
+name: Ops
+description: Calendar, scheduling, billing, Stripe, Gumroad, admin, task management
+
+telegram_bot_token_env: OPS_BOT_TOKEN
+
+model: claude-opus-5
+
+obsidian:
+  vault: /home/nmaldaner/vault
+  folders:
+    - inbox/
+  read_only:
+    - daily/
