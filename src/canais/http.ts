@@ -93,6 +93,14 @@ export function ligarHttp(app: App): Server {
       json(res, 500, { erro: (e as Error).message });
     }
   });
-  srv.listen(app.cfg.porta, '0.0.0.0', () => app.log(`[http] ouvindo em :${app.cfg.porta}`));
+  // Loopback por padrão: /mensagem leva a um `claude -p --dangerously-skip-permissions`.
+  // O hub `wifi` roda nesta máquina, então /health continua alcançável. Expor na
+  // LAN exige HTTP_BIND_V3=0.0.0.0 E DASHBOARD_TOKEN_V3 definido.
+  const bind = process.env.HTTP_BIND_V3 || '127.0.0.1';
+  if (bind !== '127.0.0.1' && bind !== 'localhost' && !token) {
+    app.log('[http] HTTP_BIND_V3 fora do loopback sem DASHBOARD_TOKEN_V3 — recusado, ficando em 127.0.0.1');
+  }
+  const bindFinal = (bind !== '127.0.0.1' && bind !== 'localhost' && !token) ? '127.0.0.1' : bind;
+  srv.listen(app.cfg.porta, bindFinal, () => app.log(`[http] ouvindo em ${bindFinal}:${app.cfg.porta}`));
   return srv;
 }
