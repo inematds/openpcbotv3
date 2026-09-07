@@ -6,6 +6,10 @@ Plano e arquitetura: [PLANO-MIGRACAO-V3.md](PLANO-MIGRACAO-V3.md). Estado por fa
 
 Bot no Telegram: **@inemav3bot** (o v2 continua no @inemaclaudebot).
 
+## 📖 Guia de uso
+
+Guia completo (landing + passo a passo): **https://inematds.github.io/openpcbotv3/guia/**
+
 ---
 
 ## 1. Subir
