@@ -6,7 +6,7 @@ telegram_bot_token_env: CONTENT_BOT_TOKEN
 model: claude-opus-5
 
 obsidian:
-  vault: /home/nmaldaner/vault
+  vault: ~/vault
   folders:
     - inbox/
     - projects/

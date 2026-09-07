@@ -10,9 +10,9 @@ allowed-tools: Bash(python3 ~/.config/calendar/gcal.py *)
 
 | Alias     | Email                        |
 |-----------|------------------------------|
-| inematds  | inematds@gmail.com (default) |
-| nei2014   | (ver .env)   |
-| nei2024   | (ver .env)   |
+| inematds  | (default — e-mail no `.env`/token do gcal) |
+| nei2014   | (ver `.env`)                 |
+| nei2024   | (ver `.env`)                 |
 
 Always use `--account ALIAS` to target a specific account. Omit for default (inematds).
 
