@@ -82,7 +82,7 @@ Especialistas em paralelo (padrão grokky): quando o roteador indica `consultar`
 | `/tarefa add [quando] <texto>` · `/tarefa lista` · `/tarefa feita <id>` | suas tarefas; `quando` = `em 2h`, `amanhã 9h`, `sex 10h`, `15/09 14:30` |
 | `/daily` | resumo: tarefas, feitas nas últimas 24 h, custo do dia, fila, Ollama, MEMORY.md |
 | `/cron lista\|on <nome>\|off <nome>` | tarefas agendadas |
-| `/fontes` · `/fontes ingerir` | chats observados e o que já virou memória ([docs/CONECTORES.md](docs/CONECTORES.md)) |
+| `/fontes` · `/fontes ingerir [gmail|agenda]` | chats observados e o que já virou memória ([docs/CONECTORES.md](docs/CONECTORES.md)) |
 | `/agentes` · `/skills` | o que está instalado |
 | `/novo` | limpa sessão do CLI e histórico do chat · `/compress` só a sessão |
 | `/consolidar` | roda a consolidação de memória agora |
