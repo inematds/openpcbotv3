@@ -68,6 +68,9 @@ export async function ligarTelegram(o: OpcoesTelegram): Promise<{ parar: () => P
   o.log(`[telegram] responde em: ${o.chatsResponder.join(', ') || '(qualquer chat)'} · observa: ${o.chatsObservar.join(', ') || '(nenhum)'}`);
   const bot = new Bot(o.token as string);
   const me = await bot.api.getMe();
+  // Chats ignorados são logados UMA vez por id: é assim que se descobre o
+  // chat_id de um grupo novo (docs/CONECTORES.md §3.3) sem ligar o observador.
+  const jaLogados = new Set<string>();
 
   // `message` (não `message:text`) para pegar também legenda de foto/vídeo —
   // em grupo é onde mora metade do que se quer lembrar.
@@ -76,8 +79,14 @@ export async function ligarTelegram(o: OpcoesTelegram): Promise<{ parar: () => P
     if (!texto) return;
     const chatId = String(ctx.chat.id);
     const papel = papelDoChat(chatId, o.chatsResponder, o.chatsObservar);
-    if (papel === 'ignorar') return;
     const chat = ctx.chat as { title?: string; first_name?: string; username?: string };
+    if (papel === 'ignorar') {
+      if (!jaLogados.has(chatId)) {
+        jaLogados.add(chatId);
+        o.log(`[telegram] ignorado chat_id=${chatId} "${chat.title ?? chat.first_name ?? chat.username ?? '?'}" — some em TELEGRAM_CHATS_OBSERVAR/RESPONDER para usar`);
+      }
+      return;
+    }
     o.bus.emit('mensagem.recebida', {
       canal: 'telegram', chatId, texto,
       usuario: ctx.from?.username ?? [ctx.from?.first_name, ctx.from?.last_name].filter(Boolean).join(' ') ?? String(ctx.from?.id ?? ''),

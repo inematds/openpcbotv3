@@ -120,8 +120,8 @@ O cron `gmail-ingestao` já existe, **desligado**. Ligue depois de autenticar:
 
 A cada 2 horas ele lê o que chegou nas últimas 3 h em todas as contas, extrai fatos duráveis
 no Ollama e grava como memória com `origem = gmail:<alias>`. Rodar agora, sem esperar o cron:
-`/fontes ingerir` (esse roda a ingestão do Telegram; para o Gmail, `/cron on` e aguarde o tick,
-ou enfileire pelo dashboard).
+`/fontes ingerir gmail` (sem argumento, `/fontes ingerir` roda só a ingestão do Telegram;
+`/fontes ingerir agenda` faz o mesmo para o Google Calendar).
 
 ---
 
@@ -184,7 +184,8 @@ da (re)entrada; grupos onde ele já estava continuam com o modo antigo.
 
 ### 3.3 Descobrir o id de cada chat
 
-Adicione o bot ao grupo, mande uma mensagem qualquer lá e olhe o log:
+Adicione o bot ao grupo, mande uma mensagem qualquer lá e olhe o log. Um chat que não está
+em nenhuma das duas listas aparece **uma vez** no log, justamente para você pegar o id:
 
 ```bash
 journalctl --user -u openpcbotv3 -f -o cat | grep -i telegram
@@ -234,7 +235,9 @@ Ver e forçar:
 
 ```
 /fontes            # chats observados + quanto já virou memória, por fonte
-/fontes ingerir    # roda a ingestão agora
+/fontes ingerir    # roda a ingestão dos chats observados agora
+/fontes ingerir gmail    # idem, para as contas de e-mail
+/fontes ingerir agenda   # idem, para as agendas
 /memoria buscar prazo
 ```
 

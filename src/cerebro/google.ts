@@ -63,14 +63,23 @@ export async function ingerirGmail(ing: Ingestao, chatId: string, horas: number,
   return out;
 }
 
-/** Eventos das próximas N dias de TODAS as agendas viram fatos. */
+/**
+ * Eventos dos próximos N dias de TODAS as agendas viram fatos.
+ *
+ * Aqui o id NÃO é a data do evento, e isso é deliberado: a agenda é uma JANELA,
+ * não um fluxo. Se o marcador guardasse o começo do evento mais distante da
+ * janela, um compromisso marcado amanhã teria `start` MENOR que o marcador e o
+ * filtro `id > ultimo_id` o descartaria para sempre. Então cada passagem usa o
+ * instante da leitura como id: a janela inteira é reprocessada e o dedupe por
+ * hash do cérebro absorve o que já é conhecido. Uma chamada local por dia.
+ */
 export async function ingerirCalendario(ing: Ingestao, chatId: string, dias: number, modelo: string | undefined, agora: () => number): Promise<ResultadoIngestao[]> {
   const evs = (await rodarConector('gcal.py', ['list', '--all', '--days', String(dias)])) as EventoBruto[];
   const porConta = new Map<string, ItemBruto[]>();
   for (const e of evs) {
     const conta = e.account ?? 'padrao';
     const item: ItemBruto = {
-      id: idPorData(e.start, agora()),
+      id: agora(),
       texto: `Compromisso ${e.start ?? ''}: ${e.summary ?? '(sem título)'}${e.location ? ` em ${e.location}` : ''}${e.attendees?.length ? ` com ${e.attendees.slice(0, 5).join(', ')}` : ''}`,
     };
     porConta.set(conta, [...(porConta.get(conta) ?? []), item]);
@@ -78,8 +87,11 @@ export async function ingerirCalendario(ing: Ingestao, chatId: string, dias: num
   const out: ResultadoIngestao[] = [];
   for (const [conta, itens] of porConta) {
     const fonte = `gcal:${conta}`;
+    // Duas passagens no mesmo segundo (cron + `/fontes ingerir agenda`) não podem
+    // se anular por empate no relógio — o marcador só precisa avançar.
     const desde = ing.ultimoId(fonte);
-    const novos = itens.filter((i) => i.id > desde);
+    const id = Math.max(desde + 1, agora());
+    const novos = itens.map((i) => ({ ...i, id }));
     if (novos.length) out.push(await ing.ingerir(fonte, chatId, novos, modelo));
   }
   return out;

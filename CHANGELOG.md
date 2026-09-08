@@ -1,5 +1,22 @@
 # CHANGELOG — openpcbotv3
 
+## 3.1.1 — 2026-09-07
+
+Correções encontradas em revisão, antes de qualquer conta ser ligada.
+
+- **Agenda voltaria a ficar cega** depois da primeira passagem: o marcador guardava o `start` do
+  evento mais distante da janela de 14 dias, então um compromisso criado depois — com data menor —
+  nunca passava do filtro `id > ultimo_id`. A agenda é uma janela, não um fluxo: agora cada passagem
+  usa o instante da leitura como id e o dedupe por hash do cérebro absorve o reprocesso.
+  Coberto por `src/cerebro/google.test.ts` (o arquivo não tinha teste nenhum).
+- **Descoberta de chat_id passou a funcionar como o doc promete**: um chat fora das duas listas era
+  descartado sem deixar rastro, e o `journalctl | grep telegram` do §3.3 não mostrava nada. Agora
+  aparece uma linha, uma vez por id.
+- **`/fontes ingerir gmail|agenda`**: o doc mandava "enfileirar pelo dashboard", que é read-only.
+- **`gcal.py`**: aliases de conta pessoal saíram do docstring (o repo é público).
+
+Testes: 175.
+
 ## 3.1.0 — 2026-09-07
 
 Conectores e ingestão: as fontes externas passam a virar **memória**, não só resposta.

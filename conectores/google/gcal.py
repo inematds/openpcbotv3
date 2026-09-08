@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Google Calendar CLI — multi-account support.
 
-Accounts: inematds, nei2014, nei2024
+Contas vêm de ~/.config/google/contas.json (fora do repo).
 Each account has its own token file. Credentials (OAuth client) are shared.
 
 Usage:
