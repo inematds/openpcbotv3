@@ -9,6 +9,7 @@ import type { Tarefa } from '../fila/worker.js';
 import type { Job } from '../fila/types.js';
 import { consolidar } from '../cerebro/consolidacao.js';
 import { indexarPendentes } from '../cerebro/contexto.js';
+import { ingerirCalendario, ingerirGmail } from '../cerebro/google.js';
 import { redigir } from '../canais/guarda.js';
 import { backupSqlite } from '../db/backup.js';
 import { RAIZ } from '../config/env.js';
@@ -44,6 +45,29 @@ export function criarTarefas(app: App, orq: () => Orquestrador): Record<string, 
     consolidacao: async () => {
       const r = await consolidar(app.cerebro, app.gateway, { modelo: app.ollama.modeloDe('geral'), agora: app.agora });
       return `chats ${r.chats} · duplicatas ${r.duplicatas} · contradições ${r.contradicoes} · insights ${r.insights}${r.erro ? ` · erro: ${r.erro}` : ''}`;
+    },
+
+    /** Conversas observadas viram fatos (lane ollama, custo zero). */
+    ingestao: async () => {
+      const rs = await app.ingestao.ingerirObservados(app.ollama.modeloDe('geral'));
+      if (!rs.length) return 'nada novo';
+      return rs.map((r) => `${r.fonte}: ${r.lidos} msg → ${r.fatos} fato(s)${r.erro ? ` · erro: ${r.erro}` : ''}`).join(' | ');
+    },
+
+    /** E-mails recentes de todas as contas viram fatos. */
+    'ingestao:gmail': async ({ job }) => {
+      const { horas } = JSON.parse(job.input || '{}') as { horas?: number };
+      const chat = app.cfg.chatPermitido ?? 'cli';
+      const rs = await ingerirGmail(app.ingestao, chat, horas ?? 8, app.ollama.modeloDe('geral'), app.agora);
+      return rs.length ? rs.map((r) => `${r.fonte}: ${r.lidos} → ${r.fatos} fato(s)`).join(' | ') : 'nada novo';
+    },
+
+    /** Próximos compromissos de todas as agendas viram fatos. */
+    'ingestao:agenda': async ({ job }) => {
+      const { dias } = JSON.parse(job.input || '{}') as { dias?: number };
+      const chat = app.cfg.chatPermitido ?? 'cli';
+      const rs = await ingerirCalendario(app.ingestao, chat, dias ?? 14, app.ollama.modeloDe('geral'), app.agora);
+      return rs.length ? rs.map((r) => `${r.fonte}: ${r.lidos} → ${r.fatos} fato(s)`).join(' | ') : 'nada novo';
     },
 
     indexar: async () => {

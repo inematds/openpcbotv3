@@ -1,5 +1,30 @@
 # CHANGELOG — openpcbotv3
 
+## 3.1.0 — 2026-09-07
+
+Conectores e ingestão: as fontes externas passam a virar **memória**, não só resposta.
+
+- **Conectores Google versionados** em `conectores/google/`: `gmail.py` (novo, multi-conta) e
+  `gcal.py` (portado do v2, agora sem e-mail hardcoded). Uma credencial OAuth serve N contas;
+  cada conta tem seu token em `~/.config/google/`. `--conta` aceita alias, lista ou `todas`.
+  Uma conta com token quebrado não derruba as outras.
+- **Telegram multi-chat com modo observador**: `TELEGRAM_CHATS_RESPONDER` e
+  `TELEGRAM_CHATS_OBSERVAR`. Chat observado grava no cérebro e **nunca** responde; o adaptador
+  passou a ler também legenda de foto/vídeo e a guardar autor e nome do grupo.
+- **Ingestão** (`src/cerebro/ingestao.ts`): converte texto bruto em fatos duráveis em LOTE, uma
+  chamada no Ollama residente por bloco (custo zero). `ingestao_estado` (migration 7) marca até
+  onde cada fonte foi lida — rodar duas vezes não reprocessa. Erro de chamada não avança o
+  marcador; resposta ilegível avança, para um bloco ruim não travar a fonte para sempre.
+- **Crons**: `ingestao-observados` (30 min, ligado), `gmail-ingestao` (2 h) e `agenda-ingestao`
+  (7h05) criados **desligados** — ligar com `/cron on` depois de autenticar as contas.
+- **`/fontes`** mostra chats observados e o que já virou memória; `/fontes ingerir` roda na hora.
+- **`doctor`** checa `contas.json` e o token de cada conta por serviço.
+- **[docs/CONECTORES.md](docs/CONECTORES.md)**: passo a passo de vários e-mails, várias agendas e
+  Telegram no cérebro, com os limites reais da Bot API e o que exigiria uma sessão de usuário.
+
+Verificado no ar: 5 mensagens de um grupo observado → 4 fatos gravados, custo US$ 0, 3,6 s.
+Testes: 172.
+
 ## 3.0.0 — 2026-09-06
 
 Primeira versão no ar, ao lado do v2 (v2 intocado, continua em produção).

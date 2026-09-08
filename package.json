@@ -1,6 +1,6 @@
 {
   "name": "openpcbotv3",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "openpcbot v3 — assistente pessoal multicanal com fila durável, gestor do Ollama, custo por chamada e cérebro com aprendizado",
   "type": "module",
   "main": "dist/index.js",

@@ -10,6 +10,10 @@ export interface MensagemRecebida {
   chatId: string;
   texto: string;
   usuario?: string;
+  /** Nome do chat/grupo, quando o canal informa (usado no cérebro). */
+  titulo?: string;
+  /** Só observar: grava no cérebro e NUNCA responde. */
+  observar?: boolean;
   /** id da mensagem no canal, para responder/editar. */
   ref?: string;
   traceId: string;

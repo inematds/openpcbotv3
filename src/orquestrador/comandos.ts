@@ -17,6 +17,7 @@ const AJUDA = `*openpcbot v3* — comandos
 /memoria [lista|buscar <termo>|esquecer <id>|aprovar <id>|descartar <id>|propostas]
 /tarefa add <quando?> <texto> · /tarefa lista · /tarefa feita <id>
 /daily — resumo do dia (tarefas, custo, fila)
+/fontes — chats observados e o que já virou memória (/fontes ingerir roda agora)
 /cron lista|on <nome>|off <nome>
 /agentes · /skills · /novo (limpa sessão e conversa) · /compress
 /consolidar — roda a consolidação de memória agora`;
@@ -154,6 +155,17 @@ export async function executarComando(app: App, m: MensagemRecebida): Promise<st
     case 'consolidar': {
       const j = app.fila.enfileirar({ fila: 'ollama', kind: 'function', tarefa: 'consolidacao', input: '{}', chat_id: /^-?\d+$/.test(chat) ? Number(chat) : null, max_tentativas: 1 });
       return `Consolidação enfileirada (job #${j.id}).`;
+    }
+
+    case 'fontes': {
+      if (args[0] === 'ingerir') {
+        const j = app.fila.enfileirar({ fila: 'ollama', kind: 'function', tarefa: 'ingestao', input: '{}', chat_id: /^-?\d+$/.test(chat) ? Number(chat) : null, max_tentativas: 1 });
+        return `Ingestão enfileirada (job #${j.id}).`;
+      }
+      const est = app.ingestao.estado();
+      const obs = app.cfg.chatsObservar.length ? app.cfg.chatsObservar.join(', ') : '(nenhum)';
+      const linhas = est.map((e) => `${e.fonte}: ${e.itens} itens · último ${new Date(e.ultimo_em * 1000).toLocaleString('pt-BR')}`);
+      return `*Fontes do cérebro*\nresponde em: ${app.cfg.chatsResponder.join(', ') || '(qualquer)'}\nobserva: ${obs}\n\n*Ingerido*\n${linhas.join('\n') || '-'}\n\n\`/fontes ingerir\` roda agora.`;
     }
 
     case 'chatid':

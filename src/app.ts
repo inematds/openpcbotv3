@@ -11,6 +11,7 @@ import type { GatewayLLM } from './custo/gateway.js';
 import type { RegistroCusto } from './custo/registro.js';
 import type { Orcamento } from './custo/orcamento.js';
 import type { Cerebro } from './cerebro/memoria.js';
+import type { Ingestao } from './cerebro/ingestao.js';
 import type { Vault } from './cerebro/vault.js';
 import type { Alertas } from './telemetria/alertas.js';
 import type { Cron } from './tarefas/cron.js';
@@ -33,6 +34,7 @@ export interface App {
   registro: RegistroCusto;
   orcamento: Orcamento;
   cerebro: Cerebro;
+  ingestao: Ingestao;
   vault: Vault;
   alertas: Alertas;
   cron: Cron;

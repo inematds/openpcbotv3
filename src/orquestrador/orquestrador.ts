@@ -28,6 +28,8 @@ export class Orquestrador {
 
   /** Comandos passam direto; texto livre entra na janela `collect` por chat. */
   receber(m: MensagemRecebida): void {
+    // Chat observado: NUNCA responde, nem a comando. Só alimenta o cérebro.
+    if (m.observar) { this.observar(m); return; }
     if (m.texto.startsWith('/')) { void this.tratar(m); return; }
     const chave = `${m.canal}:${m.chatId}`;
     const p = this.pendentes.get(chave);
@@ -115,6 +117,22 @@ export class Orquestrador {
     const fila = app.fila.listar({ fila: 'agente', status: 'queued' }).length;
     this.enviar(m, `🧠 ${agente}${consultas.length ? ` (+${consultas.length} especialista${consultas.length > 1 ? 's' : ''})` : ''} — job #${job.id}${fila > 1 ? ` · ${fila - 1} na frente` : ''}. /status ${job.id} acompanha.`);
     app.cerebro.logarTurno(m.chatId, m.canal, 'user', m.texto, undefined, agente);
+  }
+
+  /**
+   * Mensagem de chat observado: entra no `conversation_log` com o autor e o nome
+   * do grupo, e a ingestão noturna extrai os fatos depois. Não gasta LLM aqui —
+   * um grupo movimentado geraria uma chamada por mensagem.
+   */
+  observar(m: MensagemRecebida): void {
+    try {
+      const quem = m.usuario ? `${m.usuario}: ` : '';
+      // `session_id` guarda o NOME do grupo em turno observado (não há sessão de
+      // agente aqui); é o que a ingestão usa para dar contexto ao bloco.
+      this.app.cerebro.logarTurno(m.chatId, m.canal, 'user', `${quem}${m.texto}`, m.titulo, 'observado');
+    } catch (e) {
+      this.app.log(`[orq] observar falhou: ${(e as Error).message}`);
+    }
   }
 
   /** Grava turno + memória (sinais PT-BR) e propõe entrada no vault quando é fato durável. */

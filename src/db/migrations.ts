@@ -234,6 +234,21 @@ export const MIGRATIONS: Migration[] = [
       );
     `,
   },
+  {
+    version: 7,
+    nome: 'ingestao',
+    // Até onde cada fonte externa já foi lida. Sem isto, a ingestão reprocessa
+    // o mesmo bloco toda noite (custo zero no Ollama, mas gera memória duplicada
+    // e o dedupe por hash só pega frase idêntica).
+    sql: `
+      CREATE TABLE ingestao_estado (
+        fonte     TEXT PRIMARY KEY,
+        ultimo_id INTEGER NOT NULL DEFAULT 0,
+        ultimo_em INTEGER,
+        itens     INTEGER NOT NULL DEFAULT 0
+      );
+    `,
+  },
 ];
 
 const SCHEMA_CONTROLE = `

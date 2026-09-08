@@ -43,6 +43,12 @@ export function carregarEnv(): void {
   }
 }
 
+/** Lista separada por vírgula; `undefined` quando a variável não existe. */
+function lista(v: string | undefined): string[] | undefined {
+  if (v === undefined || v.trim() === '') return undefined;
+  return v.split(',').map((s) => s.trim()).filter(Boolean);
+}
+
 function num(nome: string, def: number): number {
   const v = process.env[nome];
   if (v === undefined || v === '') return def;
@@ -55,6 +61,10 @@ export interface Config {
   instancia: string;
   telegramToken: string | undefined;
   chatPermitido: string | undefined;
+  /** Chats em que o bot RESPONDE. Default: só o `ALLOWED_CHAT_ID`. */
+  chatsResponder: string[];
+  /** Chats que o bot só OBSERVA (grava no cérebro, nunca responde). `['todos']` = qualquer chat. */
+  chatsObservar: string[];
   porta: number;
   dbPath: string;
   vaultPath: string;
@@ -73,10 +83,12 @@ export interface Config {
 
 export function lerConfig(): Config {
   return {
-    versao: '3.0.0',
+    versao: '3.1.0',
     instancia: `${hostname()}:${process.pid}`,
     telegramToken: process.env.TELEGRAM_BOT_TOKEN_V3 || undefined,
     chatPermitido: process.env.ALLOWED_CHAT_ID || undefined,
+    chatsResponder: lista(process.env.TELEGRAM_CHATS_RESPONDER) ?? (process.env.ALLOWED_CHAT_ID ? [process.env.ALLOWED_CHAT_ID] : []),
+    chatsObservar: lista(process.env.TELEGRAM_CHATS_OBSERVAR) ?? [],
     porta: num('PORT_V3', 3142),
     dbPath: process.env.DB_PATH_V3 ?? resolve(RAIZ, 'store/openpcbotv3.db'),
     vaultPath: process.env.VAULT_PATH ?? resolve(homedir(), 'vault'),

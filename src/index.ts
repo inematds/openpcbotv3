@@ -23,6 +23,7 @@ import { ProvedorOllama } from './provedores/ollama.js';
 import { ProvedorOpenRouter } from './provedores/openrouter.js';
 import { ProvedorAnthropic } from './provedores/anthropic.js';
 import { Cerebro } from './cerebro/memoria.js';
+import { Ingestao } from './cerebro/ingestao.js';
 import { Vault } from './cerebro/vault.js';
 import { Alertas } from './telemetria/alertas.js';
 import { logger } from './telemetria/logger.js';
@@ -69,6 +70,7 @@ export function montarApp(): App {
     precos: cfgPrecos, registro, orcamento, ollama, log,
   });
   const cerebro = new Cerebro(db, agora);
+  const ingestao = new Ingestao(db, cerebro, gateway, agora);
   const vault = new Vault(db, cfg.vaultPath, agora);
   const alertas = new Alertas(bus, cfg.chatPermitido ? { canal: 'telegram', chatId: cfg.chatPermitido } : null, log, agora);
   const cron = new Cron(db, fila, agora);
@@ -78,7 +80,7 @@ export function montarApp(): App {
 
   return {
     cfg, cfgOllama, cfgPrecos, cfgOrcamento, agora, iniciadoEm: agora(), db, bus, fila, ollama, gateway, registro, orcamento,
-    cerebro, vault, alertas, cron, tarefas, heartbeat, sessoes, log, canaisAtivos: [],
+    cerebro, ingestao, vault, alertas, cron, tarefas, heartbeat, sessoes, log, canaisAtivos: [],
   };
 }
 
@@ -120,7 +122,7 @@ async function main(): Promise<void> {
   const batidas = setInterval(() => { for (const w of workers) void w.bater(); }, 30_000);
 
   // Canais
-  const tg = await ligarTelegram({ token: cfg.telegramToken, chatPermitido: cfg.chatPermitido, bus, log, agora });
+  const tg = await ligarTelegram({ token: cfg.telegramToken, chatsResponder: cfg.chatsResponder, chatsObservar: cfg.chatsObservar, bus, log, agora });
   if (tg) app.canaisAtivos.push('telegram');
   const http = ligarHttp(app);
   app.canaisAtivos.push('http');

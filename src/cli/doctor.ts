@@ -9,6 +9,7 @@ import { lerConfigOllama } from '../config/yaml.js';
 import { GestorOllama } from '../ollama/gestor.js';
 import { lerRam } from '../ollama/ram.js';
 import { probeOAuthSlack } from '../canais/slack.js';
+import { contasConfiguradas } from '../cerebro/google.js';
 
 type Item = { nome: string; ok: boolean; critico: boolean; detalhe: string };
 
@@ -61,6 +62,15 @@ export async function doctor(): Promise<Item[]> {
   add('porta livre/ocupada', true, `${cfg.porta}: ${(sh(`ss -ltn | grep -c ':${cfg.porta} ' || true`) ?? '0') === '0' ? 'livre' : 'em uso (v3 rodando?)'}`);
   add('banco v3', existsSync(cfg.dbPath), cfg.dbPath);
   add('banco v2 (importação)', existsSync(resolve(RAIZ_V2, 'store/openpcbot.db')), resolve(RAIZ_V2, 'store/openpcbot.db'));
+  const contas = await contasConfiguradas();
+  add('conectores Google (contas)', contas !== null && contas.length > 0,
+      contas === null ? 'contas.json ausente — ver docs/CONECTORES.md' : contas.join(', ') || 'nenhuma');
+  for (const servico of ['gmail', 'gcal'] as const) {
+    for (const c of contas ?? []) {
+      const tp = resolve(process.env.GOOGLE_CONFIG_DIR ?? resolve(process.env.HOME ?? '', '.config/google'), `token_${servico}_${c}.json`);
+      add(`token ${servico}/${c}`, existsSync(tp), existsSync(tp) ? 'ok' : `rode: python3 conectores/google/${servico}.py --conta ${c} auth`);
+    }
+  }
   const slack = await probeOAuthSlack(process.env.SLACK_USER_TOKEN);
   add('Slack OAuth', slack.ok, slack.ok ? `user ${slack.user}` : (slack.erro ?? ''));
   for (const arq of ['ollama.yaml', 'precos.yaml', 'orcamento.yaml']) add(`config/${arq}`, existsSync(resolve(RAIZ, 'config', arq)), existsSync(resolve(RAIZ, 'config', arq)) ? 'ok' : 'ausente (defaults embutidos)');
