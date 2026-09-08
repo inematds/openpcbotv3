@@ -4,3 +4,5 @@ dist/
 store/
 *.db
 *.db-*
+__pycache__/
+*.pyc
