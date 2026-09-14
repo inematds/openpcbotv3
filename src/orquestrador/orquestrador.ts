@@ -12,6 +12,7 @@ import { identidade, type EntradaAgente } from './agente-cli.js';
 import { executarComando } from './comandos.js';
 import { rotear, type Decisao } from './roteador.js';
 import { skillsCacheadas } from './skills.js';
+import { Geracoes, cancelarDoChat, lerModo } from './modo-fila.js';
 
 const JANELA_COLLECT_MS = 2000;
 const MAX_CONTEXTO_TURNOS = 8;
@@ -19,6 +20,7 @@ const MAX_CONTEXTO_TURNOS = 8;
 export class Orquestrador {
   private readonly pendentes = new Map<string, { msgs: MensagemRecebida[]; timer: NodeJS.Timeout }>();
   private readonly emCurso = new Set<string>();
+  private readonly geracoes = new Geracoes();
 
   constructor(private readonly app: App) {}
 
@@ -32,6 +34,7 @@ export class Orquestrador {
     if (m.observar) { this.observar(m); return; }
     if (m.texto.startsWith('/')) { void this.tratar(m); return; }
     const chave = `${m.canal}:${m.chatId}`;
+    if (lerModo(this.app.prefs, m.chatId) !== 'collect') { void this.tratar(m); return; }
     const p = this.pendentes.get(chave);
     if (p) { p.msgs.push(m); clearTimeout(p.timer); }
     const msgs = p?.msgs ?? [m];
@@ -59,10 +62,25 @@ export class Orquestrador {
         if (r !== null) { this.enviar(m, r, 'markdown'); return; }
       }
       if (this.emCurso.has(chave)) {
-        this.enviar(m, '⏳ Ainda estou na sua mensagem anterior — esta entrou na fila.');
-        // `steer` leve: enfileira como job direto para depois, sem colidir.
-        app.fila.enfileirar({ fila: 'chat', kind: 'function', tarefa: 'responder', input: JSON.stringify(m), chat_id: numOuNull(m.chatId), max_tentativas: 1 });
-        return;
+        const modo = lerModo(app.prefs, m.chatId);
+        if (modo === 'interrupt') {
+          // Descarta a resposta em voo (geração) e cancela fila + agentes do chat.
+          this.geracoes.avancar(chave);
+          const n = cancelarDoChat(app.fila, chave, { emVoo: true });
+          this.emCurso.delete(chave);
+          this.enviar(m, `⏹ Interrompi a anterior${n ? ` e cancelei ${n} job(s)` : ''}. Respondendo à nova.`);
+        } else {
+          let aviso = '⏳ Ainda estou na sua mensagem anterior. Esta entrou na fila.';
+          let prioridade = 0;
+          if (modo === 'steer') {
+            const n = cancelarDoChat(app.fila, chave, { emVoo: false, apenasTarefa: 'responder' });
+            aviso = `↪️ Substituí ${n} mensagem(ns) na fila por esta; respondo assim que terminar a atual.`;
+            prioridade = 5;
+          }
+          this.enviar(m, aviso);
+          app.fila.enfileirar({ fila: 'chat', kind: 'function', tarefa: 'responder', input: JSON.stringify(m), chat_id: numOuNull(m.chatId), max_tentativas: 1, flow_ref: chave, prioridade });
+          return;
+        }
       }
       this.emCurso.add(chave);
       try { await this.responder(m); } finally { this.emCurso.delete(chave); }
@@ -76,6 +94,8 @@ export class Orquestrador {
     const app = this.app;
     const parado = app.interruptores.bloqueiaResposta();
     if (parado) { this.enviar(m, `⛔ Parado (${parado}). /retomar libera.`); return; }
+    const chave = `${m.canal}:${m.chatId}`;
+    const geracao = this.geracoes.atual(chave);
     const agentes = agentesCacheados();
     const decisao = await rotear(app.gateway, app.ollama.modeloDe('roteador'), m.texto, agentes, skillsCacheadas(), { chatId: m.chatId, traceId: m.traceId });
     app.log(`[orq] ${m.canal}:${m.chatId} → ${decisao.rota}${decisao.agente ? '/' + decisao.agente : ''} tier=${decisao.tier} (${decisao.motivo})`);
@@ -95,6 +115,7 @@ export class Orquestrador {
       mensagens: [{ role: 'system', content: sistema }, ...historico, { role: 'user', content: m.texto }],
     });
     const texto = r.texto.trim() || '(sem resposta)';
+    if (!this.geracoes.vigente(chave, geracao)) { app.log(`[orq] ${chave} resposta descartada (interrupt)`); return; }
     this.enviar(m, texto);
     this.aprender(m, texto);
   }
@@ -109,7 +130,7 @@ export class Orquestrador {
     // recebe as saídas via `consultas` quando a tarefa `agente-lead` rodar.
     const consultas = (d.consultar ?? []).map((id) => app.fila.enfileirar({
       fila: 'agente', kind: 'agent', tarefa: `consulta:${id}`, input: JSON.stringify({ ...entrada, agente: id, somenteLeitura: true } satisfies EntradaAgente),
-      chat_id: numOuNull(m.chatId), max_tentativas: 1, prioridade: 1,
+      chat_id: numOuNull(m.chatId), max_tentativas: 1, prioridade: 1, flow_ref: `${m.canal}:${m.chatId}`,
     }).id);
     const job = app.fila.enfileirar({
       fila: consultas.length ? 'io' : 'agente',

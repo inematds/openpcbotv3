@@ -7,6 +7,7 @@ import { rssMb } from '../ollama/ram.js';
 import { parsearQuando } from '../tarefas/usuario.js';
 import { agentesCacheados } from './agentes.js';
 import { cancelarEmVoo, filtroDoAlvo, parsearAlvo } from './interruptores.js';
+import { DESCRICAO, MODOS, gravarModo, lerModo, parsearModo } from './modo-fila.js';
 import { skillsCacheadas } from './skills.js';
 
 const AJUDA = `*openpcbot v3* — comandos
@@ -22,7 +23,8 @@ const AJUDA = `*openpcbot v3* — comandos
 /cron lista|on <nome>|off <nome>
 /agentes · /skills · /novo (limpa sessão e conversa) · /compress
 /consolidar — roda a consolidação de memória agora
-/parar [tudo|agentes|<agente>] [motivo] · /retomar [alvo|tudo] — interruptores`;
+/parar [tudo|agentes|<agente>] [motivo] · /retomar [alvo|tudo] — interruptores
+/fila [collect|followup|steer|interrupt] — como tratar mensagem que chega ocupado`;
 
 function fmtUsd(v: number): string { return `US$ ${v.toFixed(3)}`; }
 function fmtDur(seg: number): string { return seg < 3600 ? `${Math.round(seg / 60)} min` : `${(seg / 3600).toFixed(1)} h`; }
@@ -192,6 +194,18 @@ export async function executarComando(app: App, m: MensagemRecebida): Promise<st
       const alvo = parsearAlvo(args[0], agentesCacheados().map((a) => a.id));
       if (!alvo) return 'Alvo desconhecido.';
       return app.interruptores.desligar(alvo) ? `✅ ${alvo} liberado.` : `${alvo} não estava parado.`;
+    }
+
+    case 'fila':
+    case 'queue': {
+      if (!args[0]) {
+        const atual = lerModo(app.prefs, chat);
+        return `*Modo de fila deste chat: ${atual}*\n${MODOS.map((x) => `${x === atual ? '▶️' : '▫️'} ${x}: ${DESCRICAO[x]}`).join('\n')}\n\n/fila <modo> muda.`;
+      }
+      const modo = parsearModo(args[0]);
+      if (!modo) return `Modo desconhecido. Use: ${MODOS.join(', ')}`;
+      gravarModo(app.prefs, chat, modo);
+      return `Modo de fila: ${modo}. ${DESCRICAO[modo]}.`;
     }
 
     case 'chatid':
