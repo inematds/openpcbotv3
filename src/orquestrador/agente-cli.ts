@@ -62,12 +62,16 @@ export function montarPrompt(e: EntradaAgente, agente: Agente): string {
 
 export function argumentosCli(bin: string, ctx: ContextoExecucao): string[] {
   const sessao = ctx.vars.OPENPCBOT_SESSION;
+  // `--strict-mcp-config`: sem ele o JSON do agente SOMA aos MCP do usuário em
+  // vez de restringir; um especialista só-leitura veria tudo (Magnific etc.).
+  const mcp = ctx.vars.OPENPCBOT_MCP;
   return [
     '--model', ctx.perfil.modelo,
     '--effort', ctx.perfil.esforco,
     '--dangerously-skip-permissions',
     '--output-format', 'json',
     ...(sessao ? ['--resume', sessao] : []),
+    ...(mcp ? ['--mcp-config', mcp, '--strict-mcp-config'] : []),
     '-p', ctx.prompt,
   ].filter((a) => a !== bin);
 }
@@ -124,7 +128,7 @@ export function criarPromptDe(o: { sessoes: Sessoes; registro: RegistroCusto; cl
       prompt: montarPrompt(e, agente),
       cwd: existsSync(agente.cwd) ? agente.cwd : RAIZ,
       perfil: { motor: 'claude', modelo: job.modelo ?? agente.modelo, esforco: job.esforco ?? agente.esforco },
-      vars: { ...(sessao ? { OPENPCBOT_SESSION: sessao } : {}), OPENPCBOT_CHAT: e.chatId, OPENPCBOT_TRACE: e.traceId ?? '' },
+      vars: { ...(sessao ? { OPENPCBOT_SESSION: sessao } : {}), ...(agente.mcpConfig && existsSync(agente.mcpConfig) ? { OPENPCBOT_MCP: agente.mcpConfig } : {}), OPENPCBOT_CHAT: e.chatId, OPENPCBOT_TRACE: e.traceId ?? '' },
       timeoutMs: TIMEOUT_AGENTE_MS,
       interpretarSaida: (bruto: string): string => {
         const s = interpretarSaidaCli(bruto);

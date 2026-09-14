@@ -27,3 +27,11 @@ model: claude-sonnet-4-6
 #     - FolderB/
 #   read_only:
 #     - Daily Notes/
+
+# (v3) Servidores MCP SÓ deste agente, em JSON no formato do Claude Code
+# ({"mcpServers": {...}}), caminho relativo a esta pasta. Passa como
+# `--mcp-config <arquivo> --strict-mcp-config`: o agente vê APENAS estes
+# servidores, não os do usuário. Sem esta chave, herda os MCP do ~/.claude.
+# mcp_config: mcp.json
+
+# (v3) Persona fixa do agente: crie SOUL.md nesta pasta (ver personalidades/README.md).

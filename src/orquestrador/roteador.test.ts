@@ -43,6 +43,13 @@ describe('agente CLI', () => {
     expect(args).toContain('--dangerously-skip-permissions');
   });
 
+  it('mcp-config por agente entra com --strict-mcp-config; sem var, nada de MCP', () => {
+    const base = { prompt: 'oi', cwd: '/tmp', perfil: { motor: 'claude', modelo: 'sonnet', esforco: 'medium' } };
+    const com = argumentosCli('claude', { ...base, vars: { OPENPCBOT_MCP: '/x/mcp.json' } });
+    expect(com.slice(com.indexOf('--mcp-config'), com.indexOf('--mcp-config') + 3)).toEqual(['--mcp-config', '/x/mcp.json', '--strict-mcp-config']);
+    expect(argumentosCli('claude', { ...base, vars: {} })).not.toContain('--mcp-config');
+  });
+
   it('interpreta JSON do claude -p e cai para texto cru', () => {
     expect(interpretarSaidaCli('{"result":"feito","session_id":"s1","total_cost_usd":0.12,"usage":{"input_tokens":5,"output_tokens":7}}'))
       .toEqual({ texto: 'feito', sessionId: 's1', custoUsd: 0.12, tokensIn: 5, tokensOut: 7 });
