@@ -1,5 +1,6 @@
 // `npm run doctor`: checa env, banco, Ollama, tokens, binários, RAM, v2, unit.
-// Não muda nada. Sai com 1 se algo crítico falhar.
+// Não muda nada. Sai com 1 se algo crítico falhar. `--deep` acrescenta os
+// probes sintéticos de `doctor-deep.ts` (esses mandam mensagem e enfileiram job).
 import { execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -10,6 +11,7 @@ import { GestorOllama } from '../ollama/gestor.js';
 import { lerRam } from '../ollama/ram.js';
 import { probeOAuthSlack } from '../canais/slack.js';
 import { contasConfiguradas } from '../cerebro/google.js';
+import { doctorDeep } from './doctor-deep.js';
 
 type Item = { nome: string; ok: boolean; critico: boolean; detalhe: string };
 
@@ -79,7 +81,8 @@ export async function doctor(): Promise<Item[]> {
 
 const ehMain = process.argv[1] && resolve(process.argv[1]) === resolve(new URL(import.meta.url).pathname);
 if (ehMain) {
-  doctor().then((itens) => {
+  const deep = process.argv.includes('--deep');
+  doctor().then(async (itens) => deep ? [...itens, ...(await doctorDeep())] : itens).then((itens) => {
     for (const i of itens) console.log(`${i.ok ? '✅' : i.critico ? '❌' : '⚠️ '} ${i.nome.padEnd(32)} ${i.detalhe}`);
     const falhas = itens.filter((i) => !i.ok && i.critico);
     console.log(falhas.length ? `\n${falhas.length} falha(s) crítica(s)` : '\nTudo crítico OK');

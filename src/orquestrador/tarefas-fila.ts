@@ -42,6 +42,9 @@ export function criarTarefas(app: App, orq: () => Orquestrador): Record<string, 
       return `lead enfileirado: #${lead.id}`;
     },
 
+    /** Probe do `doctor --deep`: prova que o worker pega e conclui. Não toca memória. */
+    'doctor-probe': async () => 'ok',
+
     consolidacao: async () => {
       const r = await consolidar(app.cerebro, app.gateway, { modelo: app.ollama.modeloDe('geral'), agora: app.agora });
       return `chats ${r.chats} · duplicatas ${r.duplicatas} · contradições ${r.contradicoes} · insights ${r.insights}${r.erro ? ` · erro: ${r.erro}` : ''}`;
