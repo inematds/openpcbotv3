@@ -1,5 +1,13 @@
 # CHANGELOG — openpcbotv3
 
+## 3.2.2 — 2026-09-14
+
+- **`interrupt` não pegava agente em voo**: o teste `emCurso` só cobre resposta direta; no caso
+  comum (agente rodando na fila, resposta direta já encerrada) o `claude -p` seguia. Agora o
+  interrupt avança a geração e cancela por `flow_ref` antes de qualquer checagem, `responder()`
+  descarta também antes de despachar agente, e o `finally` só limpa `emCurso` se a geração ainda
+  for a vigente. Achado em revisão, não em produção.
+
 ## 3.2.1 — 2026-09-14 (fase 9: "Jarvis obedece")
 
 Seis itens de `docs/INCORPORAR-V3.md`, um commit cada. Tudo em `prefs` (migration 8), sem tocar
@@ -11,6 +19,7 @@ o que já existia.
 - **Modos de fila por chat** `/fila collect|followup|steer|interrupt` (openclaw). `steer` substitui o
   que estava na fila do chat com prioridade alta, sem injetar no agente em voo; `interrupt` cancela
   fila e agentes do chat por `flow_ref` e descarta a resposta direta em voo (contador de geração).
+  Processo `claude -p` cancelado morre na batida seguinte do worker (até 30 s).
 - **SOUL** (Hermes): `agents/<id>/SOUL.md` fixo por agente e `/personality <nome|off>` por chat
   lendo `personalidades/*.md`, somados a `IDENTIDADE.md`. Trocar limpa as sessões retomadas.
 - **`/context [detail] [texto]`**: tokens por camada do prompt (direto e agente), retrieval em modo
@@ -19,6 +28,8 @@ o que já existia.
   Telegram, Ollama pelo gateway em banco de memória, job `doctor-probe` que o worker precisa concluir.
 - **`mcp_config` por agente** no `agent.yaml`: `--mcp-config <json> --strict-mcp-config`, o
   especialista vê só os servidores dele. Sem a chave, herda os do usuário como antes.
+
+Testes: 187 passando (`npm test`).
 
 Fora desta fase, anotado como fase 10 em `docs/INCORPORAR-V3.md`: cliente MCP nativo no caminho
 Ollama e servidor MCP do inemavox como primeiro caso real.

@@ -62,29 +62,33 @@ export class Orquestrador {
         const r = await executarComando(app, m);
         if (r !== null) { this.enviar(m, r, 'markdown'); return; }
       }
-      if (this.emCurso.has(chave)) {
-        const modo = lerModo(app.prefs, m.chatId);
-        if (modo === 'interrupt') {
-          // Descarta a resposta em voo (geração) e cancela fila + agentes do chat.
-          this.geracoes.avancar(chave);
-          const n = cancelarDoChat(app.fila, chave, { emVoo: true });
-          this.emCurso.delete(chave);
-          this.enviar(m, `⏹ Interrompi a anterior${n ? ` e cancelei ${n} job(s)` : ''}. Respondendo à nova.`);
-        } else {
-          let aviso = '⏳ Ainda estou na sua mensagem anterior. Esta entrou na fila.';
-          let prioridade = 0;
-          if (modo === 'steer') {
-            const n = cancelarDoChat(app.fila, chave, { emVoo: false, apenasTarefa: 'responder' });
-            aviso = `↪️ Substituí ${n} mensagem(ns) na fila por esta; respondo assim que terminar a atual.`;
-            prioridade = 5;
-          }
-          this.enviar(m, aviso);
-          app.fila.enfileirar({ fila: 'chat', kind: 'function', tarefa: 'responder', input: JSON.stringify(m), chat_id: numOuNull(m.chatId), max_tentativas: 1, flow_ref: chave, prioridade });
-          return;
+      const modo = lerModo(app.prefs, m.chatId);
+      if (modo === 'interrupt') {
+        // Independe de `emCurso`: o caso comum é agente rodando na fila com a
+        // resposta direta já encerrada. Avança a geração (descarta resposta
+        // direta em voo) e cancela fila + agentes do chat.
+        const ocupado = this.emCurso.has(chave);
+        this.geracoes.avancar(chave);
+        const n = cancelarDoChat(app.fila, chave, { emVoo: true });
+        this.emCurso.delete(chave);
+        if (ocupado || n) this.enviar(m, `⏹ Interrompi a anterior${n ? ` e cancelei ${n} job(s)` : ''}. Respondendo à nova.`);
+      } else if (this.emCurso.has(chave)) {
+        let aviso = '⏳ Ainda estou na sua mensagem anterior. Esta entrou na fila.';
+        let prioridade = 0;
+        if (modo === 'steer') {
+          const n = cancelarDoChat(app.fila, chave, { emVoo: false, apenasTarefa: 'responder' });
+          aviso = `↪️ Substituí ${n} mensagem(ns) na fila por esta; respondo assim que terminar a atual.`;
+          prioridade = 5;
         }
+        this.enviar(m, aviso);
+        app.fila.enfileirar({ fila: 'chat', kind: 'function', tarefa: 'responder', input: JSON.stringify(m), chat_id: numOuNull(m.chatId), max_tentativas: 1, flow_ref: chave, prioridade });
+        return;
       }
       this.emCurso.add(chave);
-      try { await this.responder(m); } finally { this.emCurso.delete(chave); }
+      const g = this.geracoes.atual(chave);
+      // Só limpa se ainda for a geração vigente: a resposta descartada por um
+      // interrupt não pode apagar a flag da resposta nova.
+      try { await this.responder(m); } finally { if (this.geracoes.vigente(chave, g)) this.emCurso.delete(chave); }
     } catch (e) {
       app.log(`[orq] erro em ${chave}: ${(e as Error).message}`);
       this.enviar(m, `❌ ${(e as Error).message.slice(0, 300)}`);
@@ -106,6 +110,7 @@ export class Orquestrador {
       m.chatId, m.texto, m.traceId,
     );
 
+    if (!this.geracoes.vigente(chave, geracao)) { app.log(`[orq] ${chave} descartado antes de despachar (interrupt)`); return; }
     if (decisao.rota === 'agente') { await this.despacharAgente(m, decisao, memoria); return; }
 
     const historico = app.cerebro.ultimosTurnos(m.chatId, MAX_CONTEXTO_TURNOS);
