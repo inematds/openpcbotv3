@@ -74,6 +74,8 @@ export class Orquestrador {
 
   async responder(m: MensagemRecebida): Promise<void> {
     const app = this.app;
+    const parado = app.interruptores.bloqueiaResposta();
+    if (parado) { this.enviar(m, `⛔ Parado (${parado}). /retomar libera.`); return; }
     const agentes = agentesCacheados();
     const decisao = await rotear(app.gateway, app.ollama.modeloDe('roteador'), m.texto, agentes, skillsCacheadas(), { chatId: m.chatId, traceId: m.traceId });
     app.log(`[orq] ${m.canal}:${m.chatId} → ${decisao.rota}${decisao.agente ? '/' + decisao.agente : ''} tier=${decisao.tier} (${decisao.motivo})`);
@@ -100,6 +102,8 @@ export class Orquestrador {
   private async despacharAgente(m: MensagemRecebida, d: Decisao, memoria: string): Promise<void> {
     const app = this.app;
     const agente = d.agente ?? 'lead';
+    const bloqueio = app.interruptores.bloqueiaAgente(agente);
+    if (bloqueio) { this.enviar(m, `⛔ Agente ${agente} parado (${bloqueio}). /retomar libera; enquanto isso respondo só pelo modelo local.`); return; }
     const entrada: EntradaAgente = { chatId: m.chatId, canal: m.canal, texto: m.texto, agente, memoria, traceId: m.traceId };
     // Especialistas read-only em paralelo: cada um vira job próprio; o lead
     // recebe as saídas via `consultas` quando a tarefa `agente-lead` rodar.

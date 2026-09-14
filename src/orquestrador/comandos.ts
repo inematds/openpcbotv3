@@ -6,6 +6,7 @@ import { FILAS } from '../fila/filas.js';
 import { rssMb } from '../ollama/ram.js';
 import { parsearQuando } from '../tarefas/usuario.js';
 import { agentesCacheados } from './agentes.js';
+import { cancelarEmVoo, filtroDoAlvo, parsearAlvo } from './interruptores.js';
 import { skillsCacheadas } from './skills.js';
 
 const AJUDA = `*openpcbot v3* — comandos
@@ -20,7 +21,8 @@ const AJUDA = `*openpcbot v3* — comandos
 /fontes — chats observados e o que já virou memória (/fontes ingerir [gmail|agenda])
 /cron lista|on <nome>|off <nome>
 /agentes · /skills · /novo (limpa sessão e conversa) · /compress
-/consolidar — roda a consolidação de memória agora`;
+/consolidar — roda a consolidação de memória agora
+/parar [tudo|agentes|<agente>] [motivo] · /retomar [alvo|tudo] — interruptores`;
 
 function fmtUsd(v: number): string { return `US$ ${v.toFixed(3)}`; }
 function fmtDur(seg: number): string { return seg < 3600 ? `${Math.round(seg / 60)} min` : `${(seg / 3600).toFixed(1)} h`; }
@@ -168,6 +170,28 @@ export async function executarComando(app: App, m: MensagemRecebida): Promise<st
       const obs = app.cfg.chatsObservar.length ? app.cfg.chatsObservar.join(', ') : '(nenhum)';
       const linhas = est.map((e) => `${e.fonte}: ${e.itens} itens · último ${new Date(e.ultimo_em * 1000).toLocaleString('pt-BR')}`);
       return `*Fontes do cérebro*\nresponde em: ${app.cfg.chatsResponder.join(', ') || '(qualquer)'}\nobserva: ${obs}\n\n*Ingerido*\n${linhas.join('\n') || '-'}\n\n\`/fontes ingerir\` roda agora (\`gmail\`/\`agenda\` para os conectores).`;
+    }
+
+    case 'parar':
+    case 'stop': {
+      const ids = agentesCacheados().map((a) => a.id);
+      if (!args[0]) {
+        const l = app.interruptores.listar();
+        return l.length ? `*Interruptores ligados*\n${l.map((i) => `⛔ ${i.alvo}: ${i.motivo}`).join('\n')}\n\n/retomar <alvo> libera.` : 'Nenhum interruptor ligado. Uso: /parar [tudo|agentes|<agente>] [motivo]';
+      }
+      const alvo = parsearAlvo(args[0], ids);
+      if (!alvo) return `Alvo desconhecido. Use tudo, agentes ou um de: ${ids.join(', ')}`;
+      app.interruptores.ligar(alvo, args.slice(1).join(' '));
+      const n = cancelarEmVoo(app.fila, filtroDoAlvo(alvo));
+      return `⛔ ${alvo} parado.${n ? ` ${n} job(s) cancelado(s); processo em execução morre na próxima batida (até 30 s).` : ''} /retomar ${alvo === 'tudo' ? '' : alvo} libera.`;
+    }
+
+    case 'retomar':
+    case 'resume': {
+      if (!args[0] || args[0] === 'tudo') { const n = app.interruptores.desligarTodos(); return n ? `✅ ${n} interruptor(es) desligado(s).` : 'Nenhum interruptor ligado.'; }
+      const alvo = parsearAlvo(args[0], agentesCacheados().map((a) => a.id));
+      if (!alvo) return 'Alvo desconhecido.';
+      return app.interruptores.desligar(alvo) ? `✅ ${alvo} liberado.` : `${alvo} não estava parado.`;
     }
 
     case 'chatid':

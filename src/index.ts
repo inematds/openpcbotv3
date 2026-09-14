@@ -32,6 +32,8 @@ import { TarefasUsuario } from './tarefas/usuario.js';
 import { Heartbeat } from './tarefas/heartbeat.js';
 import { Sessoes, argumentosCli, criarPromptDe, TIMEOUT_AGENTE_MS } from './orquestrador/agente-cli.js';
 import { Orquestrador } from './orquestrador/orquestrador.js';
+import { Prefs } from './config/prefs.js';
+import { Interruptores } from './orquestrador/interruptores.js';
 import { criarEntregador, criarTarefas } from './orquestrador/tarefas-fila.js';
 import { redigir } from './canais/guarda.js';
 import { ligarTelegram } from './canais/telegram.js';
@@ -77,10 +79,12 @@ export function montarApp(): App {
   const tarefas = new TarefasUsuario(db, agora);
   const heartbeat = new Heartbeat(db, fila, agora, TIMEOUT_AGENTE_MS / 1000);
   const sessoes = new Sessoes(db, agora);
+  const prefs = new Prefs(db, agora);
+  const interruptores = new Interruptores(prefs);
 
   return {
     cfg, cfgOllama, cfgPrecos, cfgOrcamento, agora, iniciadoEm: agora(), db, bus, fila, ollama, gateway, registro, orcamento,
-    cerebro, ingestao, vault, alertas, cron, tarefas, heartbeat, sessoes, log, canaisAtivos: [],
+    cerebro, ingestao, vault, alertas, cron, tarefas, heartbeat, sessoes, prefs, interruptores, log, canaisAtivos: [],
   };
 }
 
@@ -101,7 +105,7 @@ async function main(): Promise<void> {
 
   // Workers: um por lane, com o runner claude configurado para o v3.
   const runnerClaude = new ClaudeRunner({ binario: cfg.claudeBin, montarArgs: (ctx) => argumentosCli(cfg.claudeBin, ctx) });
-  const promptDe = criarPromptDe({ sessoes: app.sessoes, registro: app.registro, claudeBin: cfg.claudeBin });
+  const promptDe = criarPromptDe({ sessoes: app.sessoes, registro: app.registro, claudeBin: cfg.claudeBin, bloqueiaAgente: (id) => app.interruptores.bloqueiaAgente(id) });
   const entregar = criarEntregador(app);
   const workers = FILAS.map((f) => new Worker(fila, {
     fila: f, dono: cfg.instancia, concorrencia: CONCORRENCIAS[f], leaseSegundos: 120,

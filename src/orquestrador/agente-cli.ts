@@ -107,9 +107,12 @@ export class Sessoes {
  * `promptDe` do worker da lane `agente`: transforma o job (input JSON =
  * EntradaAgente) no ContextoExecucao do runner `claude`.
  */
-export function criarPromptDe(o: { sessoes: Sessoes; registro: RegistroCusto; claudeBin: string }) {
+export function criarPromptDe(o: { sessoes: Sessoes; registro: RegistroCusto; claudeBin: string; bloqueiaAgente?: (id: string) => string | null }) {
   return async (job: Job): Promise<ContextoExecucao> => {
     const e = JSON.parse(job.input) as EntradaAgente;
+    // Job enfileirado ANTES do /parar: falha aqui, sem gastar tokens.
+    const bloqueio = o.bloqueiaAgente?.(e.agente);
+    if (bloqueio) throw new Error(`interruptor ligado (${bloqueio}); /retomar libera`);
     const agente = agentesCacheados().find((a) => a.id === e.agente) ?? agentesCacheados().find((a) => a.id === 'lead')!;
     const sessao = e.somenteLeitura ? undefined : o.sessoes.obter(e.chatId, agente.id);
     const t0 = Date.now();

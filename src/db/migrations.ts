@@ -249,6 +249,22 @@ export const MIGRATIONS: Migration[] = [
       );
     `,
   },
+  {
+    version: 8,
+    nome: 'prefs',
+    // KV por chat (fase 9): interruptores (`chat_id = '*'` = global), modo de
+    // fila e personalidade. Persistido para sobreviver a restart: um `/parar`
+    // que some no reboot não é interruptor, é sugestão.
+    sql: `
+      CREATE TABLE prefs (
+        chat_id TEXT    NOT NULL,
+        chave   TEXT    NOT NULL,
+        valor   TEXT    NOT NULL,
+        em      INTEGER NOT NULL,
+        PRIMARY KEY (chat_id, chave)
+      );
+    `,
+  },
 ];
 
 const SCHEMA_CONTROLE = `

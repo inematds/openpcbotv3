@@ -18,6 +18,8 @@ import type { Cron } from './tarefas/cron.js';
 import type { TarefasUsuario } from './tarefas/usuario.js';
 import type { Heartbeat } from './tarefas/heartbeat.js';
 import type { Sessoes } from './orquestrador/agente-cli.js';
+import type { Prefs } from './config/prefs.js';
+import type { Interruptores } from './orquestrador/interruptores.js';
 
 export interface App {
   cfg: Config;
@@ -41,6 +43,8 @@ export interface App {
   tarefas: TarefasUsuario;
   heartbeat: Heartbeat;
   sessoes: Sessoes;
+  prefs: Prefs;
+  interruptores: Interruptores;
   log: (m: string) => void;
   /** Canais efetivamente ligados neste processo. */
   canaisAtivos: string[];
