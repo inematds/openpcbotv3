@@ -8,6 +8,7 @@ import { parsearQuando } from '../tarefas/usuario.js';
 import { agentesCacheados } from './agentes.js';
 import { cancelarEmVoo, filtroDoAlvo, parsearAlvo } from './interruptores.js';
 import { DESCRICAO, MODOS, gravarModo, lerModo, parsearModo } from './modo-fila.js';
+import { formatarMedicao, medirContexto } from './contexto-cmd.js';
 import { definirPersonalidade, lerPersonalidade, listarPersonalidades, personalidadeDoChat } from './personalidade.js';
 import { skillsCacheadas } from './skills.js';
 
@@ -26,7 +27,8 @@ const AJUDA = `*openpcbot v3* — comandos
 /consolidar — roda a consolidação de memória agora
 /parar [tudo|agentes|<agente>] [motivo] · /retomar [alvo|tudo] — interruptores
 /fila [collect|followup|steer|interrupt] — como tratar mensagem que chega ocupado
-/personality [nome|off] — persona deste chat (personalidades/*.md)`;
+/personality [nome|off] — persona deste chat (personalidades/*.md)
+/context [detail] [texto] — tokens por camada do prompt`;
 
 function fmtUsd(v: number): string { return `US$ ${v.toFixed(3)}`; }
 function fmtDur(seg: number): string { return seg < 3600 ? `${Math.round(seg / 60)} min` : `${(seg / 3600).toFixed(1)} h`; }
@@ -223,6 +225,13 @@ export async function executarComando(app: App, m: MensagemRecebida): Promise<st
       definirPersonalidade(app.prefs, chat, args[0]);
       app.sessoes.limpar(chat);
       return `Personalidade: ${args[0]}. Sessões de agente reiniciadas para a voz nova valer.\n\n${t.split('\n').slice(0, 4).join('\n')}`;
+    }
+
+    case 'context':
+    case 'contexto': {
+      const detalhe = args[0] === 'detail' || args[0] === 'detalhe';
+      const texto = (detalhe ? args.slice(1) : args).join(' ');
+      return formatarMedicao(await medirContexto(app, chat, texto), detalhe);
     }
 
     case 'chatid':

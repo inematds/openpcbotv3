@@ -10,9 +10,11 @@ export interface OpcoesContexto {
   modeloEmbed?: string;
   /** Teto aproximado em tokens (~4 chars/token). */
   tetoTokens?: number;
+  /** Diagnóstico (`/context`): não toca saliência nem accessed_at. */
+  somenteLeitura?: boolean;
 }
 
-const aproxTokens = (s: string): number => Math.ceil(s.length / 4);
+export const aproxTokens = (s: string): number => Math.ceil(s.length / 4);
 
 export async function montarContextoMemoria(o: OpcoesContexto, chatId: string, mensagem: string, traceId?: string): Promise<string> {
   const teto = o.tetoTokens ?? 600;
@@ -21,7 +23,7 @@ export async function montarContextoMemoria(o: OpcoesContexto, chatId: string, m
   const add = (m: Memoria, tag: string): void => {
     if (vistos.has(m.id)) return;
     vistos.add(m.id);
-    o.cerebro.tocar(m.id);
+    if (!o.somenteLeitura) o.cerebro.tocar(m.id);
     linhas.push(`- ${m.content} (${tag})`);
   };
 
