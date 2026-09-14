@@ -35,8 +35,9 @@ Sem token do Telegram o serviço sobe mesmo assim com HTTP (`127.0.0.1:3142`) e 
 | Falar com o bot sem Telegram | `npm run cli -- "mensagem"` ou `POST /mensagem {"texto":"..."}` |
 | Logs | `journalctl --user -u openpcbotv3 -f -o cat` |
 | Restart após mudar `src/` ou `.env` | `bash scripts/instalar-servico.sh` |
-| Diagnóstico | `npm run doctor` |
-| Testes | `npm test` (161) |
+| Diagnóstico | `npm run doctor` (config) · `npm run doctor -- --deep` (probes reais: manda mensagem no Telegram e roda um job) |
+| Parar tudo agora | `/parar tudo <motivo>` no chat; `/retomar` libera |
+| Testes | `npm test` (187) |
 
 ---
 
@@ -171,6 +172,57 @@ Orçamento (`config/orcamento.yaml`, `ORCAMENTO_MENSAL_USD`): aviso a 70 %, **tr
 
 ---
 
+## 9b. Controle da conversa (fase 9: interruptores, modos de fila, persona, contexto)
+
+Tudo desta seção fica na tabela `prefs` (KV por chat; `'*'` é global) e sobrevive a restart.
+
+### Interruptores (`/parar`, `/retomar`)
+
+| Alvo | O que bloqueia | O que continua |
+|---|---|---|
+| `tudo` | qualquer resposta (Telegram, CLI, HTTP, cron→responder) e qualquer agente | comandos de barra; manutenção na lane `ollama` (consolidação, ingestão, indexação, backup) |
+| `agentes` | despacho de `claude -p` (lead e especialistas) | resposta direta no Ollama |
+| `agente:<id>` | só aquele agente (`/parar ops quebrou`) | o resto |
+
+- `/parar` sozinho lista o que está ligado, com motivo. `/retomar` sem alvo desliga todos.
+- Ligar cancela o que está em voo nas lanes `chat`, `agente` e `io` que bate com o alvo. Um `claude -p` em execução morre na batida seguinte do worker (até 30 s).
+- Job enfileirado **antes** do `/parar` falha ao ser pego, com o motivo, sem gastar token.
+
+### Modos de fila (`/fila`)
+
+O que fazer com uma mensagem que chega enquanto outra está em curso. Por chat; padrão `collect`.
+
+| Modo | Comportamento | Diferença para o openclaw |
+|---|---|---|
+| `collect` | junta mensagens seguidas por 2 s e responde uma vez | igual |
+| `followup` | sem janela; se ocupado, entra na fila e responde depois | igual |
+| `steer` | se ocupado, **substitui** o que estava na fila deste chat pela nova, prioridade alta | o openclaw injeta no agente em execução; com `claude -p` em subprocesso não dá, então a mensagem só entra quando o agente atual terminar |
+| `interrupt` | cancela fila e agentes deste chat (por `flow_ref = canal:chat`) e responde à nova agora | resposta direta já em voo no Ollama não é abortável: ela termina e é descartada (contador de geração por chat) |
+
+### Persona (`/personality`, `SOUL.md`)
+
+Três camadas, sempre somadas, nesta ordem no prompt:
+
+1. `IDENTIDADE.md` (raiz): a base, nunca sai.
+2. `agents/<id>/SOUL.md`: persona fixa daquele agente (opcional; precisa de restart para o registry reler).
+3. `personalidades/<nome>.md`: escolhida por chat com `/personality <nome>`; `/personality off` volta ao padrão. Vale para resposta direta e agentes.
+
+Trocar a personalidade apaga as sessões `--resume` do chat, senão o agente retomaria com a voz antiga por até 6 h. Exemplos que já vêm: `curto`, `professor`. Criar uma = um `.md` novo na pasta.
+
+### `/context [detail] [texto]`
+
+Mede, sem chamar modelo de chat, quanto do prompt é cada camada (identidade, persona, `USER.md`, memória e insights, histórico, skills, regras, mensagem), para a resposta direta e para o agente. `detail` lista os itens de memória e histórico. Sem `texto`, usa a última mensagem sua do chat como consulta. O retrieval roda em modo somente leitura: `/context` não infla saliência.
+
+### `doctor --deep`
+
+`npm run doctor -- --deep` acrescenta quatro probes que **exercitam** o sistema, marcados como probe: `GET /health` do serviço; `sendMessage` no Telegram para o `ALLOWED_CHAT_ID` (nunca `getUpdates`); uma chamada ao modelo `roteador` pelo gateway de custo em banco de memória (não entra em `chamadas_llm`); e um job `doctor-probe` na lane `io` que o worker do serviço precisa pegar e concluir em 30 s (falha com "serviço antigo" se o binário no ar não tiver a tarefa: reinstale).
+
+### MCP por agente (`mcp_config`)
+
+No `agents/<id>/agent.yaml`, `mcp_config: mcp.json` (caminho relativo à pasta) faz o `claude -p` subir com `--mcp-config <arquivo> --strict-mcp-config`: o agente vê **só** esses servidores. Sem a chave, herda os MCP do `~/.claude` como sempre. Modelo em `agents/_template/mcp.json.example`. Um cliente MCP nativo no caminho Ollama está anotado como fase 10 em [docs/INCORPORAR-V3.md](docs/INCORPORAR-V3.md), sem ordem de início.
+
+---
+
 ## 10. Canais (`src/canais/`)
 
 - **Telegram** (grammy): só o `ALLOWED_CHAT_ID`; markdown simples vira HTML; mensagens longas fatiadas; 409 vira log, não loop.
@@ -215,6 +267,7 @@ Backup noturno: `VACUUM INTO` + `age` (se `AGE_RECIPIENT`) ou gzip, retenção 1
 | `ORCAMENTO_MENSAL_USD` | 50 | |
 | `SLACK_ENABLED` / `WHATSAPP_ENABLED` | 0 | |
 | `AGE_RECIPIENT` | | backup cifrado |
+| (tabela `prefs`) | | interruptores, modo de fila e personalidade por chat; `/parar`, `/fila`, `/personality` gravam aqui |
 | `CLAUDE_BIN` / `CODEX_BIN` | claude / codex | |
 
 YAML em `config/`: `ollama.yaml` (papéis, piso, probe), `precos.yaml` (USD/1M tokens, tiers), `orcamento.yaml`.
@@ -249,6 +302,8 @@ Regras: nenhum módulo acima de 500 linhas; toda chamada de LLM passa por `custo
 ## 15. O que ainda não está
 
 - **Fase 8 (corte)**: trocar o token de produção, v2 só leitura por 30 dias, arquivar. Só com ordem explícita.
+- **Fase 10 (anotada)**: cliente MCP nativo no caminho Ollama, servidor MCP do inemavox, voz no Telegram, `/retry` `/undo`, rodapé de uso, saúde de skills ([docs/INCORPORAR-V3.md](docs/INCORPORAR-V3.md)).
 - WhatsApp real (daemon separado), Slack ligado.
+- `steer` não injeta no agente em execução (ver 9b).
 - Retenção da tabela `jobs` (hoje nunca purga; ~1,5 k linhas/dia com o cron de lembretes).
 - Memória guarda a frase inteira, não um fato extraído.

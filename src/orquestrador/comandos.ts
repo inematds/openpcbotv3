@@ -25,10 +25,34 @@ const AJUDA = `*openpcbot v3* — comandos
 /cron lista|on <nome>|off <nome>
 /agentes · /skills · /novo (limpa sessão e conversa) · /compress
 /consolidar — roda a consolidação de memória agora
-/parar [tudo|agentes|<agente>] [motivo] · /retomar [alvo|tudo] — interruptores
-/fila [collect|followup|steer|interrupt] — como tratar mensagem que chega ocupado
-/personality [nome|off] — persona deste chat (personalidades/*.md)
-/context [detail] [texto] — tokens por camada do prompt`;
+
+*Controle da conversa*
+/parar [tudo|agentes|<agente>] [motivo] — interruptor persistente; cancela o que está em voo; sozinho lista
+/retomar [alvo] — libera (sem alvo: todos)
+/fila [collect|followup|steer|interrupt] — mensagem que chega com outra em curso: junta 2 s | enfileira | substitui a fila | cancela tudo e responde à nova
+/personality [nome|off] — persona deste chat (personalidades/*.md, somada a IDENTIDADE.md); trocar reinicia sessões
+/context [detail] [texto] — tokens por camada do prompt (direto e agente), sem mexer na memória
+/ajuda <comando> — detalhe de um comando`;
+
+const DETALHE: Record<string, string> = {
+  parar: `*/parar [tudo|agentes|<agente>] [motivo]*
+tudo: nenhuma resposta nem agente (comandos e manutenção no Ollama seguem).
+agentes: nenhum claude -p; resposta direta no Ollama continua.
+<agente>: só aquele (ex.: /parar ops quebrou).
+Cancela o que está em voo nas lanes chat/agente/io; processo em execução morre na batida seguinte (até 30 s). Job enfileirado antes falha ao ser pego, sem gastar token. Persiste no banco; /retomar libera.`,
+  retomar: `*/retomar [alvo]*\nDesliga um interruptor (tudo, agentes ou <agente>). Sem alvo desliga todos.`,
+  fila: `*/fila [modo]* (por chat, padrão collect)
+collect: junta mensagens seguidas por 2 s e responde uma vez.
+followup: sem janela; ocupado → entra na fila.
+steer: ocupado → substitui o que estava na fila deste chat, prioridade alta. NÃO injeta no agente em execução (limite do claude -p).
+interrupt: cancela fila e agentes deste chat e responde à nova agora. Resposta direta já em voo termina e é descartada.`,
+  personality: `*/personality [nome|off]*
+Camadas somadas: IDENTIDADE.md (base) + agents/<id>/SOUL.md (agente) + personalidades/<nome>.md (este chat).
+Trocar apaga as sessões retomadas do chat para a voz nova valer. Sem argumento: lista as disponíveis.`,
+  context: `*/context [detail] [texto]*
+Mede tokens por camada do prompt (identidade, persona, USER.md, memória+insights, histórico, skills, regras, mensagem) para resposta direta e agente. detail lista os itens. Sem texto usa sua última mensagem. Não toca saliência.`,
+};
+
 
 function fmtUsd(v: number): string { return `US$ ${v.toFixed(3)}`; }
 function fmtDur(seg: number): string { return seg < 3600 ? `${Math.round(seg / 60)} min` : `${(seg / 3600).toFixed(1)} h`; }
@@ -42,8 +66,11 @@ export async function executarComando(app: App, m: MensagemRecebida): Promise<st
   switch (cmd) {
     case 'start':
     case 'ajuda':
-    case 'help':
+    case 'help': {
+      const d = args[0]?.replace(/^\//, '').toLowerCase();
+      if (d) return DETALHE[d === 'personalidade' ? 'personality' : d === 'contexto' ? 'context' : d === 'queue' ? 'fila' : d] ?? `Sem detalhe para /${d}. Comandos: ${Object.keys(DETALHE).map((k) => '/' + k).join(' ')}`;
       return AJUDA;
+    }
 
     case 'status': {
       if (args[0]) {

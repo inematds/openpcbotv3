@@ -1,5 +1,11 @@
 # CHANGELOG — openpcbotv3
 
+## 3.2.3 — 2026-09-14
+
+- Documentação da fase 9: seção 9b do README (interruptores, modos de fila com os limites frente ao
+  openclaw, camadas de persona, `/context`, `doctor --deep`, `mcp_config`); `/ajuda` ganhou bloco
+  "Controle da conversa" e `/ajuda <comando>` com o detalhe de cada um.
+
 ## 3.2.2 — 2026-09-14
 
 - **`interrupt` não pegava agente em voo**: o teste `emCurso` só cobre resposta direta; no caso
