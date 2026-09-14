@@ -13,6 +13,7 @@ import { executarComando } from './comandos.js';
 import { rotear, type Decisao } from './roteador.js';
 import { skillsCacheadas } from './skills.js';
 import { Geracoes, cancelarDoChat, lerModo } from './modo-fila.js';
+import { blocoPersonalidade } from './personalidade.js';
 
 const JANELA_COLLECT_MS = 2000;
 const MAX_CONTEXTO_TURNOS = 8;
@@ -108,7 +109,7 @@ export class Orquestrador {
     if (decisao.rota === 'agente') { await this.despacharAgente(m, decisao, memoria); return; }
 
     const historico = app.cerebro.ultimosTurnos(m.chatId, MAX_CONTEXTO_TURNOS);
-    const sistema = [identidade(), app.vault.ler('USER.md', 800), memoria].filter(Boolean).join('\n\n');
+    const sistema = [identidade(), blocoPersonalidade(app.prefs, m.chatId), app.vault.ler('USER.md', 800), memoria].filter(Boolean).join('\n\n');
     const r = await app.gateway.chamar({
       tier: decisao.tier, agente: 'direto', chatId: m.chatId, traceId: m.traceId, motivoTier: decisao.tier !== 'local' ? decisao.motivo : undefined,
       temperatura: 0.4, maxTokens: 1200, timeoutMs: 180_000, keepAlive: app.ollama.papel('geral').keep_alive,
@@ -125,7 +126,7 @@ export class Orquestrador {
     const agente = d.agente ?? 'lead';
     const bloqueio = app.interruptores.bloqueiaAgente(agente);
     if (bloqueio) { this.enviar(m, `⛔ Agente ${agente} parado (${bloqueio}). /retomar libera; enquanto isso respondo só pelo modelo local.`); return; }
-    const entrada: EntradaAgente = { chatId: m.chatId, canal: m.canal, texto: m.texto, agente, memoria, traceId: m.traceId };
+    const entrada: EntradaAgente = { chatId: m.chatId, canal: m.canal, texto: m.texto, agente, memoria, traceId: m.traceId, personalidade: blocoPersonalidade(app.prefs, m.chatId) || undefined };
     // Especialistas read-only em paralelo: cada um vira job próprio; o lead
     // recebe as saídas via `consultas` quando a tarefa `agente-lead` rodar.
     const consultas = (d.consultar ?? []).map((id) => app.fila.enfileirar({

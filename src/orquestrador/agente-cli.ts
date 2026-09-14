@@ -19,6 +19,8 @@ export interface EntradaAgente {
   texto: string;
   agente: string;
   memoria?: string;
+  /** Bloco `[Personalidade: x]` do chat, já lido (o worker não tem prefs). */
+  personalidade?: string;
   /** Saídas dos especialistas read-only (id → texto), já coletadas. */
   consultas?: Record<string, string>;
   traceId?: string;
@@ -44,6 +46,8 @@ export function identidade(): string {
 
 export function montarPrompt(e: EntradaAgente, agente: Agente): string {
   const partes: string[] = [identidade()];
+  if (agente.soul) partes.push(`[Persona do agente ${agente.nome}]\n${agente.soul}`);
+  if (e.personalidade) partes.push(e.personalidade);
   if (agente.prompt) partes.push(`[Agente ${agente.nome}]\n${agente.prompt}`);
   if (e.somenteLeitura || agente.somenteLeitura) partes.push('MODO SOMENTE LEITURA: não crie, edite ou apague arquivos, não faça commit. Só leia e responda.');
   if (e.memoria) partes.push(e.memoria);

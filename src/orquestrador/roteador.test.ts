@@ -5,9 +5,9 @@ import { parsearDecisao } from './roteador.js';
 import { argumentosCli, interpretarSaidaCli } from './agente-cli.js';
 
 const agentes: Agente[] = [
-  { id: 'lead', nome: 'Lead', descricao: '', modelo: 'sonnet', esforco: 'medium', somenteLeitura: false, cwd: '/tmp', dir: '/tmp', prompt: '' },
-  { id: 'research', nome: 'Research', descricao: '', modelo: 'opus', esforco: 'high', somenteLeitura: true, cwd: '/tmp', dir: '/tmp', prompt: '' },
-  { id: 'ops', nome: 'Ops', descricao: '', modelo: 'sonnet', esforco: 'medium', somenteLeitura: false, cwd: '/tmp', dir: '/tmp', prompt: '' },
+  { id: 'lead', nome: 'Lead', descricao: '', modelo: 'sonnet', esforco: 'medium', somenteLeitura: false, cwd: '/tmp', dir: '/tmp', prompt: '', soul: '' },
+  { id: 'research', nome: 'Research', descricao: '', modelo: 'opus', esforco: 'high', somenteLeitura: true, cwd: '/tmp', dir: '/tmp', prompt: '', soul: '' },
+  { id: 'ops', nome: 'Ops', descricao: '', modelo: 'sonnet', esforco: 'medium', somenteLeitura: false, cwd: '/tmp', dir: '/tmp', prompt: '', soul: '' },
 ];
 
 describe('parsearDecisao', () => {

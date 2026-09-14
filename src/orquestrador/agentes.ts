@@ -5,6 +5,7 @@ import path from 'node:path';
 import yaml from 'js-yaml';
 
 import { RAIZ } from '../config/env.js';
+import { lerSoul } from './personalidade.js';
 
 export interface Agente {
   id: string;
@@ -18,6 +19,10 @@ export interface Agente {
   cwd: string;
   dir: string;
   prompt: string;
+  /** `agents/<id>/SOUL.md`: persona fixa do agente (Hermes). */
+  soul: string;
+  /** Caminho de JSON de servidores MCP só deste agente (`mcp_config` no yaml). */
+  mcpConfig?: string;
 }
 
 export const AGENTS_DIR = path.join(RAIZ, 'agents');
@@ -53,13 +58,15 @@ export function listarAgentes(dir: string = AGENTS_DIR): Agente[] {
       cwd: String(doc.cwd ?? path.join(process.env.HOME ?? '', 'projetos')),
       dir: d,
       prompt: prompt.slice(0, 6000),
+      soul: lerSoul(d),
+      mcpConfig: typeof doc.mcp_config === 'string' ? path.resolve(d, doc.mcp_config) : undefined,
     });
   }
   // Lead genérico: o próprio openpcbot com escrita, para pedidos sem especialista.
   out.push({
     id: 'lead', nome: 'Lead', descricao: 'Agente geral com escrita (código, arquivos, shell) — assume quando nenhum especialista cabe',
     modelo: 'sonnet', esforco: 'medium', somenteLeitura: false,
-    cwd: path.join(process.env.HOME ?? '', 'projetos'), dir, prompt: '',
+    cwd: path.join(process.env.HOME ?? '', 'projetos'), dir, prompt: '', soul: '',
   });
   return out.sort((a, b) => a.id.localeCompare(b.id));
 }

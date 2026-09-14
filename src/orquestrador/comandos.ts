@@ -8,6 +8,7 @@ import { parsearQuando } from '../tarefas/usuario.js';
 import { agentesCacheados } from './agentes.js';
 import { cancelarEmVoo, filtroDoAlvo, parsearAlvo } from './interruptores.js';
 import { DESCRICAO, MODOS, gravarModo, lerModo, parsearModo } from './modo-fila.js';
+import { definirPersonalidade, lerPersonalidade, listarPersonalidades, personalidadeDoChat } from './personalidade.js';
 import { skillsCacheadas } from './skills.js';
 
 const AJUDA = `*openpcbot v3* — comandos
@@ -24,7 +25,8 @@ const AJUDA = `*openpcbot v3* — comandos
 /agentes · /skills · /novo (limpa sessão e conversa) · /compress
 /consolidar — roda a consolidação de memória agora
 /parar [tudo|agentes|<agente>] [motivo] · /retomar [alvo|tudo] — interruptores
-/fila [collect|followup|steer|interrupt] — como tratar mensagem que chega ocupado`;
+/fila [collect|followup|steer|interrupt] — como tratar mensagem que chega ocupado
+/personality [nome|off] — persona deste chat (personalidades/*.md)`;
 
 function fmtUsd(v: number): string { return `US$ ${v.toFixed(3)}`; }
 function fmtDur(seg: number): string { return seg < 3600 ? `${Math.round(seg / 60)} min` : `${(seg / 3600).toFixed(1)} h`; }
@@ -206,6 +208,21 @@ export async function executarComando(app: App, m: MensagemRecebida): Promise<st
       if (!modo) return `Modo desconhecido. Use: ${MODOS.join(', ')}`;
       gravarModo(app.prefs, chat, modo);
       return `Modo de fila: ${modo}. ${DESCRICAO[modo]}.`;
+    }
+
+    case 'personality':
+    case 'personalidade': {
+      const nomes = listarPersonalidades();
+      if (!args[0] || args[0] === 'lista') {
+        const atual = personalidadeDoChat(app.prefs, chat);
+        return `*Personalidade deste chat: ${atual ?? 'padrão (IDENTIDADE.md)'}*\ndisponíveis: ${nomes.join(', ') || 'nenhuma em personalidades/'}\n\n/personality <nome> liga · /personality off volta ao padrão.`;
+      }
+      if (args[0] === 'off' || args[0] === 'padrao') { definirPersonalidade(app.prefs, chat, null); app.sessoes.limpar(chat); return 'Personalidade padrão. Sessões de agente reiniciadas.'; }
+      const t = lerPersonalidade(args[0]);
+      if (!t) return `Não existe. Disponíveis: ${nomes.join(', ') || 'nenhuma'}`;
+      definirPersonalidade(app.prefs, chat, args[0]);
+      app.sessoes.limpar(chat);
+      return `Personalidade: ${args[0]}. Sessões de agente reiniciadas para a voz nova valer.\n\n${t.split('\n').slice(0, 4).join('\n')}`;
     }
 
     case 'chatid':
