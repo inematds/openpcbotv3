@@ -86,6 +86,10 @@ Especialistas em paralelo (padrão grokky): quando o roteador indica `consultar`
 | `/agentes` · `/skills` | o que está instalado |
 | `/novo` | limpa sessão do CLI e histórico do chat · `/compress` só a sessão |
 | `/consolidar` | roda a consolidação de memória agora |
+| `/parar [tudo\|agentes\|<agente>] [motivo]` · `/retomar [alvo]` | interruptores persistentes; `/parar` sozinho lista |
+| `/fila [collect\|followup\|steer\|interrupt]` | como tratar mensagem que chega com outra em curso (por chat) |
+| `/personality [nome\|off]` | persona deste chat (`personalidades/*.md`, somada a `IDENTIDADE.md`) |
+| `/context [detail] [texto]` | tokens por camada do prompt, direto e agente |
 | `/chatid` · `/versao` · `/ajuda` | |
 
 ---

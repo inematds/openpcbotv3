@@ -73,11 +73,14 @@ Legenda de esforço: **P** (≤1 dia) · **M** (2–3 dias) · **G** (semana+).
 | `jarvis`, `gravityclaw`, `agentes-voz`, `hermes*` | curso/doc | só vocabulário e checklist; nada de código |
 | `~/.openclaw` (instalação) | config | Ollama `qwen-agentic` como primário, OpenRouter com tabela de custo, 27 skills; zero cron, zero devices |
 
-## 3. Proposta de sequência
+## 3. Sequência (decidida em 2026-09-14)
 
-- **Fase 9 — "Jarvis fala e obedece"**: A1, A2, A5, A6, A7 (≈5 dias).
-- **Fase 10 — "Jarvis se explica"**: A3, A4, A8, A9, B4, B6, B10 (≈4 dias).
-- **Fase 11 — "Jarvis aprende"**: B1, B5, B7, B8; B2/B3 dependem da decisão 1 do plano (≈6 dias).
+- **Fase 9 — entregue em 3.2.1**: A7 kill switches, A2 modos de fila, A6 SOUL/personality, A3 `/context`, A8 `doctor --deep`, `mcp_config` por agente (`--strict-mcp-config`).
+- **Fase 10 — MCP como porta para outros serviços (anotado, sem ordem de início)**:
+  - Cliente MCP nativo em TypeScript (SDK oficial) no caminho de resposta direta no Ollama, para o Jarvis local usar ferramentas sem acordar o Claude. Tool calling do `qwen3 27b` basta para chamadas simples; toda chamada continua no gateway de custo.
+  - Servidor MCP fininho do **inemavox** (baixar, transcrever, narrar) como primeiro caso real, servindo Claude, Codex e Ollama com o mesmo catálogo. Serviços sem MCP (Groq, HeyGen, Kling) só entram se valer o mesmo catálogo.
+  - Junto: A1 voz no Telegram, A4 rodapé de uso, A5 `/retry` `/undo`, A9 saúde de skills, B4 failover, B6 `/insights`, B10 compactação visível.
+- **Fase 11 — "Jarvis aprende"**: B1, B5, B7, B8; B2/B3 dependem da decisão 1 do plano.
 - Fase 8 (corte) continua sem ordem, independente das acima.
 
 ## 4. Fontes

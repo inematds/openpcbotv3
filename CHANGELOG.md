@@ -1,5 +1,28 @@
 # CHANGELOG — openpcbotv3
 
+## 3.2.1 — 2026-09-14 (fase 9: "Jarvis obedece")
+
+Seis itens de `docs/INCORPORAR-V3.md`, um commit cada. Tudo em `prefs` (migration 8), sem tocar
+o que já existia.
+
+- **Interruptores** `/parar [tudo|agentes|<agente>] [motivo]` e `/retomar`: persistem, cancelam o
+  que está em voo nas lanes de conversa e o runner recusa job enfileirado antes do `/parar`.
+  Manutenção na lane `ollama` segue livre. Processo em execução morre na batida seguinte (até 30 s).
+- **Modos de fila por chat** `/fila collect|followup|steer|interrupt` (openclaw). `steer` substitui o
+  que estava na fila do chat com prioridade alta, sem injetar no agente em voo; `interrupt` cancela
+  fila e agentes do chat por `flow_ref` e descarta a resposta direta em voo (contador de geração).
+- **SOUL** (Hermes): `agents/<id>/SOUL.md` fixo por agente e `/personality <nome|off>` por chat
+  lendo `personalidades/*.md`, somados a `IDENTIDADE.md`. Trocar limpa as sessões retomadas.
+- **`/context [detail] [texto]`**: tokens por camada do prompt (direto e agente), retrieval em modo
+  somente leitura para não inflar saliência.
+- **`npm run doctor -- --deep`**: probes que exercitam o sistema: `/health`, `sendMessage` no
+  Telegram, Ollama pelo gateway em banco de memória, job `doctor-probe` que o worker precisa concluir.
+- **`mcp_config` por agente** no `agent.yaml`: `--mcp-config <json> --strict-mcp-config`, o
+  especialista vê só os servidores dele. Sem a chave, herda os do usuário como antes.
+
+Fora desta fase, anotado como fase 10 em `docs/INCORPORAR-V3.md`: cliente MCP nativo no caminho
+Ollama e servidor MCP do inemavox como primeiro caso real.
+
 ## 3.1.1 — 2026-09-07
 
 Correções encontradas em revisão, antes de qualquer conta ser ligada.
