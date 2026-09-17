@@ -37,5 +37,6 @@ When I correct you, or you catch yourself making a mistake: before continuing, a
 
 - `keep_alive` do Ollama: `-1` é número, não string; durações são `"10m"`. Validar contra a API antes de assumir o formato do plano.
 - Em `execSync('pgrep -f ...')` o próprio `sh -c` entra na contagem; usar `pgrep -x` ou filtrar. `grep -c` sem match sai com código 1: `|| true`.
+- Fluxo OAuth dos conectores (`gmail.py/gcal.py auth`): rodar com `python3 -u` e em background com log em arquivo; sem `-u` a URL fica presa no buffer e nada aparece.
 
 - OAuth `run_local_server`: nunca testar o callback com conexão TCP/HTTP; o servidor atende uma única requisição. Verificar listener apenas passivamente.
