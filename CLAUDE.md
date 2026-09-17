@@ -37,3 +37,5 @@ When I correct you, or you catch yourself making a mistake: before continuing, a
 
 - `keep_alive` do Ollama: `-1` é número, não string; durações são `"10m"`. Validar contra a API antes de assumir o formato do plano.
 - Em `execSync('pgrep -f ...')` o próprio `sh -c` entra na contagem; usar `pgrep -x` ou filtrar. `grep -c` sem match sai com código 1: `|| true`.
+
+- OAuth `run_local_server`: nunca testar o callback com conexão TCP/HTTP; o servidor atende uma única requisição. Verificar listener apenas passivamente.

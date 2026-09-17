@@ -103,7 +103,8 @@ def credenciais(servico: str, conta: str, scopes: list[str], interativo: bool = 
     flow = InstalledAppFlow.from_client_secrets_file(str(CREDS_FILE), scopes)
     print(f"\nAutenticando {carregar_contas().get(conta, conta)} ({conta}) para {servico}…", file=sys.stderr)
     print("Abra a URL no navegador e faça login COM ESSA CONTA.\n", file=sys.stderr)
-    creds = flow.run_local_server(port=0, open_browser=False)
+    creds = flow.run_local_server(port=0, open_browser=False,
+                                  login_hint=carregar_contas()[conta], prompt="consent")
     tp.write_text(creds.to_json())
     tp.chmod(0o600)
     return creds

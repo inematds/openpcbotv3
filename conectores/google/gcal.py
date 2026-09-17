@@ -110,10 +110,6 @@ def now_rfc3339() -> str:
 # ── Commands ──────────────────────────────────────────────────────────────────
 
 def cmd_auth(account: str):
-    tp = token_path(account)
-    if tp.exists():
-        tp.unlink()
-        print(f"Removed old token for {account}")
     get_service(account, interativo=True)
     print(f"Auth complete for {ACCOUNTS[account]}")
 
@@ -259,7 +255,7 @@ def cmd_freebusy(account: str, date: str, days: int = 1) -> dict:
 
 def main():
     parser = argparse.ArgumentParser(description="Google Calendar CLI")
-    parser.add_argument("--conta", "--account", default=DEFAULT_ACCOUNT, choices=list(ACCOUNTS.keys()),
+    parser.add_argument("--conta", "--account", dest="account", default=DEFAULT_ACCOUNT, choices=list(ACCOUNTS.keys()),
                         help=f"Account alias (default: {DEFAULT_ACCOUNT})")
     sub = parser.add_subparsers(dest="command", required=True)
 

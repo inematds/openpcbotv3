@@ -22,11 +22,17 @@ Acesso sem ingestão = o bot lê seu e-mail quando você manda, e esquece depois
 cd ~/projetos/openpcbotv3 && npm run doctor
 ```
 
-O `doctor` mostra uma linha por conta e por token. Em 2026-09-07, numa máquina limpa:
+Validação real em 2026-09-17: Gmail e Calendar conectados para `inematds`,
+`nei2014` e `nei2024`. Os seis tokens têm refresh token e permissão 600, fora do repo.
+Identidade confirmada pelas APIs. Em cada conta foram testados leitura, busca, corpo
+de mensagem, rascunho temporário e marcar-lida; o rascunho foi removido sem envio.
+Calendar: listagem de calendários/eventos, freebusy e criar/ler/alterar/excluir evento
+sem convidados, com exclusão confirmada. Nenhum e-mail real foi enviado.
 
-- **Gmail: não conectado.** Não existe `~/.config/google/` nem credencial.
-- **Calendar: script existe, sem credencial e sem token.** O `gcal.py` do v2 tinha três contas no código, mas nunca teve o `credentials.json` nesta máquina.
-- **Telegram: conectado** (@inemav3bot), respondendo só no seu chat pessoal.
+Fusos das agendas primárias: `inematds` e `nei2014` = `America/Sao_Paulo`;
+`nei2024` = `UTC`. O conector cria eventos com `TZ_BOT` (default `America/Sao_Paulo`).
+O CLI Gmail implementa envio, mas não resposta em thread, anexos, rascunhos ou gestão
+de labels como comandos; os testes de rascunho usaram diretamente a API autenticada.
 
 Os conectores agora moram **no repo**, em `conectores/google/`, e não em `~/.config`:
 
@@ -47,22 +53,14 @@ Segredos e tokens **nunca** entram no repo: ficam em `~/.config/google/`.
 Uma credencial OAuth (o "app") serve **todas** as contas. Cada conta tem seu token.
 Adicionar a quarta conta depois custa um comando.
 
-### 1.1 Criar a credencial, uma vez
+### 1.1 Reaproveitar a credencial existente
 
-1. Abra <https://console.cloud.google.com> e crie um projeto (ex.: `openpcbot`).
-2. **APIs & Services → Library**: ative **Gmail API** e **Google Calendar API**.
-3. **APIs & Services → OAuth consent screen**: tipo **External**, preencha nome e e-mail de suporte.
-   Em **Test users**, adicione **todos os e-mails** que você vai conectar. Sem isso, o login falha
-   com `access_denied`. Não precisa publicar o app; em modo *Testing* o token de teste expira
-   em 7 dias, então **publique** (botão *Publish app*) quando confirmar que funciona.
-4. **Credentials → Create credentials → OAuth client ID → Desktop app**. Baixe o JSON.
-5. Salve como a credencial compartilhada:
-
-```bash
-mkdir -p ~/.config/google && chmod 700 ~/.config/google
-mv ~/Downloads/client_secret_*.json ~/.config/google/credentials.json
-chmod 600 ~/.config/google/credentials.json
-```
+O projeto é `inema-tds-459114`. `~/.config/google/credentials.json` já contém o mesmo
+OAuth Desktop Client de `~/.config/gws/client_secret.json`; não criar outro projeto ou
+client. Credenciais e tokens ficam fora do repo (arquivos 600, pasta 700).
+A tela de consentimento observada ainda exibia `openpcbot`; o nome pretendido é
+`INEMA openpcbot`. O app está em teste; se o Google expirar o refresh token, repetir o
+OAuth da conta. A publicação do app não foi alterada durante esta configuração.
 
 ### 1.2 Declarar as contas
 
@@ -71,15 +69,15 @@ Um arquivo, um alias por conta. O alias é como você chama a conta nos comandos
 ```bash
 cat > ~/.config/google/contas.json <<'JSON'
 {
-  "pessoal":  "voce@gmail.com",
-  "inema":    "contato@inema.club",
-  "trabalho": "voce@empresa.com"
+  "inematds": "inematds@gmail.com",
+  "nei2014": "nei.maldaner2014@gmail.com",
+  "nei2024": "nei.maldaner2024@gmail.com"
 }
 JSON
 chmod 600 ~/.config/google/contas.json
 ```
 
-A primeira do arquivo é a padrão. Para fixar outra: `GOOGLE_CONTA_PADRAO=inema` no `.env` do v3.
+A primeira do arquivo é a padrão. Para fixar outra: `GOOGLE_CONTA_PADRAO=inematds` no `.env` do v3.
 
 ### 1.3 Autenticar cada conta
 
@@ -87,9 +85,9 @@ Uma vez por conta. O comando imprime uma URL: abra no navegador **logado naquela
 
 ```bash
 cd ~/projetos/openpcbotv3/conectores/google
-python3 gmail.py --conta pessoal  auth
-python3 gmail.py --conta inema    auth
-python3 gmail.py --conta trabalho auth
+python3 gmail.py --conta nei2014  auth
+python3 gmail.py --conta inematds    auth
+python3 gmail.py --conta nei2024 auth
 ```
 
 Gera `~/.config/google/token_gmail_<alias>.json`. O token se renova sozinho enquanto o
@@ -102,9 +100,9 @@ Gera `~/.config/google/token_gmail_<alias>.json`. O token se renova sozinho enqu
 ```bash
 python3 gmail.py --conta todas    list --nao-lidas          # caixa de entrada das 3
 python3 gmail.py --conta todas    recentes --horas 6        # o que chegou (é o que a ingestão lê)
-python3 gmail.py --conta pessoal  buscar "fatura vencimento"
-python3 gmail.py --conta inema    ler <id>                  # corpo da mensagem
-python3 gmail.py --conta inema    enviar --para a@b.com --assunto "Oi" --texto "..."
+python3 gmail.py --conta nei2014  buscar "fatura vencimento"
+python3 gmail.py --conta inematds    ler <id>                  # corpo da mensagem
+python3 gmail.py --conta inematds    enviar --para a@b.com --assunto "Oi" --texto "..."
 python3 gmail.py contas                                     # o que está configurado
 ```
 
@@ -131,24 +129,24 @@ Mesma credencial, mesmo `contas.json`. Só o consentimento é separado, porque o
 
 ```bash
 cd ~/projetos/openpcbotv3/conectores/google
-python3 gcal.py --conta pessoal  auth
-python3 gcal.py --conta inema    auth
-python3 gcal.py --conta trabalho auth
+python3 gcal.py --conta nei2014  auth
+python3 gcal.py --conta inematds    auth
+python3 gcal.py --conta nei2024 auth
 ```
 
 Uso:
 
 ```bash
 python3 gcal.py list --all --days 14          # agrega TODAS as agendas, ordenado por hora
-python3 gcal.py --conta inema list --days 7
-python3 gcal.py --conta inema create --title "Call com Paulo" --date 2026-09-10 --time 14:00 --duration 45 --meet
-python3 gcal.py --conta pessoal freebusy --date 2026-09-10
+python3 gcal.py --conta inematds list --days 7
+python3 gcal.py --conta inematds create --title "Call com Paulo" --date 2026-09-10 --time 14:00 --duration 45 --meet
+python3 gcal.py --conta nei2014 freebusy --date 2026-09-10
 ```
 
 Ingestão: `/cron on agenda-ingestao` (todo dia às 7h05, próximos 14 dias, `origem = gcal:<alias>`).
 
-**Agendas compartilhadas** (a agenda de outra pessoa, ou uma agenda de equipe) entram sozinhas:
-o token da conta enxerga tudo que aquela conta enxerga no Google Calendar. Não precisa de alias novo.
+**Agendas compartilhadas:** a credencial permite consultá-las pela API, mas os comandos
+atuais do CLI operam apenas em `primary`. `--all` agrega as agendas primárias das contas.
 
 ---
 

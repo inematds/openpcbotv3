@@ -1,5 +1,12 @@
 # CHANGELOG — openpcbotv3
 
+## 3.2.4 — 2026-09-17
+
+- Corrige o argumento de conta do Calendar e preserva tokens existentes no auth.
+- OAuth sugere a conta correta e solicita consentimento para acesso offline.
+- Skills Gmail/Calendar alinhadas aos conectores locais; seis autorizações validadas
+  com leitura e escrita temporária, sem envio de e-mail. Segredos fora do repositório.
+
 ## 3.2.3 — 2026-09-14
 
 - Documentação da fase 9: seção 9b do README (interruptores, modos de fila com os limites frente ao

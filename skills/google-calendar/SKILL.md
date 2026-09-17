@@ -1,7 +1,7 @@
 ---
 name: google-calendar
 description: Manage Google Calendar from Claude Code. Multi-account (inematds, nei2014, nei2024). Create events with Meet links, send invites, check availability, delete events.
-allowed-tools: Bash(python3 ~/.config/calendar/gcal.py *)
+allowed-tools: Bash(python3 /home/nmaldaner/projetos/openpcbotv3/conectores/google/gcal.py *)
 ---
 
 # Google Calendar Skill
@@ -10,9 +10,9 @@ allowed-tools: Bash(python3 ~/.config/calendar/gcal.py *)
 
 | Alias     | Email                        |
 |-----------|------------------------------|
-| inematds  | (default — e-mail no `.env`/token do gcal) |
-| nei2014   | (ver `.env`)                 |
-| nei2024   | (ver `.env`)                 |
+| inematds  | inematds@gmail.com |
+| nei2014   | nei.maldaner2014@gmail.com |
+| nei2024   | nei.maldaner2024@gmail.com |
 
 Always use `--account ALIAS` to target a specific account. Omit for default (inematds).
 
@@ -21,8 +21,8 @@ Always use `--account ALIAS` to target a specific account. Omit for default (ine
 ### List upcoming events (one account)
 
 ```bash
-python3 ~/.config/calendar/gcal.py list
-python3 ~/.config/calendar/gcal.py --account nei2014 list --days 7
+python3 /home/nmaldaner/projetos/openpcbotv3/conectores/google/gcal.py list
+python3 /home/nmaldaner/projetos/openpcbotv3/conectores/google/gcal.py --account nei2014 list --days 7
 ```
 
 Returns JSON array: `id`, `summary`, `start`, `end`, `attendees`, `meet_link`, `account`.
@@ -30,19 +30,19 @@ Returns JSON array: `id`, `summary`, `start`, `end`, `attendees`, `meet_link`, `
 ### List from ALL accounts (aggregated, sorted by time)
 
 ```bash
-python3 ~/.config/calendar/gcal.py list --all --days 14
+python3 /home/nmaldaner/projetos/openpcbotv3/conectores/google/gcal.py list --all --days 14
 ```
 
 ### Get event details
 
 ```bash
-python3 ~/.config/calendar/gcal.py --account nei2014 get <event_id>
+python3 /home/nmaldaner/projetos/openpcbotv3/conectores/google/gcal.py --account nei2014 get <event_id>
 ```
 
 ### Create event
 
 ```bash
-python3 ~/.config/calendar/gcal.py --account inematds create \
+python3 /home/nmaldaner/projetos/openpcbotv3/conectores/google/gcal.py --account inematds create \
   --title "Reunião X" \
   --date 2026-05-20 \
   --time 14:00 \
@@ -66,7 +66,7 @@ Flags:
 ### Update event
 
 ```bash
-python3 ~/.config/calendar/gcal.py --account inematds update <event_id> \
+python3 /home/nmaldaner/projetos/openpcbotv3/conectores/google/gcal.py --account inematds update <event_id> \
   --field title --value "Novo Título"
 ```
 
@@ -75,7 +75,7 @@ Fields: `title`, `description`, `date` (YYYY-MM-DD).
 ### Delete event
 
 ```bash
-python3 ~/.config/calendar/gcal.py --account nei2014 delete <event_id>
+python3 /home/nmaldaner/projetos/openpcbotv3/conectores/google/gcal.py --account nei2014 delete <event_id>
 ```
 
 Sends cancellation notices to all attendees.
@@ -83,19 +83,19 @@ Sends cancellation notices to all attendees.
 ### Check free/busy
 
 ```bash
-python3 ~/.config/calendar/gcal.py --account inematds freebusy --date 2026-05-20
-python3 ~/.config/calendar/gcal.py --account inematds freebusy --date 2026-05-20 --days 3
+python3 /home/nmaldaner/projetos/openpcbotv3/conectores/google/gcal.py --account inematds freebusy --date 2026-05-20
+python3 /home/nmaldaner/projetos/openpcbotv3/conectores/google/gcal.py --account inematds freebusy --date 2026-05-20 --days 3
 ```
 
 ### Authenticate an account
 
 ```bash
-python3 ~/.config/calendar/gcal.py --account inematds auth
-python3 ~/.config/calendar/gcal.py --account nei2014 auth
-python3 ~/.config/calendar/gcal.py --account nei2024 auth
+python3 /home/nmaldaner/projetos/openpcbotv3/conectores/google/gcal.py --account inematds auth
+python3 /home/nmaldaner/projetos/openpcbotv3/conectores/google/gcal.py --account nei2014 auth
+python3 /home/nmaldaner/projetos/openpcbotv3/conectores/google/gcal.py --account nei2024 auth
 ```
 
-Browser opens for each account. Each saves its own token (`~/.config/calendar/token_ALIAS.json`). All three share the same `credentials.json` OAuth client.
+Run OAuth with `python3 -u`, keep the process active and open its URL in a browser on the same machine. Never probe the callback port. Each saves its own token (`~/.config/google/token_gcal_ALIAS.json`). All three share the same `credentials.json` OAuth client.
 
 ## CRITICAL: Day-of-Week Verification
 
@@ -127,7 +127,7 @@ Always show before executing:
 
 ## Timezone
 
-`America/Sao_Paulo` — set in the `TIMEZONE` constant in `gcal.py`.
+`America/Sao_Paulo` — default in `comum.py`, overridable with `TZ_BOT`. The primary calendar may have a different timezone; creation supplies the bot timezone explicitly.
 
 ## Defaults
 
@@ -137,20 +137,20 @@ Always show before executing:
 
 ## One-Time Setup
 
-Requires `~/.config/gmail/credentials.json` (Google OAuth 2.0 Desktop Client). Same file used by Gmail skill.
+Requires `~/.config/google/credentials.json` (Google OAuth 2.0 Desktop Client). Same file used by Gmail skill.
 
 Authenticate each account once:
 
 ```bash
-python3 ~/.config/calendar/gcal.py --account inematds auth
-python3 ~/.config/calendar/gcal.py --account nei2014 auth
-python3 ~/.config/calendar/gcal.py --account nei2024 auth
+python3 /home/nmaldaner/projetos/openpcbotv3/conectores/google/gcal.py --account inematds auth
+python3 /home/nmaldaner/projetos/openpcbotv3/conectores/google/gcal.py --account nei2014 auth
+python3 /home/nmaldaner/projetos/openpcbotv3/conectores/google/gcal.py --account nei2024 auth
 ```
 
 Tokens saved to:
-- `~/.config/calendar/token_inematds.json`
-- `~/.config/calendar/token_nei2014.json`
-- `~/.config/calendar/token_nei2024.json`
+- `~/.config/google/token_gcal_inematds.json`
+- `~/.config/google/token_gcal_nei2014.json`
+- `~/.config/google/token_gcal_nei2024.json`
 
 ## Error Handling
 
