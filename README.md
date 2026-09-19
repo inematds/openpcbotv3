@@ -12,6 +12,8 @@ Bot no Telegram: **@inemav3bot** (o v2 continua no @inemaclaudebot).
 
 `/jev observar` ativa comparação de rota, agente e skill pelo OpenRouter neste chat; `/jev` mostra o resultado e `/jev off` desliga. O roteador atual continua decidindo. Custos passam pelo gateway e aparecem em `/usage`. [Configuração, limites e teste real](docs/JEV.md).
 
+Os comandos Jev também estão na ajuda do bot: envie `/help` ou `/ajuda` para ver a lista e `/ajuda jev` para consultar a explicação detalhada. A observação envia ao provedor a mensagem atual e os critérios de classificação, sem memória ou histórico; as sugestões não alteram rotas nem executam skills.
+
 ## 📖 Guia de uso
 
 Guia completo (landing + passo a passo): **https://inematds.github.io/openpcbotv3/guia/**
@@ -95,7 +97,9 @@ Especialistas em paralelo (padrão grokky): quando o roteador indica `consultar`
 | `/fila [collect\|followup\|steer\|interrupt]` | como tratar mensagem que chega com outra em curso (por chat) |
 | `/personality [nome\|off]` | persona deste chat (`personalidades/*.md`, somada a `IDENTIDADE.md`) |
 | `/context [detail] [texto]` | tokens por camada do prompt, direto e agente |
-| `/chatid` · `/versao` · `/ajuda` | |
+| `/jev [observar\|off]` | ativa/desativa a comparação neste chat; sem argumento, mostra o estado e a última sugestão com custo |
+| `/ajuda jev` | explica a observação Jev, os dados enviados e seus limites |
+| `/chatid` · `/versao` · `/ajuda` · `/help` | identificação do chat, versão e lista de comandos |
 
 ---
 
