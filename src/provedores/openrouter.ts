@@ -1,3 +1,4 @@
+import { consultarJev, type PedidoJev, type RespostaJev } from './jev.js';
 // OpenRouter (API compatível com OpenAI). `usage.cost` vem na resposta quando
 // pedimos `usage: {include: true}` — é o custo real cobrado.
 import type { PedidoLLM, Provedor, RespostaLLM } from './tipos.js';
@@ -6,6 +7,10 @@ export class ProvedorOpenRouter implements Provedor {
   nome = 'openrouter' as const;
 
   constructor(private readonly apiKey: string, private readonly fetchFn: typeof fetch = fetch) {}
+
+  decidirJev(p: PedidoJev): Promise<RespostaJev> {
+    return consultarJev(this.apiKey, p, this.fetchFn);
+  }
 
   async chamar(p: PedidoLLM): Promise<RespostaLLM> {
     const ctrl = new AbortController();

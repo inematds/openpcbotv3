@@ -1,3 +1,4 @@
+import { MODELO_JEV, validarPedidoJev, type PedidoJev, type RespostaJev } from '../provedores/jev.js';
 // O ÚNICO ponto por onde uma chamada de LLM passa (regra de ouro 2).
 // Escolhe o provedor pelo tier, checa orçamento, faz preflight de RAM no
 // Ollama, mede latência, calcula custo e grava em `chamadas_llm`.
@@ -114,6 +115,30 @@ export class GatewayLLM {
 
     if (erro || !resposta) throw new Error(erro ?? 'resposta vazia');
     return { ...resposta, provedor: provedor.nome, modelo, tier, custoUsd, latenciaMs, rebaixado };
+  }
+
+  /** Decisão tipada: orçamento e registro iguais ao chat; nunca rebaixa para outro modelo. */
+  async decidirJev(p: PedidoJev & { chatId?: string; traceId?: string }): Promise<RespostaJev & { latenciaMs: number }> {
+    validarPedidoJev(p);
+    const d = this.o.orcamento.avaliar('barato');
+    if (!d.permitido) throw new TravaOrcamento(d.motivo);
+    const prov = this.o.provedores.openrouter;
+    if (!prov?.decidirJev) throw new Error('Jev: OpenRouter indisponível');
+    const t0=Date.now();
+    let resposta: RespostaJev | undefined;
+    let erro: string | undefined;
+    try { resposta=await prov.decidirJev(p); }
+    catch { erro='Jev: consulta falhou; custo não confirmado'; }
+    const latenciaMs=Date.now()-t0;
+    this.o.registro.gravar({
+      chatId:p.chatId, traceId:p.traceId, agente:'jev-roteador', provedor:'openrouter',
+      modelo:resposta?.modelo ?? p.modelo ?? MODELO_JEV, tier:'barato',
+      tokensIn:resposta?.tokensIn ?? 0, tokensOut:resposta?.tokensOut ?? 0,
+      custoUsd:resposta?.custoUsdInformado ?? 0, latenciaMs, ok:!!resposta && !erro,
+      erro, motivoTier:'Observação de roteamento com decisões estruturadas Jev',
+    });
+    if (erro || !resposta) throw new Error(erro ?? 'Jev: resposta vazia');
+    return { ...resposta, latenciaMs };
   }
 
   /** Embedding local (bge-m3). Também passa pelo registro (tokens e tempo). */

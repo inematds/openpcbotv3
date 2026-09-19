@@ -1,3 +1,4 @@
+import { ObservadorJev } from './jev.js';
 // Orquestrador: recebe `mensagem.recebida` do bus, classifica, planeja e
 // despacha. Resposta direta = Ollama residente com contexto de memória;
 // agente = job na lane `agente` (CLI). Modo de chegada: `collect` (junta
@@ -19,6 +20,7 @@ const JANELA_COLLECT_MS = 2000;
 const MAX_CONTEXTO_TURNOS = 8;
 
 export class Orquestrador {
+  private readonly jev = new ObservadorJev();
   private readonly pendentes = new Map<string, { msgs: MensagemRecebida[]; timer: NodeJS.Timeout }>();
   private readonly emCurso = new Set<string>();
   private readonly geracoes = new Geracoes();
@@ -104,6 +106,10 @@ export class Orquestrador {
     const agentes = agentesCacheados();
     const decisao = await rotear(app.gateway, app.ollama.modeloDe('roteador'), m.texto, agentes, skillsCacheadas(), { chatId: m.chatId, traceId: m.traceId });
     app.log(`[orq] ${m.canal}:${m.chatId} → ${decisao.rota}${decisao.agente ? '/' + decisao.agente : ''} tier=${decisao.tier} (${decisao.motivo})`);
+
+    // Observação não bloqueia o atendimento nem entrega sua sugestão ao dispatcher.
+    void this.jev.observar(app, m, agentes, skillsCacheadas(), decisao)
+      .catch(() => app.log('[jev] falha ao registrar observação; rota preservada'));
 
     const memoria = await montarContextoMemoria(
       { cerebro: app.cerebro, gateway: app.gateway, modeloEmbed: app.ollama.modeloDe('embed'), tetoTokens: 600 },

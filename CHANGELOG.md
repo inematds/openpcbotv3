@@ -1,5 +1,12 @@
 # CHANGELOG — openpcbotv3
 
+## 3.3.4 — 2026-09-19
+
+- Adiciona Jev via OpenRouter Decisions para observar rota, agente e skill sem alterar o dispatcher.
+- Passa as consultas pelo gateway, orçamento e registro de custo, com timeout, limite de frequência e isolamento por chat.
+- Acrescenta /jev observar|off, consulta da última comparação e CLI local de operação/teste.
+- Verificação: 202 testes e uma chamada real registrada pelo gateway.
+
 ## 3.2.4 — 2026-09-17
 
 - Corrige o argumento de conta do Calendar e preserva tokens existentes no auth.

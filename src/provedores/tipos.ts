@@ -1,3 +1,4 @@
+import type { PedidoJev, RespostaJev } from './jev.js';
 // Contrato mínimo de um provedor de LLM. Nenhum módulo chama provedor direto:
 // tudo passa por `custo/gateway.ts` (regra de ouro 2).
 export interface MensagemLLM {
@@ -29,4 +30,5 @@ export interface RespostaLLM {
 export interface Provedor {
   nome: 'ollama' | 'openrouter' | 'anthropic';
   chamar(p: PedidoLLM): Promise<RespostaLLM>;
+  decidirJev?(p: PedidoJev): Promise<RespostaJev>;
 }

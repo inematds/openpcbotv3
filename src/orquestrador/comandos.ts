@@ -1,3 +1,4 @@
+import { comandoJev } from './jev.js';
 // Comandos de barra. Devolve texto (markdown simples) ou `null` quando o
 // comando não existe (cai para conversa normal).
 import type { App } from '../app.js';
@@ -16,6 +17,7 @@ const AJUDA = `*openpcbot v3* — comandos
 /status [id] — fila por lane, ou um job
 /cancelar <id> · /prioridade <id> <n>
 /usage — custo hoje/semana/mês por tier e agente
+/jev [observar|off] — comparar com Jev sem mudar a rota
 /health — Ollama, RAM, fila, heartbeat, canais
 /ollama status|descarregar <modelo>
 /memoria [lista|buscar <termo>|esquecer <id>|aprovar <id>|descartar <id>|propostas]
@@ -35,6 +37,7 @@ const AJUDA = `*openpcbot v3* — comandos
 /ajuda <comando> — detalhe de um comando`;
 
 const DETALHE: Record<string, string> = {
+  jev: '/jev observar ativa comparação neste chat pelo OpenRouter. /jev mostra a última sugestão e custo; /jev off desliga. Não altera rotas nem executa skills. Critérios e mensagem atual são enviados ao provedor, sem memória/histórico. Limiar didático não comprova calibração.',
   parar: `*/parar [tudo|agentes|<agente>] [motivo]*
 tudo: nenhuma resposta nem agente (comandos e manutenção no Ollama seguem).
 agentes: nenhum claude -p; resposta direta no Ollama continua.
@@ -64,6 +67,7 @@ export async function executarComando(app: App, m: MensagemRecebida): Promise<st
   const chat = m.chatId;
 
   switch (cmd) {
+    case 'jev': return comandoJev(app, chat, resto);
     case 'start':
     case 'ajuda':
     case 'help': {

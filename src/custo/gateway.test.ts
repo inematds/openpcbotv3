@@ -99,3 +99,22 @@ describe('preços', () => {
     expect(calcularCusto(PRECOS_DEFAULT, 'anthropic', 'claude-sonnet-5', 1000, 1000)).toBeCloseTo(0.018);
   });
 });
+
+describe('gateway Jev — orçamento e custo',()=>{
+  const pedido={state:{mensagem:'teste'},questions:{rota:{type:'choice' as const,instructions:'rota?',criteria:{direto:'direto',incerto:'incerto'}}}};
+  it('contabiliza custo real e modelo resolvido sem chamar chat',async()=>{
+    const {gw,registro,barato}=montar();
+    Object.assign(barato,{decidirJev:async()=>({modelo:'typesafe/jev-resolvido',answers:{},tokensIn:100,tokensOut:20,custoUsdInformado:.0000042})});
+    const r=await gw.decidirJev(pedido);
+    expect(r.custoUsdInformado).toBe(.0000042);expect(registro.hoje().custoUsd).toBeCloseTo(.0000042,10);expect(barato.chamadas).toBe(0);
+  });
+  it('orçamento bloqueado não chama Jev nem substitui por chat local',async()=>{
+    const {gw,local,barato}=montar({mensal:1,gastoInicial:2});
+    let chamadas=0;Object.assign(barato,{decidirJev:async()=>{chamadas++;throw new Error('não deveria chamar');}});
+    await expect(gw.decidirJev(pedido)).rejects.toThrow('esgotado');expect(chamadas).toBe(0);expect(local.chamadas+barato.chamadas).toBe(0);
+  });
+  it('falha de decisão gera registro de chamada sem vazar erro externo',async()=>{
+    const {gw,registro,barato}=montar();Object.assign(barato,{decidirJev:async()=>{throw new Error('segredo');}});
+    await expect(gw.decidirJev(pedido)).rejects.toThrow('custo não confirmado');expect(registro.hoje().chamadas).toBe(1);
+  });
+});

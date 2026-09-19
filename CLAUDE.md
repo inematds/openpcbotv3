@@ -40,3 +40,7 @@ When I correct you, or you catch yourself making a mistake: before continuing, a
 - Fluxo OAuth dos conectores (`gmail.py/gcal.py auth`): rodar com `python3 -u` e em background com log em arquivo; sem `-u` a URL fica presa no buffer e nada aparece.
 
 - OAuth `run_local_server`: nunca testar o callback com conexão TCP/HTTP; o servidor atende uma única requisição. Verificar listener apenas passivamente.
+
+## Jev (3.3.4)
+
+Roteamento Jev é apenas observação: src/orquestrador/jev.ts. Toda inferência passa por GatewayLLM.decidirJev; não chamar scripts do repo Jev dentro do bot para contornar custo/orçamento. /jev observar|off controla cada chat. Documentação e teste local: docs/JEV.md e npm run jev -- teste.

@@ -8,6 +8,10 @@ Bot no Telegram: **@inemav3bot** (o v2 continua no @inemaclaudebot).
 
 **Conectar e-mails, agendas e o Telegram ao cérebro:** [docs/CONECTORES.md](docs/CONECTORES.md).
 
+## Jev para observar o roteamento
+
+`/jev observar` ativa comparação de rota, agente e skill pelo OpenRouter neste chat; `/jev` mostra o resultado e `/jev off` desliga. O roteador atual continua decidindo. Custos passam pelo gateway e aparecem em `/usage`. [Configuração, limites e teste real](docs/JEV.md).
+
 ## 📖 Guia de uso
 
 Guia completo (landing + passo a passo): **https://inematds.github.io/openpcbotv3/guia/**
@@ -37,7 +41,7 @@ Sem token do Telegram o serviço sobe mesmo assim com HTTP (`127.0.0.1:3142`) e 
 | Restart após mudar `src/` ou `.env` | `bash scripts/instalar-servico.sh` |
 | Diagnóstico | `npm run doctor` (config) · `npm run doctor -- --deep` (probes reais: manda mensagem no Telegram e roda um job) |
 | Parar tudo agora | `/parar tudo <motivo>` no chat; `/retomar` libera |
-| Testes | `npm test` (187) |
+| Testes | `npm test` (202) |
 
 ---
 
