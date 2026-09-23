@@ -3,4 +3,4 @@ description: Deep web research, academic sources, competitive intel, trend analy
 
 telegram_bot_token_env: RESEARCH_BOT_TOKEN
 
-model: claude-opus-5
+model: topo

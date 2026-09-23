@@ -5,6 +5,7 @@ import path from 'node:path';
 import yaml from 'js-yaml';
 
 import { RAIZ } from '../config/env.js';
+import { CLAUDE_TOPO } from '../config/modelos.js';
 import { lerSoul } from './personalidade.js';
 
 export interface Agente {
@@ -29,6 +30,8 @@ export const AGENTS_DIR = path.join(RAIZ, 'agents');
 
 function aliasModelo(m: unknown): string {
   const s = String(m ?? 'sonnet');
+  // `topo` = modelo central (~/.config/inema/modelos.env), ID completo.
+  if (s === 'topo') return CLAUDE_TOPO;
   if (/opus/i.test(s)) return 'opus';
   if (/haiku/i.test(s)) return 'haiku';
   if (/fable|mythos/i.test(s)) return 'fable';

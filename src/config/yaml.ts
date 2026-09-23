@@ -71,9 +71,11 @@ export const PRECOS_DEFAULT: ConfigPrecos = {
     'anthropic/claude-haiku-4.5': { in: 1, out: 5, cache: 0.1 },
     'anthropic/claude-sonnet-5': { in: 3, out: 15, cache: 0.3 },
     'anthropic/claude-opus-5': { in: 15, out: 75, cache: 1.5 },
+    'anthropic/claude-opus-5.5': { in: 4, out: 20, cache: 0.2 },
     'claude-haiku-4-5-20251001': { in: 1, out: 5, cache: 0.1 },
     'claude-sonnet-5': { in: 3, out: 15, cache: 0.3 },
     'claude-opus-5': { in: 15, out: 75, cache: 1.5 },
+    'claude-opus-5-5': { in: 4, out: 20, cache: 0.2 },
   },
   tiers: {
     local: { provedor: 'ollama', modelo: 'qwen3.8:27b' },
