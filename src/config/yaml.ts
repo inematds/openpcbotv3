@@ -5,6 +5,7 @@ import { resolve } from 'node:path';
 import yaml from 'js-yaml';
 
 import { RAIZ } from './env.js';
+import { ehNivel, nivel } from './modelos.js';
 
 export interface PapelOllama {
   modelo: string;
@@ -86,6 +87,12 @@ export const PRECOS_DEFAULT: ConfigPrecos = {
 
 export const ORCAMENTO_DEFAULT: ConfigOrcamento = { mensal_usd: 50, aviso_pct: 70, trava_pct: 100 };
 
-export const lerConfigOllama = (): ConfigOllama => ler('ollama.yaml', OLLAMA_DEFAULT);
+/** `modelo: topo|executor|super|menor` num papel vira a tag central (`INEMA_OLLAMA_<NIVEL>`). */
+export const lerConfigOllama = (): ConfigOllama => {
+  const c = ler('ollama.yaml', OLLAMA_DEFAULT);
+  const papeis = Object.fromEntries(Object.entries(c.papeis).map(([k, v]) =>
+    [k, ehNivel(v.modelo) ? { ...v, modelo: nivel('ollama', v.modelo).modelo ?? v.modelo } : v])) as ConfigOllama['papeis'];
+  return { ...c, papeis };
+};
 export const lerConfigPrecos = (): ConfigPrecos => ler('precos.yaml', PRECOS_DEFAULT);
 export const lerConfigOrcamento = (): ConfigOrcamento => ler('orcamento.yaml', ORCAMENTO_DEFAULT);

@@ -5,7 +5,7 @@ import path from 'node:path';
 import yaml from 'js-yaml';
 
 import { RAIZ } from '../config/env.js';
-import { CLAUDE_TOPO } from '../config/modelos.js';
+import { ehNivel, nivel, resolverModelo } from '../config/modelos.js';
 import { lerSoul } from './personalidade.js';
 
 export interface Agente {
@@ -30,8 +30,8 @@ export const AGENTS_DIR = path.join(RAIZ, 'agents');
 
 function aliasModelo(m: unknown): string {
   const s = String(m ?? 'sonnet');
-  // `topo` = modelo central (~/.config/inema/modelos.env), ID completo.
-  if (s === 'topo') return CLAUDE_TOPO;
+  // Nível (`super|topo|executor|menor`) = modelo central (~/.config/inema/modelos.env), ID completo.
+  if (ehNivel(s)) return resolverModelo(s) as string;
   if (/opus/i.test(s)) return 'opus';
   if (/haiku/i.test(s)) return 'haiku';
   if (/fable|mythos/i.test(s)) return 'fable';
@@ -56,7 +56,7 @@ export function listarAgentes(dir: string = AGENTS_DIR): Agente[] {
       nome: String(doc.name ?? e.name),
       descricao: String(doc.description ?? ''),
       modelo: aliasModelo(doc.model),
-      esforco: String(doc.effort ?? 'medium'),
+      esforco: String(doc.effort ?? (ehNivel(doc.model) ? nivel('claude', doc.model).esforco : undefined) ?? 'medium'),
       somenteLeitura: doc.read_only === true || e.name === 'research',
       cwd: String(doc.cwd ?? path.join(process.env.HOME ?? '', 'projetos')),
       dir: d,
