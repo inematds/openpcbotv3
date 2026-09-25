@@ -70,13 +70,15 @@ export const OLLAMA_DEFAULT: ConfigOllama = {
 export const PRECOS_DEFAULT: ConfigPrecos = {
   modelos: {
     'anthropic/claude-haiku-4.5': { in: 1, out: 5, cache: 0.1 },
-    'anthropic/claude-sonnet-5': { in: 3, out: 15, cache: 0.3 },
-    'anthropic/claude-opus-5': { in: 15, out: 75, cache: 1.5 },
+    'anthropic/claude-sonnet-5': { in: 2, out: 10, cache: 0.2 },
+    'anthropic/claude-opus-5': { in: 5, out: 25, cache: 0.5 },
     'anthropic/claude-opus-5.5': { in: 4, out: 20, cache: 0.2 },
+    'anthropic/claude-fable-5.1': { in: 10, out: 50, cache: 0.25 },
     'claude-haiku-4-5-20251001': { in: 1, out: 5, cache: 0.1 },
-    'claude-sonnet-5': { in: 3, out: 15, cache: 0.3 },
-    'claude-opus-5': { in: 15, out: 75, cache: 1.5 },
+    'claude-sonnet-5': { in: 2, out: 10, cache: 0.2 },
+    'claude-opus-5': { in: 5, out: 25, cache: 0.5 },
     'claude-opus-5-5': { in: 4, out: 20, cache: 0.2 },
+    'claude-fable-5-1': { in: 10, out: 50, cache: 0.25 },
   },
   tiers: {
     local: { provedor: 'ollama', modelo: 'qwen3.8:27b' },

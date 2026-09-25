@@ -19,7 +19,7 @@ export class Orcamento {
   constructor(private readonly registro: RegistroCusto, private readonly cfg: ConfigOrcamento) {}
 
   avaliar(tier: Tier): DecisaoOrcamento {
-    const gasto = this.registro.mes().custoUsd;
+    const gasto = this.registro.mesPago().custoUsd;
     const limite = this.cfg.mensal_usd;
     const pct = limite > 0 ? Math.round((gasto / limite) * 1000) / 10 : 0;
     const aviso = pct >= this.cfg.aviso_pct;

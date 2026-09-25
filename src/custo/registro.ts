@@ -28,6 +28,14 @@ export interface ResumoUso {
   custoUsd: number;
 }
 
+/**
+ * Provedores pagos por ASSINATURA (Claude Code, Codex): o custo que o CLI informa é
+ * o equivalente de API, não gasto real. Fica no registro como estimativa (/usage),
+ * mas não entra no orçamento — senão ele travaria o OpenRouter (gasto real) por
+ * causa de uso que não custou nada a mais.
+ */
+export const PROVEDORES_ASSINATURA = ['claude-cli', 'codex', 'codex-cli'];
+
 export class RegistroCusto {
   constructor(private readonly db: Database.Database, private readonly agora: () => number) {}
 
@@ -63,6 +71,11 @@ export class RegistroCusto {
   }
 
   hoje(): ResumoUso { return this.soma(RegistroCusto.inicios(this.agora()).hoje); }
+  /** Mês corrente só com gasto real (sem os provedores de assinatura) — base do orçamento. */
+  mesPago(): ResumoUso {
+    const marcas = PROVEDORES_ASSINATURA.map(() => '?').join(',');
+    return this.soma(RegistroCusto.inicios(this.agora()).mes, `AND provedor NOT IN (${marcas})`, PROVEDORES_ASSINATURA);
+  }
   semana(): ResumoUso { return this.soma(RegistroCusto.inicios(this.agora()).semana); }
   mes(): ResumoUso { return this.soma(RegistroCusto.inicios(this.agora()).mes); }
 

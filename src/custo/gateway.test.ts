@@ -54,6 +54,16 @@ describe('gateway — único ponto de chamada de LLM', () => {
     expect(local.chamadas).toBe(1);
   });
 
+  it('custo de assinatura (claude-cli) fica no registro mas não trava o orçamento', async () => {
+    const { gw, registro, barato } = montar({ mensal: 1 });
+    registro.gravar({ provedor: 'claude-cli', modelo: 'claude-opus-5-5', tier: 'premium', tokensIn: 0, tokensOut: 0, custoUsd: 5, latenciaMs: 1, ok: true });
+    expect(registro.mes().custoUsd).toBe(5);
+    expect(registro.mesPago().custoUsd).toBe(0);
+    const r = await gw.chamar({ tier: 'barato', mensagens: [] });
+    expect(r.tier).toBe('barato');
+    expect(barato.chamadas).toBe(1);
+  });
+
   it('sem RAM para o modelo local não residente → cai para barato (nunca carrega)', async () => {
     const { gw, local, barato } = montar({ ram: 12, residente: false });
     const r = await gw.chamar({ tier: 'local', mensagens: [] });
@@ -96,7 +106,7 @@ describe('preços', () => {
   it('calcula por 1M tokens e Ollama é zero', () => {
     expect(calcularCusto(PRECOS_DEFAULT, 'openrouter', 'anthropic/claude-haiku-4.5', 1_000_000, 100_000)).toBeCloseTo(1.5);
     expect(calcularCusto(PRECOS_DEFAULT, 'ollama', 'qwen3.8:27b', 1e6, 1e6)).toBe(0);
-    expect(calcularCusto(PRECOS_DEFAULT, 'anthropic', 'claude-sonnet-5', 1000, 1000)).toBeCloseTo(0.018);
+    expect(calcularCusto(PRECOS_DEFAULT, 'anthropic', 'claude-sonnet-5', 1000, 1000)).toBeCloseTo(0.012);
   });
 });
 

@@ -4,7 +4,7 @@ import { argumentosCodex } from '../fila/runner-codex.js';
 import { ehNivel, nivel, resolverModelo } from './modelos.js';
 
 const CHAVES = ['INEMA_CLAUDE_SUPER', 'INEMA_CLAUDE_TOPO', 'INEMA_CLAUDE_TOPO_EFFORT',
-  'INEMA_CLAUDE_EXECUTOR', 'INEMA_CLAUDE_EXECUTOR_EFFORT', 'INEMA_CODEX_MENOR', 'INEMA_OLLAMA_MENOR'];
+  'INEMA_CLAUDE_EXECUTOR', 'INEMA_CLAUDE_EXECUTOR_EFFORT', 'INEMA_CODEX_MENOR', 'INEMA_OLLAMA_MENOR', 'INEMA_OLLAMA_TOPO'];
 const antes = Object.fromEntries(CHAVES.map((k) => [k, process.env[k]]));
 
 afterEach(() => {
@@ -29,11 +29,9 @@ describe('níveis centrais', () => {
   });
 
   it('super vazio herda o topo (modelo e esforço)', () => {
-    process.env.INEMA_CLAUDE_SUPER = '';
-    process.env.INEMA_CLAUDE_TOPO = 'claude-topo';
-    process.env.INEMA_CLAUDE_TOPO_EFFORT = 'medium';
-    // env vazia cai no arquivo central, onde INEMA_CLAUDE_SUPER também está vazio
-    expect(nivel('claude', 'super')).toEqual({ modelo: 'claude-topo', esforco: 'medium' });
+    // INEMA_OLLAMA_SUPER fica vazio no arquivo central de propósito (Ollama não tem super próprio)
+    process.env.INEMA_OLLAMA_TOPO = 'q-topo';
+    expect(nivel('ollama', 'super').modelo).toBe('q-topo');
   });
 
   it('codex: nível vira --model do central quando não há mapa', () => {
