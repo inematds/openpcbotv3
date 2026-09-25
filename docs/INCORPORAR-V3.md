@@ -20,7 +20,7 @@ Legenda de esforço: **P** (≤1 dia) · **M** (2–3 dias) · **G** (semana+).
 
 | # | Lacuna | De onde vem | Como encaixa no v3 | Esf. |
 |---|---|---|---|---|
-| A1 | **Voz no Telegram**: áudio recebido → texto; resposta em áudio opcional | OpenClaw `src/telegram/voice.ts`, `src/tts/`; claudeclaw-os `src/voice.ts`, `agent-voice-bridge.ts` | STT pelo **inemavox** (`transcrever_v1.py`, Parakeet/Whisper) ou **Groq** quando a GPU estiver ocupada; TTS chatterbox/`rachel`. Job na lane `io`. Regra global já define isso. | M |
+| A1 | **Voz no Telegram**: áudio recebido → texto; resposta em áudio opcional ([uso e plano](VOZ-TELEGRAM.md)) | OpenClaw `src/telegram/voice.ts`, `src/tts/`; claudeclaw-os `src/voice.ts`, `agent-voice-bridge.ts` | STT pelo **inemavox** (`transcrever_v1.py`, Parakeet/Whisper) ou **Groq** quando a GPU estiver ocupada; TTS chatterbox/`rachel`. Job na lane `io`. Regra global já define isso. | M |
 | A2 | **Modos de fila** `steer` / `followup` / `interrupt` (v3 só tem `collect`) | OpenClaw `docs/concepts/queue.md`; claudeclaw-os `src/message-queue.ts` | `/fila <modo>` por chat; `interrupt` cancela fila e agentes do chat por `flow_ref` e descarta a resposta direta em voo (entregue em 3.2.1/3.2.2). | P |
 | A3 | **`/context list\|detail`**: quanto do prompt é skill, memória, histórico, sistema | OpenClaw `docs/reference/token-use.md` | `cerebro/contexto.ts` já monta as camadas com teto de tokens; falta só expor a contagem. Base pra cortar overhead fixo (Hermes: ~73 % do request). | P |
 | A4 | **Rodapé de uso por resposta** (`/usage off\|tokens\|full\|cost`) | OpenClaw; claudeclaw-os `src/cost-footer.ts` | `chamadas_llm` já registra tudo; é formatação no adaptador Telegram. | P |

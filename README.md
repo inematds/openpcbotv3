@@ -310,7 +310,7 @@ Regras: nenhum módulo acima de 500 linhas; toda chamada de LLM passa por `custo
 ## 15. O que ainda não está
 
 - **Fase 8 (corte)**: trocar o token de produção, v2 só leitura por 30 dias, arquivar. Só com ordem explícita.
-- **Fase 10 (anotada)**: cliente MCP nativo no caminho Ollama, servidor MCP do inemavox, voz no Telegram, `/retry` `/undo`, rodapé de uso, saúde de skills ([docs/INCORPORAR-V3.md](docs/INCORPORAR-V3.md)).
+- **Fase 10 (anotada)**: cliente MCP nativo no caminho Ollama, servidor MCP do inemavox, voz no Telegram ([docs/VOZ-TELEGRAM.md](docs/VOZ-TELEGRAM.md) — hoje só o v2 tem), `/retry` `/undo`, rodapé de uso, saúde de skills ([docs/INCORPORAR-V3.md](docs/INCORPORAR-V3.md)).
 - WhatsApp real (daemon separado), Slack ligado.
 - `steer` não injeta no agente em execução (ver 9b).
 - Retenção da tabela `jobs` (hoje nunca purga; ~1,5 k linhas/dia com o cron de lembretes).
