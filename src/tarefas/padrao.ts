@@ -18,6 +18,11 @@ export function montarCronPadrao(app: App): void {
     { nome: 'consolidacao-noturna', expressao: '0 4 * * *', tarefa: 'consolidacao', input: '', sessao: 'isolada' as const, canal, chat_id: null },
     { nome: 'backup-noturno', expressao: '15 4 * * *', tarefa: 'backup', input: '', sessao: 'isolada' as const, canal, chat_id: null },
     ...(chat ? [{ nome: 'daily-8h', expressao: '0 8 * * *', tarefa: 'cron:comando', input: '/daily', sessao: 'principal' as const, canal, chat_id: chat }] : []),
+    // Relatórios da observação Jev (3.4.4): diário às 8h05, semanal na segunda às 8h10.
+    ...(chat ? [
+      { nome: 'jev-relatorio-diario', expressao: '5 8 * * *', tarefa: 'cron:comando', input: '/jev relatorio dia', sessao: 'principal' as const, canal, chat_id: chat },
+      { nome: 'jev-relatorio-semanal', expressao: '10 8 * * 1', tarefa: 'cron:comando', input: '/jev relatorio semana', sessao: 'principal' as const, canal, chat_id: chat },
+    ] : []),
   ];
   const existentes = new Set(app.cron.listar().map((c) => c.nome));
   const desligados = new Set(['gmail-ingestao', 'agenda-ingestao']);

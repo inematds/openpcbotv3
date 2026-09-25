@@ -6,8 +6,9 @@ import type { PedidoJev } from '../provedores/jev.js';
 import type { Agente } from './agentes.js';
 import type { SkillInfo } from './skills.js';
 import type { Decisao } from './roteador.js';
+import { gravarComparacao, historicoJev, relatorioJev, type ComparacaoJev } from './jev-historico.js';
 
-type Contexto = Pick<App, 'gateway' | 'prefs' | 'agora' | 'log'>;
+type Contexto = Pick<App, 'gateway' | 'prefs' | 'agora' | 'log' | 'db'>;
 type Mensagem = Pick<MensagemRecebida, 'texto' | 'chatId' | 'traceId'>;
 export const CHAVE_MODO_JEV='jev:modo';
 const CHAVE_ULTIMA='jev:ultima';
@@ -30,6 +31,12 @@ export function pedidoRoteamentoJev(texto: string, agentes: Agente[], skills: Sk
   };
 }
 
+/** Última comparação (prefs, para /jev) + histórico (jev_comparacoes). Falha no histórico não derruba a observação. */
+function registrar(app: Contexto, chatId: string, c: ComparacaoJev): void {
+  app.prefs.gravar(chatId,CHAVE_ULTIMA,JSON.stringify(c));
+  try { gravarComparacao(app.db,chatId,c); } catch { app.log('[jev] histórico indisponível; última comparação preservada'); }
+}
+
 export class ObservadorJev {
   private ocupado=false;
   private readonly ultimas=new Map<string,number>();
@@ -49,23 +56,27 @@ export class ObservadorJev {
       const rota=r.answers.rota, skill=r.answers.skill;
       const confiavel=rota.choice!=='incerto' && rota.confidence>=.9 && rota.probabilities[rota.choice]>=.9;
       const skillConfiavel=skill.choice!=='incerto' && skill.confidence>=.9 && skill.probabilities[skill.choice]>=.9;
-      app.prefs.gravar(m.chatId,CHAVE_ULTIMA,JSON.stringify({
+      registrar(app,m.chatId,{
         em:agora, traceId:m.traceId, modelo:r.modelo, rotaAtual, sugestao:rota.choice,
         skill:skill.choice, confidence:rota.confidence, probabilidade:rota.probabilities[rota.choice],
         skillConfidence:skill.confidence, skillProbabilidade:skill.probabilities[skill.choice],
         revisar:!confiavel || !skillConfiavel, concorda:rota.choice===rotaAtual,
         custoUsd:r.custoUsdInformado, latenciaMs:r.latenciaMs, erro:null,
-      }));
+      });
       app.log(`[jev] observação concluída; concorda=${rota.choice===rotaAtual}; revisar=${!confiavel || !skillConfiavel}`);
     } catch {
-      app.prefs.gravar(m.chatId,CHAVE_ULTIMA,JSON.stringify({ em:agora, traceId:m.traceId, rotaAtual, revisar:true, custoUsd:null, erro:'Consulta indisponível, recusada ou fora do orçamento. Rota atual preservada.' }));
+      registrar(app,m.chatId,{ em:agora, traceId:m.traceId, rotaAtual, revisar:true, custoUsd:null, erro:'Consulta indisponível, recusada ou fora do orçamento. Rota atual preservada.' });
       app.log('[jev] observação indisponível; rota atual preservada');
     } finally { this.ocupado=false; }
   }
 }
 
-export function comandoJev(app: Pick<App,'prefs'|'cfg'>, chatId: string, argumento=''): string {
-  if (argumento && !['off','observar'].includes(argumento)) return 'Uso: /jev [observar|off]. Sem argumento mostra a última comparação.';
+const USO_JEV='Uso: /jev [observar|off|historico [n]|relatorio dia|semana]. Sem argumento mostra a última comparação.';
+export function comandoJev(app: Pick<App,'prefs'|'cfg'|'db'|'agora'>, chatId: string, argumento=''): string {
+  const [sub, extra] = argumento.trim().split(/\s+/);
+  if (sub==='historico') return historicoJev(app.db,chatId,Number(extra ?? 10));
+  if (sub==='relatorio') return extra==='dia' || extra==='semana' ? relatorioJev(app.db,chatId,extra,app.agora()) : USO_JEV;
+  if (argumento && !['off','observar'].includes(argumento)) return USO_JEV;
   if (argumento==='observar' && !app.cfg.openrouterKey) return 'OpenRouter indisponível: configure OPENROUTER_API_KEY no ambiente do servidor.';
   if (argumento) app.prefs.gravar(chatId,CHAVE_MODO_JEV,argumento);
   const modo=modoJev(app,chatId);
@@ -77,6 +88,6 @@ export function comandoJev(app: Pick<App,'prefs'|'cfg'>, chatId: string, argumen
   try {
     const r=JSON.parse(raw);
     if (r.erro) return `${header}\nÚltima tentativa: ${r.erro}`;
-    return `${header}\nÚltima comparação: ${new Date(r.em*1000).toISOString()}\nAtual: ${r.rotaAtual}\nJev: ${r.sugestao}\nSkill sugerida: ${r.skill}\nRevisar: ${r.revisar?'sim':'não'} · concorda: ${r.concorda?'sim':'não'}\nConfidence: ${r.confidence} · probabilidade: ${r.probabilidade}\nModelo: ${r.modelo}\nCusto: US$ ${r.custoUsd} · ${r.latenciaMs} ms`;
+    return `${header}\nÚltima comparação: ${new Date(r.em*1000).toISOString()}\nAtual: ${r.rotaAtual}\nJev: ${r.sugestao}\nSkill sugerida: ${r.skill}\nRevisar: ${r.revisar?'sim':'não'} · concorda: ${r.concorda?'sim':'não'}\nConfidence: ${r.confidence} · probabilidade: ${r.probabilidade}\nModelo: ${r.modelo}\nCusto: US$ ${r.custoUsd} · ${r.latenciaMs} ms\nMais: /jev historico · /jev relatorio dia|semana`;
   } catch { return header+' Registro anterior inválido; aguarde nova observação.'; }
 }

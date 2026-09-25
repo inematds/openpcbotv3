@@ -24,6 +24,21 @@ Os três primeiros comandos usam o chat principal configurado, ou `http` quando 
 
 Novas instalações começam desligadas. A preferência é persistida em SQLite e pode ser alterada sem reiniciar.
 
+## Histórico e relatórios (3.4.4)
+
+Cada observação (acerto ou erro) vira uma linha em `jev_comparacoes`: chat, trace, rota atual, sugestão, skill, confidence,
+probabilidades, revisar, concorda, custo, latência e erro. **O texto da mensagem não é guardado.**
+
+- `/jev historico [n]`: totais acumulados e as últimas n comparações (padrão 10, máximo 50).
+- `/jev relatorio dia` / `/jev relatorio semana`: últimas 24 h ou 7 dias — concordância com o roteador, quantas o Jev
+  respondeu confiante (rota e skill ≥ 0,9), divergências com Jev confiante (as que valem revisar), pares de divergência
+  mais comuns, skills sugeridas, custo e latência média.
+- Crons `jev-relatorio-diario` (`5 8 * * *`) e `jev-relatorio-semanal` (`10 8 * * 1`), fuso America/Sao_Paulo, entregam
+  no chat principal. Desligar: `/cron off jev-relatorio-diario`.
+- Terminal: `npm run jev -- historico 20`, `npm run jev -- relatorio semana`.
+
+Comparações anteriores à 3.4.4 não existem no histórico: só a última ficava em `prefs`.
+
 ## O que acontece
 
 1. O roteador existente escolhe rota, agente e tier.
@@ -41,7 +56,7 @@ A observação inicia depois da escolha da rota, sem aguardar o resultado Jev pa
 - Até 60 KB locais de request e 255 opções por pergunta. Catálogo maior é recusado, sem truncar silenciosamente os candidatos.
 - Mensagens com menos de 12 caracteres e comandos não são observados. Canais em modo somente observação de memória não passam por este caminho.
 - Não envia histórico, memória, prompts de agentes, arquivos ou credenciais. Envia a mensagem atual e descrições do catálogo ao OpenRouter; detecção de segredo conhecido impede a consulta. Esse filtro não detecta todo dado pessoal possível.
-- O registro de comparação guarda apenas o último resultado por chat, sem copiar a mensagem. O custo de todas as tentativas efetivamente iniciadas fica em `chamadas_llm`.
+- O registro de comparação guarda o último resultado por chat (para `/jev`) e, desde a 3.4.4, o histórico em `jev_comparacoes`, sem copiar a mensagem. O custo de todas as tentativas efetivamente iniciadas fica em `chamadas_llm`.
 - Limiar didático de 0,9 para confidence e probabilidade selecionada, nas duas perguntas. Não há alegação de calibração. `revisar=false` não habilita ação automática.
 
 ## Gateway e orçamento

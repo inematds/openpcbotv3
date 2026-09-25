@@ -10,7 +10,7 @@ Bot no Telegram: **@inemav3bot** (o v2 continua no @inemaclaudebot).
 
 ## Jev para observar o roteamento
 
-`/jev observar` ativa comparação de rota, agente e skill pelo OpenRouter neste chat; `/jev` mostra o resultado e `/jev off` desliga. O roteador atual continua decidindo. Custos passam pelo gateway e aparecem em `/usage`. [Configuração, limites e teste real](docs/JEV.md).
+`/jev observar` ativa comparação de rota, agente e skill pelo OpenRouter neste chat; `/jev` mostra o resultado e `/jev off` desliga. Desde a 3.4.4 cada comparação fica guardada: `/jev historico` lista e `/jev relatorio dia|semana` resume (enviado sozinho no Telegram às 8h05 e às segundas 8h10). O roteador atual continua decidindo. Custos passam pelo gateway e aparecem em `/usage`. [Configuração, limites e teste real](docs/JEV.md).
 
 Os comandos Jev também estão na ajuda do bot: envie `/help` ou `/ajuda` para ver a lista e `/ajuda jev` para consultar a explicação detalhada. A observação envia ao provedor a mensagem atual e os critérios de classificação, sem memória ou histórico; as sugestões não alteram rotas nem executam skills.
 
@@ -98,6 +98,8 @@ Especialistas em paralelo (padrão grokky): quando o roteador indica `consultar`
 | `/personality [nome\|off]` | persona deste chat (`personalidades/*.md`, somada a `IDENTIDADE.md`) |
 | `/context [detail] [texto]` | tokens por camada do prompt, direto e agente |
 | `/jev [observar\|off]` | ativa/desativa a comparação neste chat; sem argumento, mostra o estado e a última sugestão com custo |
+| `/jev historico [n]` | últimas n comparações (padrão 10, máx. 50) com concordância acumulada |
+| `/jev relatorio dia\|semana` | resumo das últimas 24 h ou 7 dias: concordância, confiança, divergências, custo |
 | `/ajuda jev` | explica a observação Jev, os dados enviados e seus limites |
 | `/chatid` · `/versao` · `/ajuda` · `/help` | identificação do chat, versão e lista de comandos |
 

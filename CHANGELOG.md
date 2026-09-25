@@ -1,5 +1,15 @@
 # CHANGELOG — openpcbotv3
 
+## 3.4.4 — 2026-09-25
+
+- Histórico das comparações Jev na tabela `jev_comparacoes` (migration 9), sem o texto da mensagem.
+  Antes só a última comparação por chat ficava guardada.
+- `/jev historico [n]` e `/jev relatorio dia|semana` (também `npm run jev -- historico|relatorio dia`).
+- Crons `jev-relatorio-diario` (8h05) e `jev-relatorio-semanal` (segunda 8h10) entregam o relatório no chat principal;
+  `/cron off <nome>` desliga.
+- Plano do jev-gw anotado em `docs/PLANO-JEV-GW.md` (não implementado).
+- Verificação: 203 testes.
+
 ## 3.3.4 — 2026-09-19
 
 - Adiciona Jev via OpenRouter Decisions para observar rota, agente e skill sem alterar o dispatcher.

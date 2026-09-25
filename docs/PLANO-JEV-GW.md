@@ -1,6 +1,6 @@
 # Plano — jev-gw no openpcbotv3
 
-Status: **proposta** (2026-09-25). Nada implementado. Alvo: v3 3.3.4 → **3.4.4**. O v2 não é alterado.
+Status: **proposta** (2026-09-25). Nada implementado. Alvo: v3 3.4.4 → **3.5.4** (o 3.4.4 foi o histórico/relatórios). O v2 não é alterado.
 
 ## 1. Situação atual
 
@@ -91,7 +91,7 @@ Não dá o teto compartilhado entre sistemas.
   2ª `origem=cache`, US$ 0. Conferir `/usage` e `http://127.0.0.1:8770/painel`.
 
 **Fase 5 — docs, versão, push**
-- `3.3.4 → 3.4.4` em `package.json`, `APP_VERSION`, CHANGELOG, README.
+- `3.4.4 → 3.5.4` em `package.json`, `APP_VERSION`, CHANGELOG, README.
 - `docs/JEV.md`: seção "Backend jev-gw"; corrigir a frase "sem subprocesso Python" (vale só pro backend padrão).
 - `CLAUDE.md` seção Jev: "jev-gw só como provedor atrás de `decidirJev`".
 - Commit por fase, push no fim, autor `inematds <inematds@gmail.com>`.
@@ -99,7 +99,7 @@ Não dá o teto compartilhado entre sistemas.
 ## 6. Critério de pronto
 
 - Todos os testes passam (hoje 202 + os novos); nenhum módulo acima de 500 linhas.
-- Com `JEV_BACKEND=openrouter` o comportamento é idêntico ao 3.3.4.
+- Com `JEV_BACKEND=openrouter` o comportamento é idêntico ao 3.4.4.
 - Com `jev-gw`: smoke real registrado, cache confirmado, custo em `/usage`, `/jev` mostra `origem`.
 - jev-gw parado → atendimento normal, `/jev` mostra "indisponível", rota preservada.
 - v2 intocado.

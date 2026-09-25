@@ -6,8 +6,8 @@ import { skillsCacheadas } from '../orquestrador/skills.js';
 import { randomUUID } from 'node:crypto';
 
 const acao=process.argv[2] ?? 'status';
-if (!['status','observar','off','teste'].includes(acao)) {
-  console.error('Uso: npm run jev -- status|observar|off|teste');process.exit(2);
+if (!['status','observar','off','teste','historico','relatorio'].includes(acao)) {
+  console.error('Uso: npm run jev -- status|observar|off|teste|historico [n]|relatorio dia|semana');process.exit(2);
 }
 const app=montarApp();
 try {
@@ -27,6 +27,6 @@ try {
       else app.prefs.gravar(chatId,'jev:modo',anterior);
     }
   } else {
-    console.log(comandoJev(app,app.cfg.chatPermitido ?? 'http',acao==='status'?'':acao));
+    console.log(comandoJev(app,app.cfg.chatPermitido ?? 'http',acao==='status'?'':process.argv.slice(2).join(' ')));
   }
 } finally { app.db.close(); }

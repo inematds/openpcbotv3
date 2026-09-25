@@ -14,7 +14,7 @@ function montar(){
     rota:{choice:'agente:lead',confidence:.95,probabilities:{'agente:lead':.95,direto:.04,incerto:.01}},
     skill:{choice:'skill:codigo',confidence:.95,probabilities:{'skill:codigo':.95,nenhuma:.04,incerto:.01}},
   }}))};
-  return {db,app:{prefs,gateway,agora:()=>100,log:vi.fn(),cfg:{openrouterKey:'test-key'}},o:new ObservadorJev(),m:{texto:'Crie um arquivo de exemplo',chatId:'teste',traceId:'t'},atual:{rota:'direto' as const,tier:'local' as const,motivo:'exemplo'}};
+  return {db,app:{db,prefs,gateway,agora:()=>100,log:vi.fn(),cfg:{openrouterKey:'test-key'}},o:new ObservadorJev(),m:{texto:'Crie um arquivo de exemplo',chatId:'teste',traceId:'t'},atual:{rota:'direto' as const,tier:'local' as const,motivo:'exemplo'}};
 }
 describe('Jev em observação',()=>{
   it('catálogo contém somente ids existentes, sem prompts ou rascunhos',()=>{
@@ -69,6 +69,27 @@ describe('Jev em observação',()=>{
       await o.observar(app as any,m,agentes,skills,atual);expect(JSON.parse(app.prefs.obter(m.chatId,'jev:ultima')!).revisar).toBe(true);
       comandoJev(app as any,m.chatId,'off');app.gateway.decidirJev.mockClear();
       await o.observar(app as any,m,agentes,skills,atual);expect(app.gateway.decidirJev).not.toHaveBeenCalled();
+    }finally{db.close();}
+  });
+  it('guarda histórico sem a mensagem e resume no relatório',async()=>{
+    const {app,o,m,atual,db}=montar();try{
+      comandoJev(app as any,m.chatId,'observar');
+      await o.observar(app as any,m,agentes,skills,atual);
+      app.agora=()=>200;app.gateway.decidirJev.mockRejectedValueOnce(new Error('x'));
+      await o.observar(app as any,m,agentes,skills,atual);
+      const linhas=db.prepare('SELECT * FROM jev_comparacoes ORDER BY id').all() as any[];
+      expect(linhas).toHaveLength(2);
+      expect(linhas[0]).toMatchObject({chat_id:'teste',rota_atual:'direto',sugestao:'agente:lead',concorda:0,revisar:0,erro:null});
+      expect(linhas[1]).toMatchObject({revisar:1,custo_usd:null});expect(linhas[1].erro).toBeTruthy();
+      expect(JSON.stringify(linhas)).not.toContain(m.texto);
+      const h=comandoJev(app as any,m.chatId,'historico 5');
+      expect(h).toContain('2 comparações');expect(h).toContain('0/1 (0%)');
+      const rel=comandoJev(app as any,m.chatId,'relatorio dia');
+      expect(rel).toContain('Comparações: 2 (1 com erro)');expect(rel).toContain('direto → agente:lead: 1');
+      expect(rel).toContain('Divergências com Jev confiante: 1');expect(rel).toContain('skill:codigo: 1');
+      expect(comandoJev(app as any,'outro','relatorio semana')).toContain('Nenhuma comparação');
+      expect(comandoJev(app as any,m.chatId,'relatorio mes')).toContain('Uso:');
+      app.agora=()=>200+8*86_400;expect(comandoJev(app as any,m.chatId,'relatorio semana')).toContain('Nenhuma comparação');
     }finally{db.close();}
   });
 });

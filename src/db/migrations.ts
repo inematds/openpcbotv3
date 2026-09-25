@@ -265,6 +265,34 @@ export const MIGRATIONS: Migration[] = [
       );
     `,
   },
+  {
+    version: 9,
+    nome: 'jev_comparacoes',
+    // Histórico das observações Jev (3.4.4). Sem o texto da mensagem: só a
+    // comparação, para medir concordância com o roteador atual ao longo do tempo.
+    sql: `
+      CREATE TABLE jev_comparacoes (
+        id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+        chat_id             TEXT    NOT NULL,
+        trace_id            TEXT,
+        em                  INTEGER NOT NULL,
+        modelo              TEXT,
+        rota_atual          TEXT    NOT NULL,
+        sugestao            TEXT,
+        skill               TEXT,
+        confidence          REAL,
+        probabilidade       REAL,
+        skill_confidence    REAL,
+        skill_probabilidade REAL,
+        revisar             INTEGER NOT NULL,
+        concorda            INTEGER,
+        custo_usd           REAL,
+        latencia_ms         INTEGER,
+        erro                TEXT
+      );
+      CREATE INDEX idx_jev_comparacoes_chat ON jev_comparacoes(chat_id, em DESC);
+    `,
+  },
 ];
 
 const SCHEMA_CONTROLE = `
