@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 
-<html lang="pt-BR">
+<html lang="es">
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>openpcbot v3 — assistente pessoal local com fila, Ollama e memória</title>
-<meta content="openpcbot v3: assistente pessoal no Telegram com fila durável, gestor do Ollama com preflight de RAM, custo por chamada com orçamento e memória PT-BR. Roda ao lado do v2 sem faltar memória." name="description"/>
+<title>openpcbot v3 — asistente personal local con cola, Ollama y memoria</title>
+<meta content="openpcbot v3: asistente personal en Telegram con cola duradera, gestor de Ollama con preflight de RAM, costo por llamada con presupuesto y memoria PT-BR. Funciona junto al v2 sin quedarse sin memoria." name="description"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;800&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet"/>
@@ -92,7 +92,7 @@
   .pill{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:.3em .8em;font-size:.78rem;color:var(--mut);margin:0 4px}
 </style>
 <link href="https://inematds.github.io/openpcbotv3/guia/" hreflang="pt-BR" rel="alternate"/><link href="https://inematds.github.io/openpcbotv3/guia/en/" hreflang="en" rel="alternate"/><link href="https://inematds.github.io/openpcbotv3/guia/es/" hreflang="es" rel="alternate"/></head>
-<body><div class="inema-lang" style="position:fixed;right:14px;bottom:14px;z-index:9999;display:flex;gap:2px;padding:4px;border-radius:10px;background:rgba(12,12,16,.82);border:1px solid rgba(226,162,59,.45);font:600 12px/1 Sora,Inter,system-ui,sans-serif;backdrop-filter:blur(8px)" translate="no"><a href="./" hreflang="pt-BR" style="padding:6px 8px;border-radius:7px;text-decoration:none;color:#1a1206;background:#E2A23B">PT</a><a href="en/" hreflang="en" style="padding:6px 8px;border-radius:7px;text-decoration:none;color:#e9e9ee">EN</a><a href="es/" hreflang="es" style="padding:6px 8px;border-radius:7px;text-decoration:none;color:#e9e9ee">ES</a></div>
+<body><div class="inema-lang" style="position:fixed;right:14px;bottom:14px;z-index:9999;display:flex;gap:2px;padding:4px;border-radius:10px;background:rgba(12,12,16,.82);border:1px solid rgba(226,162,59,.45);font:600 12px/1 Sora,Inter,system-ui,sans-serif;backdrop-filter:blur(8px)" translate="no"><a href="../" hreflang="pt-BR" style="padding:6px 8px;border-radius:7px;text-decoration:none;color:#e9e9ee">PT</a><a href="../en/" hreflang="en" style="padding:6px 8px;border-radius:7px;text-decoration:none;color:#e9e9ee">EN</a><a href="./" hreflang="es" style="padding:6px 8px;border-radius:7px;text-decoration:none;color:#1a1206;background:#E2A23B">ES</a></div>
 <nav><div class="wrap">
 <a class="brand" href="#top"><span class="emoji">🤖</span> openpcbot v3</a>
 <span class="sep">|</span>
@@ -102,12 +102,12 @@
 <a class="pro" href="https://inema.pro" rel="noopener" target="_blank">PRO</a>
 </span>
 <div class="links">
-<a class="sec" href="#oque">O que é</a>
-<a class="sec" href="#fluxo">Como funciona</a>
-<a class="sec" href="#guia">Guia de uso</a>
-<a class="sec" href="#exemplos">Exemplos</a>
+<a class="sec" href="#oque">Qué es</a>
+<a class="sec" href="#fluxo">Cómo funciona</a>
+<a class="sec" href="#guia">Guía de uso</a>
+<a class="sec" href="#exemplos">Ejemplos</a>
 <a class="sec" href="#roadmap">Roadmap</a>
-<button aria-label="Alternar tema" class="tgl" id="themeToggle" title="Alternar tema">🌙</button>
+<button aria-label="Cambiar tema" class="tgl" id="themeToggle" title="Cambiar tema">🌙</button>
 <a class="btn" href="https://github.com/inematds/openpcbotv3" rel="noopener" target="_blank">GitHub</a>
 </div>
 </div></nav>
@@ -115,135 +115,135 @@
 <div class="glow"></div>
 <div class="wrap">
 <div>
-<span class="chip">Assistente pessoal · Telegram · local</span>
-<h1>Um bot que trabalha <span class="amb">sem estourar</span> a memória da máquina</h1>
-<p class="lead">Fila durável em SQLite, gestor do Ollama com preflight de RAM, custo por chamada com orçamento e um cérebro que lembra em PT-BR. Roda ao lado do v2 até a paridade.</p>
+<span class="chip">Asistente personal · Telegram · local</span>
+<h1>Un bot que trabaja <span class="amb">sin exceder</span> la memoria de la máquina</h1>
+<p class="lead">Cola durable en SQLite, gestor de Ollama con preflight de RAM, costo por llamada con presupuesto y un cerebro que recuerda en PT-BR. Funciona junto a v2 hasta alcanzar la paridad.</p>
 <div class="cta">
-<a class="btn" href="#guia">Começar o guia</a>
-<a class="btn ghost" href="https://github.com/inematds/openpcbotv3" rel="noopener" target="_blank">Ver no GitHub</a>
+<a class="btn" href="#guia">Comenzar la guía</a>
+<a class="btn ghost" href="https://github.com/inematds/openpcbotv3" rel="noopener" target="_blank">Ver en GitHub</a>
 </div>
 </div>
-<figure><img alt="Ilustração do openpcbot v3: assistente pessoal rodando local" src="assets/hero.jpg"/></figure>
+<figure><img alt="Ilustración de openpcbot v3: asistente personal ejecutándose localmente" src="../assets/hero.jpg"/></figure>
 </div>
 </header>
 <section id="oque"><div class="wrap">
-<span class="chip">O que é</span>
-<h2>Sucessor do openpcbot v2, desenhado a partir da dor real</h2>
-<p class="sub">O v2 funciona, mas é um monólito sem fila, sem custo por chamada e sem gestão do Ollama, com dois travamentos por falta de RAM em agosto. O v3 pega o que já estava pronto e testado em outros repos locais e monta por camadas.</p>
+<span class="chip">Qué es</span>
+<h2>Sucesor de openpcbot v2, diseñado a partir de problemas reales</h2>
+<p class="sub">v2 funciona, pero es un monolito sin cola, sin costo por llamada y sin gestión de Ollama, con dos bloqueos por falta de RAM en agosto. v3 toma lo que ya estaba listo y probado en otros repos locales y lo organiza por capas.</p>
 <div class="grid g3">
-<div class="card"><h3>🧱 Fila de verdade</h3><p>Claim atômico, lease com heartbeat, backoff, idempotência e drain gracioso, portados do inemaccbot com os 107 testes originais. Lanes por tipo de trabalho, um <code>claude -p</code> por vez.</p></div>
-<div class="card"><h3>🧠 Cérebro em PT-BR</h3><p>Memórias com salience e decaimento, busca por FTS5 mais vetor bge-m3, consolidação noturna que detecta contradições e um vault curado que só grava com a sua aprovação.</p></div>
-<div class="card"><h3>💸 Custo e RAM sob controle</h3><p>Toda chamada de LLM passa por um único gateway: tier local → barato → premium, orçamento mensal com trava, e preflight que recusa carregar modelo grande sem 40 GB livres.</p></div>
+<div class="card"><h3>🧱 Cola real</h3><p>Claim atómico, lease con heartbeat, backoff, idempotencia y drain gradual, portados de inemaccbot con las 107 pruebas originales. Lanes por tipo de trabajo, un <code>claude -p</code> a la vez.</p></div>
+<div class="card"><h3>🧠 Cerebro en PT-BR</h3><p>Memorias con salience y decaimiento, búsqueda por FTS5 más vector bge-m3, consolidación nocturna que detecta contradicciones y un vault curado que solo guarda con tu aprobación.</p></div>
+<div class="card"><h3>💸 Costo y RAM bajo control</h3><p>Todas las llamadas de LLM pasan por un único gateway: tier local → barato → premium, presupuesto mensual con bloqueo y preflight que rechaza cargar un modelo grande si no hay 40 GB libres.</p></div>
 </div>
 </div></section>
 <section id="fluxo"><div class="wrap">
-<span class="chip">Como funciona</span>
-<h2>O caminho de uma mensagem</h2>
-<p class="sub">Canais só traduzem para um barramento de eventos. O orquestrador classifica com um modelo local pequeno antes de gastar qualquer token na nuvem.</p>
+<span class="chip">Cómo funciona</span>
+<h2>El recorrido de un mensaje</h2>
+<p class="sub">Los canales solo traducen a un bus de eventos. El orquestador clasifica con un modelo local pequeño antes de gastar cualquier token en la nube.</p>
 <div class="flow">
 <span>Telegram / CLI / HTTP</span><span class="arr">→</span>
 <span>Bus</span><span class="arr">→</span>
-<span>Roteador (llama3.2)</span><span class="arr">→</span>
-<span>Memória (3 camadas)</span><span class="arr">→</span>
-<span>Resposta direta (qwen3.8) ou job de agente (claude -p)</span><span class="arr">→</span>
-<span>Guarda de segredos</span><span class="arr">→</span>
+<span>Enrutador (llama3.2)</span><span class="arr">→</span>
+<span>Memoria (3 capas)</span><span class="arr">→</span>
+<span>Respuesta directa (qwen3.8) o job de agente (claude -p)</span><span class="arr">→</span>
+<span>Protección de secretos</span><span class="arr">→</span>
 <span>Chat</span>
 </div>
 <div class="grid g4" style="margin-top:26px">
-<div class="card"><span class="num">1</span><h3>Roteador</h3><p>Devolve JSON com rota, agente e tier. "direto" para conversa; "agente" quando precisa de arquivo, shell, repo, web ou skill.</p></div>
-<div class="card"><span class="num">2</span><h3>Gateway de LLM</h3><p>Orçamento → provedor → preflight de RAM → chamada → custo em <code>chamadas_llm</code>. Ollama custa zero, mas conta tokens e tempo.</p></div>
-<div class="card"><span class="num">3</span><h3>Fila</h3><p>Job de agente roda <code>claude -p --output-format json</code> na lane <code>agente</code>. Resultado e custo real voltam ao chat de origem.</p></div>
-<div class="card"><span class="num">4</span><h3>Aprendizado</h3><p>Cada turno vira memória. Fato durável gera proposta para <code>MEMORY.md</code> / <code>USER.md</code>; você aprova com um comando.</p></div>
+<div class="card"><span class="num">1</span><h3>Enrutador</h3><p>Devuelve JSON con ruta, agente y tier. "directo" para conversar; "agente" cuando necesita archivo, shell, repo, web o skill.</p></div>
+<div class="card"><span class="num">2</span><h3>Gateway de LLM</h3><p>Presupuesto → proveedor → preflight de RAM → llamada → costo en <code>chamadas_llm</code>. Ollama cuesta cero, pero cuenta tokens y tiempo.</p></div>
+<div class="card"><span class="num">3</span><h3>Cola</h3><p>El job de agente se ejecuta <code>claude -p --output-format json</code> en la lane <code>agente</code>. El resultado y el costo real vuelven al chat de origen.</p></div>
+<div class="card"><span class="num">4</span><h3>Aprendizaje</h3><p>Cada turno se convierte en memoria. Un hecho duradero genera una propuesta para <code>MEMORY.md</code> / <code>USER.md</code>; lo apruebas con un comando.</p></div>
 </div>
 </div></section>
 <section id="pre"><div class="wrap">
-<span class="chip">Pré-requisitos</span>
-<h2>O que precisa estar no ar</h2>
-<p class="sub">Tudo local. As API keys compartilhadas são lidas em runtime do <code>.env</code> do v2; o v3 só precisa do próprio token de bot.</p>
+<span class="chip">Requisitos previos</span>
+<h2>Lo que debe estar en producción</h2>
+<p class="sub">Todo local. Las API keys compartidas se leen en runtime desde <code>.env</code> del v2; el v3 solo necesita su propio token de bot.</p>
 <div class="grid g3">
-<div class="card"><h3>Ollama como serviço</h3><p>Só HTTP na 11434. Nunca um <code>ollama serve</code> paralelo.</p><pre><span class="c"># modelos usados (mesmas tags do v2)</span>
+<div class="card"><h3>Ollama como servicio</h3><p>Solo HTTP en 11434. Nunca un <code>ollama serve</code> en paralelo.</p><pre><span class="c"># modelos usados (las mismas tags de v2)</span>
 <span class="k">ollama</span> pull qwen3.8:27b
 <span class="k">ollama</span> pull llama3.2
 <span class="k">ollama</span> pull bge-m3</pre></div>
-<div class="card"><h3>Node 20+ e Claude Code</h3><p>O agente roda por subprocesso da CLI, não pelo SDK.</p><pre><span class="k">node</span> -v          <span class="c"># v20+</span>
-<span class="k">claude</span> --version <span class="c"># CLI no PATH do usuário</span></pre></div>
-<div class="card"><h3>Bot próprio no Telegram</h3><p>Crie no BotFather. O token do v2 é recusado no boot (dois <code>getUpdates</code> = 409 e bot surdo).</p><pre><span class="c"># ~/projetos/openpcbotv3/.env</span>
+<div class="card"><h3>Node 20+ y Claude Code</h3><p>El agente se ejecuta mediante un subproceso de la CLI, no con el SDK.</p><pre><span class="k">node</span> -v          <span class="c"># v20+</span>
+<span class="k">claude</span> --version <span class="c"># CLI en el PATH del usuario</span></pre></div>
+<div class="card"><h3>Bot propio en Telegram</h3><p>Créalo en BotFather. El token de v2 se rechaza al iniciar (dos <code>getUpdates</code> = 409 y bot sordo).</p><pre><span class="c"># ~/projetos/openpcbotv3/.env</span>
 TELEGRAM_BOT_TOKEN_V3=<span class="s">123456:AAH...</span>
 PORT_V3=3142
 PISO_RAM_GB=40</pre></div>
 </div>
 </div></section>
 <section id="guia"><div class="wrap">
-<span class="chip">Guia de uso · passo a passo</span>
-<h2>Do clone ao bot respondendo</h2>
-<p class="sub">Cinco comandos. Sem token de Telegram o serviço sobe mesmo assim, com HTTP e CLI.</p>
+<span class="chip">Guía de uso · paso a paso</span>
+<h2>Del clone al bot respondiendo</h2>
+<p class="sub">Cinco comandos. Sin token de Telegram, el servicio igual se inicia, con HTTP y CLI.</p>
 <div class="step"><div class="b">1</div><div>
-<h3>Instalar e configurar</h3>
-<p>Copie o exemplo de <code>.env</code> e preencha só o que é do v3.</p>
+<h3>Instalar y configurar</h3>
+<p>Copia el ejemplo de <code>.env</code> y completa solo lo que corresponde al v3.</p>
 <pre><span class="k">git clone</span> <span class="s">git@github.com:inematds/openpcbotv3.git</span> &amp;&amp; <span class="k">cd</span> openpcbotv3
 <span class="k">npm install</span>
 <span class="k">cp</span> .env.exemplo .env   <span class="c"># TELEGRAM_BOT_TOKEN_V3, PORT_V3, PISO_RAM_GB, ORCAMENTO_MENSAL_USD</span></pre>
 </div></div>
 <div class="step"><div class="b">2</div><div>
-<h3>Rodar o doctor</h3>
-<p>Checa env, Ollama e modelos, RAM, CLIs, v2 ativo, unit e teto de memória. Não muda nada.</p>
+<h3>Ejecutar el doctor</h3>
+<p>Verifica env, Ollama y modelos, RAM, CLIs, v2 activo, unit y límite de memoria. No cambia nada.</p>
 <pre><span class="k">npm run doctor</span>
-<span class="c">✅ mesmo modelo geral que o v2   v2=qwen3.8:27b v3=qwen3.8:27b
-✅ RAM                          63.8 GB disponíveis · piso p/ carregar modelo grande: 40 GB
-⚠️  TELEGRAM_BOT_TOKEN_V3        ausente — canal Telegram desligado</span></pre>
+<span class="c">✅ mismo modelo general que el v2   v2=qwen3.8:27b v3=qwen3.8:27b
+✅ RAM                          63.8 GB disponibles · mínimo para cargar un modelo grande: 40 GB
+⚠️  TELEGRAM_BOT_TOKEN_V3        ausente — canal de Telegram desactivado</span></pre>
 </div></div>
 <div class="step"><div class="b">3</div><div>
-<h3>Importar as memórias do v2</h3>
-<p>Snapshot com <code>VACUUM INTO</code>: o banco do v2 nunca é aberto para escrita. Idempotente.</p>
+<h3>Importar las memorias de v2</h3>
+<p>Snapshot con <code>VACUUM INTO</code>: la base de datos de v2 nunca se abre para escritura. Idempotente.</p>
 <pre><span class="k">npx tsx</span> src/cli/importar.ts
-<span class="c">memórias do v2: lidas 308 · inseridas 291 · já existiam 17</span></pre>
+<span class="c">memorias del v2: leídas 308 · insertadas 291 · ya existían 17</span></pre>
 </div></div>
 <div class="step"><div class="b">4</div><div>
-<h3>Instalar o serviço</h3>
-<p>Unit de usuário com <code>Restart=on-failure</code>, <code>MemoryHigh=1.5G</code> e <code>MemoryMax=2G</code>. O mesmo script serve para reiniciar depois de mudar <code>src/</code> ou <code>.env</code>.</p>
+<h3>Instalar el servicio</h3>
+<p>Unit de usuario con <code>Restart=on-failure</code>, <code>MemoryHigh=1.5G</code> e <code>MemoryMax=2G</code>. El mismo script sirve para reiniciar después de cambiarlo <code>src/</code> o <code>.env</code>.</p>
 <pre><span class="k">bash</span> scripts/instalar-servico.sh
-<span class="c"># build + daemon-reload + enable + restart; sem sudo</span>
+<span class="c"># build + daemon-reload + enable + restart; sin sudo</span>
 <span class="k">journalctl</span> --user -u openpcbotv3 -f -o cat</pre>
 </div></div>
 <div class="step"><div class="b">5</div><div>
 <h3>Conversar</h3>
-<p>No Telegram, ou por HTTP e CLI enquanto não há token.</p>
+<p>En Telegram, o por HTTP y CLI mientras no haya token.</p>
 <pre><span class="k">npm run cli</span> -- <span class="s">"/health"</span>
 <span class="k">npm run cli</span> -- <span class="s">"lembra que eu prefiro respostas curtas"</span>
-<span class="k">npm run cli</span> -- <span class="s">"no projeto X, conta as linhas de src/app.ts"</span>   <span class="c"># vira job de agente</span></pre>
+<span class="k">npm run cli</span> -- <span class="s">"no projeto X, conta as linhas de src/app.ts"</span>   <span class="c"># se convierte en job de agente</span></pre>
 </div></div>
 <div class="step"><div class="b">6</div><div>
-<h3>Operar pelo chat</h3>
-<p>Fila, custo, memória, tarefas e cron sem sair do Telegram. O dashboard fica em <code>http://127.0.0.1:3142/</code>.</p>
-<pre><span class="k">/status</span> [id]        <span class="c"># fila por lane ou detalhe de um job</span>
-<span class="k">/usage</span>              <span class="c"># custo hoje/semana/mês, por tier e agente, orçamento</span>
-<span class="k">/health</span>             <span class="c"># Ollama, RAM, RSS, fila, heartbeat, canais</span>
+<h3>Operar por el chat</h3>
+<p>Cola, costo, memoria, tareas y cron sin salir de Telegram. El dashboard está en <code>http://127.0.0.1:3142/</code>.</p>
+<pre><span class="k">/status</span> [id]        <span class="c"># cola por lane o detalle de un job</span>
+<span class="k">/usage</span>              <span class="c"># costo hoy/semana/mes, por tier y agente, presupuesto</span>
+<span class="k">/health</span>             <span class="c"># Ollama, RAM, RSS, cola, heartbeat, canales</span>
 <span class="k">/memoria</span> lista|buscar|salvar|propostas|aprovar &lt;id&gt;
-<span class="k">/tarefa</span> add amanhã 9h revisar PR   <span class="c"># lembrete + resumo no /daily</span>
+<span class="k">/tarefa</span> add amanhã 9h revisar PR   <span class="c"># recordatorio + resumen en /daily</span>
 <span class="k">/cron</span> lista · <span class="k">/ollama</span> status · <span class="k">/consolidar</span> · <span class="k">/novo</span></pre>
 </div></div>
 </div></section>
 <section id="exemplos"><div class="wrap">
-<span class="chip">Exemplos</span>
-<h2>O que aconteceu nos primeiros testes no ar</h2>
-<p class="sub">Trocas reais do dia em que o v3 subiu, com o v2 ativo na mesma máquina.</p>
+<span class="chip">Ejemplos</span>
+<h2>Lo que pasó en las primeras pruebas en producción</h2>
+<p class="sub">Interacciones reales del día en que se inició v3, con v2 activo en la misma máquina.</p>
 <div class="grid g2">
-<div class="card"><h3>Memória entre turnos</h3><pre><span class="c">você&gt;</span> qual a capital do RS? e lembra que eu prefiro respostas curtas
+<div class="card"><h3>Memoria entre turnos</h3><pre><span class="c">tú&gt;</span> qual a capital do RS? e lembra que eu prefiro respostas curtas
 <span class="c">bot&gt;</span>  Porto Alegre.
 <span class="c">bot&gt;</span>  📝 Guardar no vault? "…prefiro respostas curtas" → /memoria aprovar 1
-<span class="c">você&gt;</span> o que eu te disse que prefiro?
+<span class="c">tú&gt;</span> o que eu te disse que prefiro?
 <span class="c">bot&gt;</span>  Respostas curtas.</pre></div>
-<div class="card"><h3>Job de agente com custo real</h3><pre><span class="c">você&gt;</span> no projeto openpcbotv3, conta as linhas de src/fila/worker.ts
+<div class="card"><h3>Job de agente con costo real</h3><pre><span class="c">tú&gt;</span> no projeto openpcbotv3, conta as linhas de src/fila/worker.ts
 <span class="c">bot&gt;</span>  🧠 lead — job #7. /status 7 acompanha.
 <span class="c">bot&gt;</span>  419
-<span class="c"># chamadas_llm: claude-cli · sonnet · premium · US$ 0,1465 · 7,8 s
-# pico de memória do unit: 636 MB (teto 2 G)</span></pre></div>
-<div class="card"><h3>Preflight de RAM recusando</h3><pre><span class="k">/ollama preflight</span> qwen3.6:35b-a3b
-<span class="c">⛔ já há modelo grande residente (qwen3.8:27b) — política de 1 residente</span>
+<span class="c"># llamadas_llm: claude-cli · sonnet · premium · US$ 0,1465 · 7,8 s
+# pico de memoria de la unidad: 636 MB (límite 2 G)</span></pre></div>
+<div class="card"><h3>Preflight de RAM que rechaza</h3><pre><span class="k">/ollama preflight</span> qwen3.6:35b-a3b
+<span class="c">⛔ ya hay un modelo grande residente (qwen3.8:27b) — política de 1 residente</span>
 
 <span class="k">/ollama descarregar</span> qwen3.8:27b
-<span class="c">⛔ não foi carregado por este processo (pode ser do v2) — recusado</span></pre></div>
-<div class="card"><h3>Health que o hub consome</h3><pre><span class="k">GET</span> /health
+<span class="c">⛔ este proceso no lo cargó (puede ser del v2) — rechazado</span></pre></div>
+<div class="card"><h3>Health que consume el hub</h3><pre><span class="k">GET</span> /health
 { "ok": true, "rss_mb": 82, "canais": ["telegram","http"],
   "ram": { "disponivelGb": 35.3, "swapUsadoGb": 8.5 },
   "ollama": { "online": true, "carregados": ["qwen3.8:27b"] },
@@ -252,17 +252,17 @@ PISO_RAM_GB=40</pre></div>
 </div></section>
 <section id="roadmap"><div class="wrap">
 <span class="chip">Roadmap</span>
-<h2>Estrangulamento, não corte seco</h2>
-<p class="sub">O v3 sobe com bot próprio ao lado do v2. Nada é apagado até a paridade: todos os comandos do v2 respondendo no v3, 7 dias sem job perdido, custo semanal medido.</p>
-<div class="phase"><div class="tag">0–2 ✓</div><div class="d"><strong>Esqueleto, fila, Ollama, custo, telemetria</strong><span>Bus, config YAML, unit com teto de memória; fila portada; gestor do Ollama com preflight; gateway de LLM com orçamento; /status, /usage, /health, alertas.</span></div></div>
-<div class="phase"><div class="tag">3–5 ✓</div><div class="d"><strong>Canais, orquestrador, cérebro, tarefas</strong><span>Telegram/CLI/HTTP; roteador local; agente por CLI com sessão e custo real; memória PT-BR importada do v2, embeddings, consolidação noturna, vault curado; cron como jobs, heartbeat, /tarefa, /daily.</span></div></div>
-<div class="phase"><div class="tag">6–7 ✓</div><div class="d"><strong>Slack, WhatsApp, dashboard, doctor, backup</strong><span>Slack via Web API (desligado até o corte); WhatsApp com guarda que recusa enquanto o v2 é dono da sessão; dashboard em uma página; doctor; backup noturno cifrado.</span></div></div>
-<div class="phase"><div class="tag">8</div><div class="d"><strong>Corte</strong><span>Trocar o token de produção, v2 só leitura por 30 dias, arquivar. Só com ordem explícita. Depois: WhatsApp real em daemon separado, Slack ligado, retenção da tabela de jobs.</span></div></div>
+<h2>Estrangulamiento, no corte abrupto</h2>
+<p class="sub">v3 se inicia con su propio bot junto a v2. No se elimina nada hasta alcanzar la paridad: todos los comandos de v2 responden en v3, 7 días sin jobs perdidos, costo semanal medido.</p>
+<div class="phase"><div class="tag">0–2 ✓</div><div class="d"><strong>Esqueleto, cola, Ollama, costo, telemetría</strong><span>Bus, config YAML, unit con límite de memoria; cola portada; gestor de Ollama con preflight; gateway de LLM con presupuesto; /status, /usage, /health, alertas.</span></div></div>
+<div class="phase"><div class="tag">3–5 ✓</div><div class="d"><strong>Canales, orquestador, cerebro, tareas</strong><span>Telegram/CLI/HTTP; enrutador local; agente por CLI con sesión y costo real; memoria PT-BR importada de v2, embeddings, consolidación nocturna, vault curado; cron como jobs, heartbeat, /tarefa, /daily.</span></div></div>
+<div class="phase"><div class="tag">6–7 ✓</div><div class="d"><strong>Slack, WhatsApp, dashboard, doctor, backup</strong><span>Slack mediante Web API (desactivado hasta el corte); WhatsApp con una protección que lo rechaza mientras v2 sea dueño de la sesión; dashboard en una página; doctor; backup nocturno cifrado.</span></div></div>
+<div class="phase"><div class="tag">8</div><div class="d"><strong>Corte</strong><span>Cambiar el token de producción, dejar v2 en solo lectura durante 30 días y archivarlo. Solo por orden explícita. Después: WhatsApp real en un daemon separado, Slack activado, retención de la tabla de jobs.</span></div></div>
 </div></section>
 <footer>
 <div class="wrap">
 <div class="pill">TypeScript · Node 20</div><div class="pill">SQLite · FTS5</div><div class="pill">Ollama · qwen3.8 · bge-m3</div><div class="pill">grammy</div><div class="pill">Claude Code CLI</div><div class="pill">systemd --user</div>
-<p style="margin-top:18px">openpcbot v3 · projeto de pesquisa e educação do INEMA ·
+<p style="margin-top:18px">openpcbot v3 · proyecto de investigación y educación de INEMA ·
       <a href="https://github.com/inematds/openpcbotv3">inematds/openpcbotv3</a> ·
       <a href="https://inema.club">INEMA.CLUB</a></p>
 </div>

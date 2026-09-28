@@ -1,5 +1,7 @@
 # openpcbot v3
 
+**🇧🇷 [Português](README.md) · 🇺🇸 [English](README.en.md) · 🇪🇸 [Español](README.es.md)**
+
 Assistente pessoal multicanal (Telegram, CLI, HTTP) com fila durável em SQLite, gestor do Ollama com preflight de RAM, custo por chamada com orçamento, cérebro com memória PT-BR e consolidação noturna. Sucessor do `openpcbotv2`, rodando **ao lado** dele (estrangulamento, não corte).
 
 Plano e arquitetura: [PLANO-MIGRACAO-V3.md](PLANO-MIGRACAO-V3.md). Estado por fase: [CHANGELOG.md](CHANGELOG.md). Falhas: [FALHAS.md](FALHAS.md).
