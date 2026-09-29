@@ -6,3 +6,4 @@ store/
 *.db-*
 __pycache__/
 *.pyc
+skills-backup/
