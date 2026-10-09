@@ -11,8 +11,8 @@ const agentes: Agente[] = [
 ];
 
 describe('parsearDecisao', () => {
-  it('lixo → direto local', () => {
-    expect(parsearDecisao('não sei', agentes)).toMatchObject({ rota: 'direto', tier: 'local' });
+  it('lixo → agente lead (na dúvida, agente)', () => {
+    expect(parsearDecisao('não sei', agentes)).toMatchObject({ rota: 'agente', agente: 'lead' });
   });
 
   it('agente inválido cai para lead; rota agente força tier premium', () => {

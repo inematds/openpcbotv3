@@ -2,6 +2,7 @@
 
 | data | o que quebrou | menor correção | prompt \| infra |
 |---|---|---|---|
+| 2026-10-09 | Pergunta de status ("qual situação do alerta do norte com avatar") foi para a rota direta (qwen sem ferramentas), que respondeu "vou verificar…" e parou | status com job aberto respondido por código (fila); consulta/estado e fallback do roteador → agente; resposta local com promessa/[ESCALAR] não é enviada e sobe ao agente (3.5.4) | prompt |
 | 2026-09-17 | Skills Google instruíam o bot a executar scripts e comandos antigos fora do v3 | alinhar caminhos, opções e capacidades ao CLI local validado | prompt |
 | 2026-09-17 | Probe TCP consumiu a única requisição do servidor OAuth e encerrou o callback com AttributeError | verificar listener passivamente; nunca conectar ao callback antes do Google | prompt |
 | 2026-09-16 | Todos os comandos do Calendar falhavam com `AttributeError: Namespace has no attribute account` | definir `dest="account"` no argumento `--conta/--account` | prompt |

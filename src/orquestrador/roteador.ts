@@ -25,6 +25,8 @@ export function promptRoteador(agentes: Agente[], skills: SkillInfo[]): string {
 Regras:
 - "direto" = conversa, pergunta factual curta, resumo, opinião, tradução, texto criativo curto. tier "local".
 - "agente" = precisa de FERRAMENTAS: ler/escrever arquivos, rodar comando, mexer em repositório, pesquisar na web a fundo, usar uma skill, mexer em calendário/email/slack. Escolha o agente pelo domínio; sem especialista claro → "lead".
+- Pergunta sobre estado, situação ou andamento de projeto, vídeo, tarefa, job ou publicação = "agente" (precisa consultar).
+- Na dúvida entre "direto" e "agente", escolha "agente".
 - tier "barato" só em "direto" quando exigir raciocínio longo (>3 passos) ou texto longo (>400 palavras). "premium" NUNCA por conta própria.
 - "consultar": até 2 especialistas [só leitura] cujo contexto ajude o agente escolhido; [] se não ajudar.
 - Nunca invente ids fora das listas.
@@ -37,7 +39,8 @@ ${sk}`;
 }
 
 export function parsearDecisao(bruto: string, agentes: Agente[]): Decisao {
-  const fallback: Decisao = { rota: 'direto', tier: 'local', motivo: 'fallback' };
+  // Na dúvida → agente (Hermes, OpenClaw e Agent Zero mandam tudo ao agente com ferramentas).
+  const fallback: Decisao = { rota: 'agente', agente: 'lead', tier: 'premium', motivo: 'fallback: roteador sem JSON', consultar: [] };
   const m = bruto.match(/\{[\s\S]*\}/);
   if (!m) return fallback;
   try {
@@ -55,6 +58,9 @@ export function parsearDecisao(bruto: string, agentes: Agente[]): Decisao {
 /** Heurística barata ANTES do LLM: comandos óbvios de ferramenta nem passam pelo roteador. */
 const FERRAMENTA_RE = /\b(cria|crie|criar|edita|edite|editar|corrig|refator|commit|push|deploy|instala|roda|rode|execut|compila|build|teste|arquivo|pasta|repo|reposit[óo]rio|projeto|script|c[óo]digo|bug|erro no|pesquis[ae] (?:a fundo|na web)|agenda|calend[áa]rio|email|e-mail|slack|skill)\b/i;
 
+/** Pedido de consulta/estado: só o agente consegue olhar (rota direta não tem ferramenta). */
+export const CONSULTA_RE = /\b(situa[çc][ãa]o|status|andamento|progresso|verific|confer|checa|cheque|d[áa] uma olhada|olha (?:o|a|se)|como (?:est[áa]|t[áa]|anda|ficou) (?:o|a|os|as)\b|pendente|pend[êe]ncia|publica|publiqu|v[íi]deo|handoff|commit|job)/i;
+
 export async function rotear(
   gateway: GatewayLLM,
   modeloRoteador: string,
@@ -63,6 +69,7 @@ export async function rotear(
   skills: SkillInfo[],
   ctx: { chatId: string; traceId: string },
 ): Promise<Decisao> {
+  if (CONSULTA_RE.test(mensagem)) return { rota: 'agente', agente: 'lead', tier: 'premium', motivo: 'heurística: consulta/estado', consultar: [] };
   if (mensagem.length < 12 && !FERRAMENTA_RE.test(mensagem)) return { rota: 'direto', tier: 'local', motivo: 'curta' };
   try {
     const r = await gateway.chamar({
@@ -76,6 +83,6 @@ export async function rotear(
     }
     return d;
   } catch {
-    return { rota: 'direto', tier: 'local', motivo: 'roteador indisponível' };
+    return { rota: 'agente', agente: 'lead', tier: 'premium', motivo: 'roteador indisponível', consultar: [] };
   }
 }

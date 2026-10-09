@@ -15,6 +15,7 @@ import { rotear, type Decisao } from './roteador.js';
 import { skillsCacheadas } from './skills.js';
 import { Geracoes, cancelarDoChat, lerModo } from './modo-fila.js';
 import { blocoPersonalidade } from './personalidade.js';
+import { deveEscalar, ehPerguntaStatus, jobsAbertos, REGRA_ROTA_DIRETA, textoSituacao } from './situacao.js';
 
 const JANELA_COLLECT_MS = 2000;
 const MAX_CONTEXTO_TURNOS = 8;
@@ -63,6 +64,11 @@ export class Orquestrador {
       if (m.texto.startsWith('/')) {
         const r = await executarComando(app, m);
         if (r !== null) { this.enviar(m, r, 'markdown'); return; }
+      }
+      // "Qual situação?" com job aberto: responde lendo a fila, sem modelo.
+      if (ehPerguntaStatus(m.texto)) {
+        const s = textoSituacao(jobsAbertos(app.fila, chave), app.agora());
+        if (s) { this.enviar(m, s); return; }
       }
       const modo = lerModo(app.prefs, m.chatId);
       if (modo === 'interrupt') {
@@ -120,7 +126,7 @@ export class Orquestrador {
     if (decisao.rota === 'agente') { await this.despacharAgente(m, decisao, memoria); return; }
 
     const historico = app.cerebro.ultimosTurnos(m.chatId, MAX_CONTEXTO_TURNOS);
-    const sistema = [identidade(), blocoPersonalidade(app.prefs, m.chatId), app.vault.ler('USER.md', 800), memoria].filter(Boolean).join('\n\n');
+    const sistema = [identidade(), REGRA_ROTA_DIRETA, blocoPersonalidade(app.prefs, m.chatId), app.vault.ler('USER.md', 800), memoria].filter(Boolean).join('\n\n');
     const r = await app.gateway.chamar({
       tier: decisao.tier, agente: 'direto', chatId: m.chatId, traceId: m.traceId, motivoTier: decisao.tier !== 'local' ? decisao.motivo : undefined,
       temperatura: 0.4, maxTokens: 1200, timeoutMs: 180_000, keepAlive: app.ollama.papel('geral').keep_alive,
@@ -128,6 +134,12 @@ export class Orquestrador {
     });
     const texto = r.texto.trim() || '(sem resposta)';
     if (!this.geracoes.vigente(chave, geracao)) { app.log(`[orq] ${chave} resposta descartada (interrupt)`); return; }
+    // Trava: rota sem ferramenta não termina em promessa ("vou verificar…") — sobe para o agente.
+    if (deveEscalar(texto)) {
+      app.log(`[orq] ${chave} rota direta prometeu ação/pediu escalada → agente lead`);
+      await this.despacharAgente(m, { rota: 'agente', agente: 'lead', tier: 'premium', motivo: 'rota direta prometeu ação', consultar: [] }, memoria);
+      return;
+    }
     this.enviar(m, texto);
     this.aprender(m, texto);
   }

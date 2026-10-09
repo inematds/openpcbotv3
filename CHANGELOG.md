@@ -1,5 +1,15 @@
 # CHANGELOG — openpcbotv3
 
+## 3.5.4 — 2026-10-09
+
+- Status por código: pergunta de andamento ("qual situação?", "terminou?") com job aberto no chat é respondida
+  lendo a fila (número, agente, há quanto tempo, pedido), sem modelo (`src/orquestrador/situacao.ts`).
+- Na dúvida → agente: consulta/estado/projeto/vídeo/publicação vão ao `lead` antes do LLM roteador; fallback
+  do roteador (sem JSON ou indisponível) passa a ser o agente, não a rota local.
+- Trava da rota direta: o qwen recebe a regra "sem ferramentas, nunca prometa; responda [ESCALAR]"; resposta com
+  promessa ("vou verificar…", "um momento") ou [ESCALAR] não é enviada e vira job do agente.
+- Caso real: 18:41/18:53 de 09/10, "vou verificar a situação…" sem job. Verificação: 216 testes.
+
 ## 3.4.4 — 2026-09-25
 
 - Histórico das comparações Jev na tabela `jev_comparacoes` (migration 9), sem o texto da mensagem.
