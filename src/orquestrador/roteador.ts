@@ -67,13 +67,13 @@ export async function rotear(
   mensagem: string,
   agentes: Agente[],
   skills: SkillInfo[],
-  ctx: { chatId: string; traceId: string; quadro?: string },
+  ctx: { chatId: string; traceId: string; quadro?: string; keepAlive?: string | number },
 ): Promise<Decisao> {
   if (CONSULTA_RE.test(mensagem)) return { rota: 'agente', agente: 'lead', tier: 'premium', motivo: 'heurística: consulta/estado', consultar: [] };
   if (mensagem.length < 12 && !FERRAMENTA_RE.test(mensagem)) return { rota: 'direto', tier: 'local', motivo: 'curta' };
   try {
     const r = await gateway.chamar({
-      tier: 'local', modelo: modeloRoteador, json: true, temperatura: 0.1, maxTokens: 160, timeoutMs: 30_000,
+      tier: 'local', modelo: modeloRoteador, json: true, temperatura: 0.1, maxTokens: 160, timeoutMs: 30_000, keepAlive: ctx.keepAlive,
       agente: 'roteador', chatId: ctx.chatId, traceId: ctx.traceId,
       mensagens: [{ role: 'system', content: [promptRoteador(agentes, skills), ctx.quadro].filter(Boolean).join('\n\n') }, { role: 'user', content: mensagem.slice(0, 2000) }],
     });

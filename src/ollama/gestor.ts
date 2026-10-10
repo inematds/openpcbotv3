@@ -161,7 +161,10 @@ export class GestorOllama {
       const carregados = await this.carregados();
       let latenciaMs: number | null = null;
       const roteador = this.modeloDe('roteador');
-      const quente = carregados.some((m) => GestorOllama.mesmoModelo(m.name, roteador));
+      // Roteador = modelo geral (qwen): sem ping. Cada ping renova o keep_alive e o
+      // modelo grande nunca sairia da GPU (o 30m de 2026-09-28 existe por causa dos renders).
+      const mesmoQueGeral = GestorOllama.mesmoModelo(roteador, this.modeloDe('geral'));
+      const quente = !mesmoQueGeral && carregados.some((m) => GestorOllama.mesmoModelo(m.name, roteador));
       if (quente) {
         const t0 = Date.now();
         const r = await this.fetchFn(`${this.opts.url}/api/generate`, {

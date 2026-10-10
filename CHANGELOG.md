@@ -1,5 +1,13 @@
 # CHANGELOG — openpcbotv3
 
+## 3.7.5 — 2026-10-10
+
+- Roteador (direto × agente) passa do `llama3.2` para o `qwen3.8:27b` (mesmo modelo do `geral`, já residente; sem
+  RAM extra). Com o prompt real do roteador e 14 frases típicas: llama3.2 7/14 (mandava "lê meus emails",
+  "o render terminou?", "espaço no disco" para a rota sem ferramentas), qwen 14/14, ~3 s/msg contra 0,7 s.
+- Roteador usa o keep_alive do papel (30m, igual ao geral) e o probe de 60 s não pinga o roteador quando ele é
+  o modelo geral: o ping renovaria o keep_alive e o qwen nunca sairia da GPU (decisão de 2026-09-28, renders).
+
 ## 3.6.5 — 2026-10-10
 
 - Especialistas só-leitura (`consulta:*`) também recebem o quadro do chat. No teste ao vivo o `research` recebeu

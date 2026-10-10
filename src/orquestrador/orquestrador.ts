@@ -120,7 +120,7 @@ export class Orquestrador {
     const agentes = agentesCacheados();
     // Quadro do chat: o mesmo retrato (fila agora) para roteador e rota direta; o agente lê o seu no worker.
     const quadro = quadroDoChat(app.fila, chave, app.agora());
-    const decisao = await rotear(app.gateway, app.ollama.modeloDe('roteador'), m.texto, agentes, skillsCacheadas(), { chatId: m.chatId, traceId: m.traceId, quadro });
+    const decisao = await rotear(app.gateway, app.ollama.modeloDe('roteador'), m.texto, agentes, skillsCacheadas(), { chatId: m.chatId, traceId: m.traceId, quadro, keepAlive: app.ollama.papel('roteador').keep_alive });
     app.log(`[orq] ${m.canal}:${m.chatId} → ${decisao.rota}${decisao.agente ? '/' + decisao.agente : ''} tier=${decisao.tier} (${decisao.motivo})`);
 
     // Observação não bloqueia o atendimento nem entrega sua sugestão ao dispatcher.
