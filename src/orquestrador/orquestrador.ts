@@ -5,6 +5,7 @@ import { ObservadorJev } from './jev.js';
 // mensagens seguidas em 2 s) — o padrão do plano §4.1.
 import type { App } from '../app.js';
 import type { MensagemRecebida } from '../bus/bus.js';
+import type { Job } from '../fila/types.js';
 import { montarContextoMemoria } from '../cerebro/contexto.js';
 import { classificarSetor } from '../cerebro/memoria.js';
 import { redigir } from '../canais/guarda.js';
@@ -15,6 +16,8 @@ import { rotear, type Decisao } from './roteador.js';
 import { skillsCacheadas } from './skills.js';
 import { Geracoes, cancelarDoChat, lerModo } from './modo-fila.js';
 import { blocoPersonalidade } from './personalidade.js';
+import { PREFIXO, ehJobDeAgente, quadroDoChat } from './quadro.js';
+import { agenteDo, complementoEspera, ehCancelar, jobAlvo, mesmoAssunto } from './triagem.js';
 import { deveEscalar, ehPerguntaStatus, jobsAbertos, REGRA_ROTA_DIRETA, textoSituacao } from './situacao.js';
 
 const JANELA_COLLECT_MS = 2000;
@@ -71,6 +74,11 @@ export class Orquestrador {
         if (s) { this.enviar(m, s); return; }
       }
       const modo = lerModo(app.prefs, m.chatId);
+      // Agente trabalhando neste chat: triagem (cancelar / mesmo assunto / outro assunto), sem interromper.
+      if (modo !== 'interrupt' && !this.emCurso.has(chave)) {
+        const abertos = jobsAbertos(app.fila, chave).filter(ehJobDeAgente);
+        if (abertos.length) { await this.triar(m, abertos); return; }
+      }
       if (modo === 'interrupt') {
         // Independe de `emCurso`: o caso comum é agente rodando na fila com a
         // resposta direta já encerrada. Avança a geração (descarta resposta
@@ -110,7 +118,9 @@ export class Orquestrador {
     const chave = `${m.canal}:${m.chatId}`;
     const geracao = this.geracoes.atual(chave);
     const agentes = agentesCacheados();
-    const decisao = await rotear(app.gateway, app.ollama.modeloDe('roteador'), m.texto, agentes, skillsCacheadas(), { chatId: m.chatId, traceId: m.traceId });
+    // Quadro do chat: o mesmo retrato (fila agora) para roteador e rota direta; o agente lê o seu no worker.
+    const quadro = quadroDoChat(app.fila, chave, app.agora());
+    const decisao = await rotear(app.gateway, app.ollama.modeloDe('roteador'), m.texto, agentes, skillsCacheadas(), { chatId: m.chatId, traceId: m.traceId, quadro });
     app.log(`[orq] ${m.canal}:${m.chatId} → ${decisao.rota}${decisao.agente ? '/' + decisao.agente : ''} tier=${decisao.tier} (${decisao.motivo})`);
 
     // Observação não bloqueia o atendimento nem entrega sua sugestão ao dispatcher.
@@ -126,7 +136,7 @@ export class Orquestrador {
     if (decisao.rota === 'agente') { await this.despacharAgente(m, decisao, memoria); return; }
 
     const historico = app.cerebro.ultimosTurnos(m.chatId, MAX_CONTEXTO_TURNOS);
-    const sistema = [identidade(), REGRA_ROTA_DIRETA, blocoPersonalidade(app.prefs, m.chatId), app.vault.ler('USER.md', 800), memoria].filter(Boolean).join('\n\n');
+    const sistema = [identidade(), REGRA_ROTA_DIRETA, quadro, blocoPersonalidade(app.prefs, m.chatId), app.vault.ler('USER.md', 800), memoria].filter(Boolean).join('\n\n');
     const r = await app.gateway.chamar({
       tier: decisao.tier, agente: 'direto', chatId: m.chatId, traceId: m.traceId, motivoTier: decisao.tier !== 'local' ? decisao.motivo : undefined,
       temperatura: 0.4, maxTokens: 1200, timeoutMs: 180_000, keepAlive: app.ollama.papel('geral').keep_alive,
@@ -140,11 +150,48 @@ export class Orquestrador {
       await this.despacharAgente(m, { rota: 'agente', agente: 'lead', tier: 'premium', motivo: 'rota direta prometeu ação', consultar: [] }, memoria);
       return;
     }
-    this.enviar(m, texto);
+    this.enviar(m, PREFIXO.local + texto);
     this.aprender(m, texto);
   }
 
-  private async despacharAgente(m: MensagemRecebida, d: Decisao, memoria: string): Promise<void> {
+  /** Mensagem nova com agente trabalhando: cancela, vira complemento do mesmo agente, ou espera a vez. */
+  private async triar(m: MensagemRecebida, abertos: Job[]): Promise<void> {
+    const app = this.app;
+    const chave = `${m.canal}:${m.chatId}`;
+    if (ehCancelar(m.texto)) {
+      const n = cancelarDoChat(app.fila, chave, { emVoo: true });
+      this.enviar(m, `⏹ Cancelei ${n} job(s) deste chat.`);
+      return;
+    }
+    const alvo = jobAlvo(abertos)!;
+    // qwen (geral, residente): 6/6 em frases reais; o llama3.2 marcou "outro assunto" em tudo (3/6).
+    const t = await mesmoAssunto(app.gateway, app.ollama.modeloDe('geral'), alvo, m.texto, { chatId: m.chatId, traceId: m.traceId, keepAlive: app.ollama.papel('geral').keep_alive });
+    app.log(`[orq] ${chave} triagem vs #${alvo.id}: ${t.mesmo ? 'mesmo assunto' : 'outro assunto'} (${t.motivo})`);
+    if (t.mesmo) {
+      const agente = agenteDo(alvo);
+      const comp: MensagemRecebida = { ...m, texto: `[Complemento do pedido #${alvo.id}, mesmo assunto]\n${m.texto}` };
+      // Com especialistas consultando, o job `agente:<x>` do pedido ainda não existe:
+      // o complemento espera (apos-agente) para não rodar ANTES do pedido original.
+      if (complementoEspera(abertos)) {
+        const espera = app.fila.enfileirar({
+          fila: 'io', kind: 'function', tarefa: 'apos-agente', input: JSON.stringify({ m: comp, apos: abertos.map((j) => j.id), complemento: { agente } }),
+          chat_id: numOuNull(m.chatId), max_tentativas: 1, flow_ref: chave,
+        });
+        this.enviar(m, `↪️ Mesmo assunto do #${alvo.id}: guardei (#${espera.id}) e entra como complemento (${agente}, mesma conversa) logo depois dele.`);
+        return;
+      }
+      await this.despacharAgente(comp, { rota: 'agente', agente, tier: 'premium', motivo: 'complemento', consultar: [] }, '',
+        (id) => `↪️ Mesmo assunto do #${alvo.id}: vira o job #${id} (${agente}, mesma conversa) e roda logo depois dele.`);
+      return;
+    }
+    const espera = app.fila.enfileirar({
+      fila: 'io', kind: 'function', tarefa: 'apos-agente', input: JSON.stringify({ m, apos: abertos.map((j) => j.id) }),
+      chat_id: numOuNull(m.chatId), max_tentativas: 1, flow_ref: chave,
+    });
+    this.enviar(m, `📥 Outro assunto: ficou na fila (#${espera.id}) e entra depois do #${alvo.id}. /status mostra a situação.`);
+  }
+
+  async despacharAgente(m: MensagemRecebida, d: Decisao, memoria: string, aviso?: (jobId: number) => string): Promise<void> {
     const app = this.app;
     const agente = d.agente ?? 'lead';
     const bloqueio = app.interruptores.bloqueiaAgente(agente);
@@ -164,7 +211,8 @@ export class Orquestrador {
       chat_id: numOuNull(m.chatId), max_tentativas: 1, flow_ref: `${m.canal}:${m.chatId}`,
     });
     const fila = app.fila.listar({ fila: 'agente', status: 'queued' }).length;
-    this.enviar(m, `🧠 ${agente}${consultas.length ? ` (+${consultas.length} especialista${consultas.length > 1 ? 's' : ''})` : ''} — job #${job.id}${fila > 1 ? ` · ${fila - 1} na frente` : ''}. /status ${job.id} acompanha.`);
+    if (aviso) this.enviar(m, aviso(job.id));
+    else this.enviar(m, `🧠 ${agente}${consultas.length ? ` (+${consultas.length} especialista${consultas.length > 1 ? 's' : ''})` : ''} — job #${job.id}${fila > 1 ? ` · ${fila - 1} na frente` : ''}. /status ${job.id} acompanha.`);
     app.cerebro.logarTurno(m.chatId, m.canal, 'user', m.texto, undefined, agente);
   }
 

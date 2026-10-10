@@ -14,7 +14,7 @@ export const MODOS: Modo[] = ['collect', 'followup', 'steer', 'interrupt'];
 export const DESCRICAO: Record<Modo, string> = {
   collect: 'junta mensagens seguidas por 2 s (padrão)',
   followup: 'sem janela; se ocupado, entra na fila',
-  steer: 'se ocupado, substitui o que estava na fila deste chat',
+  steer: 'se ocupado (resposta rápida em voo), substitui o que estava na fila; com agente rodando vale a triagem',
   interrupt: 'cancela tudo deste chat e responde à nova agora',
 };
 const CHAVE = 'fila:modo';

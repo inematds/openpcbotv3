@@ -18,7 +18,7 @@ describe('pergunta de status', () => {
   });
   it('não pega pedido comum nem texto longo', () => {
     expect(ehPerguntaStatus('me explica o que é RAG')).toBe(false);
-    expect(ehPerguntaStatus('situação '.repeat(30))).toBe(false);
+    expect(ehPerguntaStatus('situação '.repeat(12))).toBe(false);
   });
 });
 

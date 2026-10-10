@@ -44,12 +44,13 @@ export function identidade(): string {
   return 'Você é o openpcbot v3, assistente pessoal do Nei (PT-BR). Seja direto, prático e honesto sobre o que não conseguiu fazer.';
 }
 
-export function montarPrompt(e: EntradaAgente, agente: Agente): string {
+export function montarPrompt(e: EntradaAgente, agente: Agente, quadro?: string): string {
   const partes: string[] = [identidade()];
   if (agente.soul) partes.push(`[Persona do agente ${agente.nome}]\n${agente.soul}`);
   if (e.personalidade) partes.push(e.personalidade);
   if (agente.prompt) partes.push(`[Agente ${agente.nome}]\n${agente.prompt}`);
   if (e.somenteLeitura || agente.somenteLeitura) partes.push('MODO SOMENTE LEITURA: não crie, edite ou apague arquivos, não faça commit. Só leia e responda.');
+  if (quadro) partes.push(quadro);
   if (e.memoria) partes.push(e.memoria);
   if (e.consultas && Object.keys(e.consultas).length) {
     partes.push('[Contexto dos especialistas]\n' + Object.entries(e.consultas).map(([id, t]) => `## ${id}\n${t.slice(0, 3000)}`).join('\n\n'));
@@ -115,7 +116,7 @@ export class Sessoes {
  * `promptDe` do worker da lane `agente`: transforma o job (input JSON =
  * EntradaAgente) no ContextoExecucao do runner `claude`.
  */
-export function criarPromptDe(o: { sessoes: Sessoes; registro: RegistroCusto; claudeBin: string; bloqueiaAgente?: (id: string) => string | null }) {
+export function criarPromptDe(o: { sessoes: Sessoes; registro: RegistroCusto; claudeBin: string; bloqueiaAgente?: (id: string) => string | null; quadro?: (job: Job) => string }) {
   return async (job: Job): Promise<ContextoExecucao> => {
     const e = JSON.parse(job.input) as EntradaAgente;
     // Job enfileirado ANTES do /parar: falha aqui, sem gastar tokens.
@@ -125,7 +126,7 @@ export function criarPromptDe(o: { sessoes: Sessoes; registro: RegistroCusto; cl
     const sessao = e.somenteLeitura ? undefined : o.sessoes.obter(e.chatId, agente.id);
     const t0 = Date.now();
     return {
-      prompt: montarPrompt(e, agente),
+      prompt: montarPrompt(e, agente, e.somenteLeitura ? undefined : o.quadro?.(job)),
       cwd: existsSync(agente.cwd) ? agente.cwd : RAIZ,
       perfil: { motor: 'claude', modelo: job.modelo ?? agente.modelo, esforco: job.esforco ?? agente.esforco },
       vars: { ...(sessao ? { OPENPCBOT_SESSION: sessao } : {}), ...(agente.mcpConfig && existsSync(agente.mcpConfig) ? { OPENPCBOT_MCP: agente.mcpConfig } : {}), OPENPCBOT_CHAT: e.chatId, OPENPCBOT_TRACE: e.traceId ?? '' },

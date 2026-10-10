@@ -1,5 +1,19 @@
 # CHANGELOG — openpcbotv3
 
+## 3.6.4 — 2026-10-10
+
+- Quadro do chat (`src/orquestrador/quadro.ts`): assunto ativo, o que roda, a fila e a última entrega, lidos da
+  fila na hora de cada chamada (nunca guardado). Entra no prompt do roteador, da rota direta (qwen) e do agente
+  (`claude -p`, e no Codex quando virar motor, via `montarPrompt`); o agente se vê como "você está executando #N".
+- Prefixo de quem respondeu: `🏠` rota local, `🧠 #N agente` entrega do agente, `📋` situação por código.
+- Triagem com agente trabalhando no chat (`src/orquestrador/triagem.ts`), sem interromper o agente:
+  "para/cancela" cancela; mesmo assunto vira complemento no MESMO agente e sessão, rodando logo depois do atual;
+  outro assunto espera a vez (tarefa `apos-agente`) e só então é roteado. Com especialistas consultando, o
+  complemento também espera, para não rodar antes do pedido original.
+- Classificador da triagem = qwen (`geral`, residente): 6/6 em frases reais; o llama3.2 marcou "outro assunto"
+  em tudo (3/6). `steer` passa a valer só com resposta rápida em voo; com agente aberto vale a triagem.
+- Verificação: 221 testes.
+
 ## 3.5.4 — 2026-10-09
 
 - Status por código: pergunta de andamento ("qual situação?", "terminou?") com job aberto no chat é respondida

@@ -16,6 +16,7 @@ import { RAIZ } from '../config/env.js';
 import { executarComando } from './comandos.js';
 import type { EntradaAgente } from './agente-cli.js';
 import type { Orquestrador } from './orquestrador.js';
+import { PREFIXO } from './quadro.js';
 
 export function criarTarefas(app: App, orq: () => Orquestrador): Record<string, Tarefa> {
   return {
@@ -23,6 +24,17 @@ export function criarTarefas(app: App, orq: () => Orquestrador): Record<string, 
     responder: async ({ job }) => {
       const m = JSON.parse(job.input) as MensagemRecebida;
       await orq().responder(m);
+      return 'ok';
+    },
+
+    /** Mensagem de outro assunto que chegou com agente trabalhando: espera os jobs `apos` e então é roteada. */
+    'apos-agente': async ({ job, fila, aindaNao }) => {
+      const { m, apos, complemento } = JSON.parse(job.input) as { m: MensagemRecebida; apos: number[]; complemento?: { agente: string } };
+      const abertos = apos.map((id) => fila.obter(id)).filter((j): j is Job => !!j && (j.status === 'queued' || j.status === 'running'));
+      if (abertos.length) aindaNao(`esperando #${abertos.map((j) => j.id).join(', #')}`, 15);
+      // Complemento: vai direto ao mesmo agente (o job do pedido já está na lane, à frente).
+      if (complemento) await orq().despacharAgente(m, { rota: 'agente', agente: complemento.agente, tier: 'premium', motivo: 'complemento', consultar: [] }, '');
+      else await orq().responder(m);
       return 'ok';
     },
 
@@ -129,6 +141,7 @@ export function criarEntregador(app: App) {
     if (job.status === 'done') {
       texto = (job.resultado ?? '').trim() || '(agente terminou sem texto)';
       app.cerebro.logarTurno(entrada.chatId, canal, 'assistant', texto, undefined, entrada.agente);
+      texto = PREFIXO.agente(job.id, entrada.agente) + texto;
     } else {
       texto = `❌ Job #${job.id} (${entrada.agente}) falhou: ${(job.erro ?? '?').slice(0, 400)}`;
     }

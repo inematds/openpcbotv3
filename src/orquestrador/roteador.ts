@@ -67,7 +67,7 @@ export async function rotear(
   mensagem: string,
   agentes: Agente[],
   skills: SkillInfo[],
-  ctx: { chatId: string; traceId: string },
+  ctx: { chatId: string; traceId: string; quadro?: string },
 ): Promise<Decisao> {
   if (CONSULTA_RE.test(mensagem)) return { rota: 'agente', agente: 'lead', tier: 'premium', motivo: 'heurística: consulta/estado', consultar: [] };
   if (mensagem.length < 12 && !FERRAMENTA_RE.test(mensagem)) return { rota: 'direto', tier: 'local', motivo: 'curta' };
@@ -75,7 +75,7 @@ export async function rotear(
     const r = await gateway.chamar({
       tier: 'local', modelo: modeloRoteador, json: true, temperatura: 0.1, maxTokens: 160, timeoutMs: 30_000,
       agente: 'roteador', chatId: ctx.chatId, traceId: ctx.traceId,
-      mensagens: [{ role: 'system', content: promptRoteador(agentes, skills) }, { role: 'user', content: mensagem.slice(0, 2000) }],
+      mensagens: [{ role: 'system', content: [promptRoteador(agentes, skills), ctx.quadro].filter(Boolean).join('\n\n') }, { role: 'user', content: mensagem.slice(0, 2000) }],
     });
     const d = parsearDecisao(r.texto, agentes);
     if (d.rota === 'direto' && FERRAMENTA_RE.test(mensagem) && /\b(no|na|do|da|desse|deste|nesse|neste)\s+(projeto|repo|arquivo|pasta)\b/i.test(mensagem)) {

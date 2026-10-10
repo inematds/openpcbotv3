@@ -10,7 +10,7 @@ const STATUS_RE = /(?<![\p{L}\p{N}])(situa[çc][ãa]o|status|andamento|progresso
 
 export function ehPerguntaStatus(texto: string): boolean {
   const t = texto.trim();
-  return t.length > 0 && t.length <= 160 && STATUS_RE.test(t);
+  return t.length > 0 && t.length <= 80 && STATUS_RE.test(t);
 }
 
 /** Jobs abertos (na fila ou rodando) deste chat; `flow_ref` = `canal:chatId`. */
@@ -22,12 +22,19 @@ export function jobsAbertos(fila: FilaSqlite, flowRef: string): Job[] {
   return abertos;
 }
 
-function pedidoDe(job: Job): string {
+export function pedidoDe(job: Job): string {
   try {
     const i = JSON.parse(job.input) as { texto?: string; entrada?: { texto?: string } };
     return (i.texto ?? i.entrada?.texto ?? '').replace(/\s+/g, ' ').trim();
   } catch { return ''; }
 }
+
+/** Tarefas internas com nome legível no quadro de situação. */
+const NOMES: Record<string, string> = {
+  'apos-agente': 'mensagem sua esperando a vez',
+  responder: 'mensagem sua na fila',
+  'agente-lead': 'agente esperando os especialistas',
+};
 
 function minutos(seg: number): string {
   const m = Math.max(0, Math.round(seg / 60));
@@ -38,7 +45,7 @@ function minutos(seg: number): string {
 export function textoSituacao(jobs: Job[], agora: number): string | null {
   if (!jobs.length) return null;
   const linhas = jobs.map((j) => {
-    const quem = j.tarefa.replace(/^(agente|consulta):/, '');
+    const quem = NOMES[j.tarefa] ?? j.tarefa.replace(/^(agente|consulta):/, '');
     const estado = j.status === 'running' ? `rodando há ${minutos(agora - (j.iniciado_em ?? j.criado_em))}` : `na fila há ${minutos(agora - j.criado_em)}`;
     const p = pedidoDe(j);
     return `• #${j.id} ${quem} — ${estado}${p ? `\n  pedido: "${p.slice(0, 100)}${p.length > 100 ? '…' : ''}"` : ''}`;

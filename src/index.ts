@@ -35,6 +35,7 @@ import { Orquestrador } from './orquestrador/orquestrador.js';
 import { Prefs } from './config/prefs.js';
 import { Interruptores } from './orquestrador/interruptores.js';
 import { criarEntregador, criarTarefas } from './orquestrador/tarefas-fila.js';
+import { quadroDoChat } from './orquestrador/quadro.js';
 import { redigir } from './canais/guarda.js';
 import { ligarTelegram } from './canais/telegram.js';
 import { ligarHttp } from './canais/http.js';
@@ -105,7 +106,7 @@ async function main(): Promise<void> {
 
   // Workers: um por lane, com o runner claude configurado para o v3.
   const runnerClaude = new ClaudeRunner({ binario: cfg.claudeBin, montarArgs: (ctx) => argumentosCli(cfg.claudeBin, ctx) });
-  const promptDe = criarPromptDe({ sessoes: app.sessoes, registro: app.registro, claudeBin: cfg.claudeBin, bloqueiaAgente: (id) => app.interruptores.bloqueiaAgente(id) });
+  const promptDe = criarPromptDe({ sessoes: app.sessoes, registro: app.registro, claudeBin: cfg.claudeBin, bloqueiaAgente: (id) => app.interruptores.bloqueiaAgente(id), quadro: (job) => quadroDoChat(fila, job.flow_ref, agora(), job.id) });
   const entregar = criarEntregador(app);
   const workers = FILAS.map((f) => new Worker(fila, {
     fila: f, dono: cfg.instancia, concorrencia: CONCORRENCIAS[f], leaseSegundos: 120,
