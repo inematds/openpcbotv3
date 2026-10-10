@@ -126,7 +126,7 @@ export function criarPromptDe(o: { sessoes: Sessoes; registro: RegistroCusto; cl
     const sessao = e.somenteLeitura ? undefined : o.sessoes.obter(e.chatId, agente.id);
     const t0 = Date.now();
     return {
-      prompt: montarPrompt(e, agente, e.somenteLeitura ? undefined : o.quadro?.(job)),
+      prompt: montarPrompt(e, agente, o.quadro?.(job)),
       cwd: existsSync(agente.cwd) ? agente.cwd : RAIZ,
       perfil: { motor: 'claude', modelo: job.modelo ?? agente.modelo, esforco: job.esforco ?? agente.esforco },
       vars: { ...(sessao ? { OPENPCBOT_SESSION: sessao } : {}), ...(agente.mcpConfig && existsSync(agente.mcpConfig) ? { OPENPCBOT_MCP: agente.mcpConfig } : {}), OPENPCBOT_CHAT: e.chatId, OPENPCBOT_TRACE: e.traceId ?? '' },

@@ -1,5 +1,13 @@
 # CHANGELOG — openpcbotv3
 
+## 3.6.5 — 2026-10-10
+
+- Especialistas só-leitura (`consulta:*`) também recebem o quadro do chat. No teste ao vivo o `research` recebeu
+  só "ah, conta também os da pasta raiz" e respondeu "me perdi no contexto".
+- Teste ao vivo (chat http `teste-triagem`): outro assunto esperou o #53772 e foi respondido depois; complemento
+  com especialistas guardado (#53778) e executado DEPOIS do pedido (#53779 → #53780, mesma sessão do lead);
+  "qual situação?" respondido por código.
+
 ## 3.6.4 — 2026-10-10
 
 - Quadro do chat (`src/orquestrador/quadro.ts`): assunto ativo, o que roda, a fila e a última entrega, lidos da
