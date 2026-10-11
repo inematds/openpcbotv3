@@ -16,6 +16,14 @@ export interface ContextoExecucao {
    */
   timeoutMs?: number;
   /**
+   * Vigia de INATIVIDADE no começo: se `arquivo` não for modificado em
+   * `prazoMs`, a execução morre com erro próprio ("não respondeu"). Existe
+   * porque um `--resume` de sessão gigante pode ficar mudo (11/10/2026: duas
+   * execuções sem escrever nada por 20 min) e, com teto de produção de horas,
+   * travaria a fila inteira esse tempo todo. Desliga na primeira escrita.
+   */
+  vigia?: { arquivo: string; prazoMs: number };
+  /**
    * Traduz o stdout bruto no RESULTADO do job (para skills: o caminho declarado
    * em `RESULT:`). Mora aqui, e não no worker, porque o que conta como resultado
    * é conhecimento do DOMÍNIO — `fila/` não sabe o que é `RESULT:`. Ausente: o

@@ -293,6 +293,16 @@ export const MIGRATIONS: Migration[] = [
       CREATE INDEX idx_jev_comparacoes_chat ON jev_comparacoes(chat_id, em DESC);
     `,
   },
+  {
+    version: 10,
+    nome: 'jobs_sessao',
+    // Sessão do `claude` que cada job de agente usou/deixou (3.8.5). Sem isto,
+    // `/job N texto` não tem como continuar a conversa DAQUELE job — a tabela
+    // `sessions` guarda só a última por (chat, agente).
+    sql: `
+      ALTER TABLE jobs ADD COLUMN sessao TEXT;
+    `,
+  },
 ];
 
 const SCHEMA_CONTROLE = `

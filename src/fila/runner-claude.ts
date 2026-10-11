@@ -1,6 +1,7 @@
 // Runner do motor `claude`. Único lugar do sistema que conhece a CLI do Claude.
 // Trocar de motor = escrever outro arquivo como este e registrá-lo em RUNNERS.
 import { spawn } from 'node:child_process';
+import { statSync } from 'node:fs';
 
 import { RUNNERS, type ContextoExecucao, type Execucao, type Runner } from './runner.js';
 
@@ -65,6 +66,10 @@ export class ClaudeRunner implements Runner {
   iniciar(ctx: ContextoExecucao): Execucao {
     // `detached: true` cria um process group próprio: cancelar mata a ÁRVORE
     // (o agente abre subprocessos), não só o pai. Nunca `shell: true`.
+    // mtime do arquivo vigiado lido ANTES do spawn: o filho pode escrever antes da próxima linha.
+    const vigia = ctx.vigia;
+    const mtime = (): number => { try { return vigia ? statSync(vigia.arquivo).mtimeMs : -1; } catch { return -1; } };
+    const mtimeInicial = mtime();
     const filho = spawn(this.binario, this.montarArgs(ctx), {
       cwd: ctx.cwd,
       detached: true,
@@ -106,11 +111,32 @@ export class ClaudeRunner implements Runner {
       relogioTimeout.unref?.();
     }
 
+    // Vigia de inatividade (ver `ContextoExecucao.vigia`): compara o mtime do
+    // arquivo com o do início; mudou → desliga; prazo sem mudança → mata.
+    let mudo = false;
+    let relogioVigia: NodeJS.Timeout | undefined;
+    if (vigia) {
+      const t0 = Date.now();
+      relogioVigia = setInterval(() => {
+        if (mtime() !== mtimeInicial) { clearInterval(relogioVigia); return; }
+        if (Date.now() - t0 >= vigia.prazoMs) {
+          clearInterval(relogioVigia);
+          mudo = true;
+          matarArvore('SIGKILL');
+        }
+      }, Math.min(30_000, Math.max(20, Math.floor(vigia.prazoMs / 4))));
+      relogioVigia.unref?.();
+    }
+
     const promessa = new Promise<string>((resolve, reject) => {
-      filho.on('error', (e) => { clearTimeout(relogioTimeout); reject(e); });
+      filho.on('error', (e) => { clearTimeout(relogioTimeout); clearInterval(relogioVigia); reject(e); });
       filho.on('close', (code) => {
         clearTimeout(relogioTimeout);
+        clearInterval(relogioVigia);
         marcarFechado();
+        if (mudo) {
+          return reject(new Error(`${this.binario}: sessão retomada não respondeu em ${Math.round((vigia?.prazoMs ?? 0) / 1000)}s — descartada`));
+        }
         if (expirou) {
           return reject(new Error(`${this.binario}: timeout de ${Math.round((timeoutMs ?? 0) / 1000)}s — execução encerrada`));
         }
@@ -131,6 +157,7 @@ export class ClaudeRunner implements Runner {
       cancelar: async () => {
         cancelado = true;
         clearTimeout(relogioTimeout);
+        clearInterval(relogioVigia);
         matarArvore('SIGTERM');
         // Corrida contra a saída do filho: o processo bem-comportado morre no
         // SIGTERM em milissegundos. Esperar os 2s cheios em TODO cancelamento

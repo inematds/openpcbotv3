@@ -2,6 +2,7 @@ import { comandoJev } from './jev.js';
 // Comandos de barra. Devolve texto (markdown simples) ou `null` quando o
 // comando não existe (cai para conversa normal).
 import type { App } from '../app.js';
+import type { Job } from '../fila/types.js';
 import type { MensagemRecebida } from '../bus/bus.js';
 import { FILAS } from '../fila/filas.js';
 import { rssMb } from '../ollama/ram.js';
@@ -12,9 +13,11 @@ import { DESCRICAO, MODOS, gravarModo, lerModo, parsearModo } from './modo-fila.
 import { formatarMedicao, medirContexto } from './contexto-cmd.js';
 import { definirPersonalidade, lerPersonalidade, listarPersonalidades, personalidadeDoChat } from './personalidade.js';
 import { skillsCacheadas } from './skills.js';
+import { jobsAbertos, pedidoDe, textoSituacao } from './situacao.js';
 
 const AJUDA = `*openpcbot v3* — comandos
-/status [id] — fila por lane, ou um job
+/status [id] — seus jobs abertos + fila, ou o detalhe de um job
+/job <id> <texto> — continua aquele job (mesma conversa dele), na vez dele
 /cancelar <id> · /prioridade <id> <n>
 /usage — custo hoje/semana/mês por tier e agente
 /jev [observar|off|historico|relatorio dia|semana] — comparar com Jev sem mudar a rota
@@ -25,7 +28,7 @@ const AJUDA = `*openpcbot v3* — comandos
 /daily — resumo do dia (tarefas, custo, fila)
 /fontes — chats observados e o que já virou memória (/fontes ingerir [gmail|agenda])
 /cron lista|on <nome>|off <nome>
-/agentes · /skills · /novo (limpa sessão e conversa) · /compress
+/agentes · /skills · /novo (conversa nova daqui pra frente; o que já roda termina) · /compress
 /consolidar — roda a consolidação de memória agora
 
 *Controle da conversa*
@@ -52,6 +55,10 @@ interrupt: cancela fila e agentes deste chat e responde à nova agora. Resposta 
   personality: `*/personality [nome|off]*
 Camadas somadas: IDENTIDADE.md (base) + agents/<id>/SOUL.md (agente) + personalidades/<nome>.md (este chat).
 Trocar apaga as sessões retomadas do chat para a voz nova valer. Sem argumento: lista as disponíveis.`,
+  novo: `*/novo*
+Daqui para frente o agente começa conversa nova. NÃO cancela nada: o que já está rodando ou na fila termina na conversa de antes e não grava por cima da nova. Apaga o histórico curto do chat (/compress mantém).`,
+  job: `*/job <id> <texto>*
+Manda um complemento para o job <id> deste chat. Não entra no meio da execução (limite do claude -p): vira um job novo que retoma a conversa DAQUELE job e roda na vez dele — se o <id> ainda roda, espera ele acabar. Se o <id> não deixou conversa (travou), começa nova levando o pedido original.`,
   context: `*/context [detail] [texto]*
 Mede tokens por camada do prompt (identidade, persona, USER.md, memória+insights, histórico, skills, regras, mensagem) para resposta direta e agente. detail lista os itens. Sem texto usa sua última mensagem. Não toca saliência.`,
 };
@@ -81,16 +88,48 @@ export async function executarComando(app: App, m: MensagemRecebida): Promise<st
         const j = app.fila.obter(Number(args[0]));
         if (!j) return `Job #${args[0]} não existe.`;
         const dur = j.iniciado_em ? fmtDur((j.terminado_em ?? app.agora()) - j.iniciado_em) : '-';
+        const p = pedidoDe(j);
         return `*Job #${j.id}* ${j.fila}/${j.tarefa}\nstatus: ${j.status} · tentativas ${j.tentativas}/${j.max_tentativas} · ${dur}` +
+          (p ? `\npedido: "${p.slice(0, 200)}${p.length > 200 ? '…' : ''}"` : '') +
+          (j.kind === 'agent' ? `\nconversa salva: ${j.sessao ? 'sim (/job ' + j.id + ' <texto> continua)' : 'não'}` : '') +
           (j.erro ? `\nerro: ${j.erro.slice(0, 300)}` : '') + (j.resultado && j.status === 'done' ? `\n\n${j.resultado.slice(0, 1500)}` : '');
       }
+      // Primeiro o que é SEU e está aberto; o cron `lembretes` (1/min) enterrava tudo nos "recentes".
+      const meus = textoSituacao(jobsAbertos(app.fila, `${m.canal}:${chat}`), app.agora());
       const linhas = FILAS.map((f) => {
         const q = app.fila.listar({ fila: f, status: 'queued' }).length;
         const r = app.fila.listar({ fila: f, status: 'running' }).length;
         return `${f}: ${r} rodando · ${q} na fila`;
       });
-      const recentes = app.fila.listar({ limite: 5 }).map((j) => `#${j.id} ${j.fila}/${j.tarefa} ${j.status}`);
-      return `*Fila*\n${linhas.join('\n')}\n\n*Recentes*\n${recentes.join('\n') || '-'}`;
+      const recentes = (app.db.prepare("SELECT * FROM jobs WHERE fila != 'cron' ORDER BY id DESC LIMIT 5").all() as Job[]).map((j) => {
+        const p = pedidoDe(j);
+        return `#${j.id} ${j.tarefa} ${j.status}${p ? ` — "${p.slice(0, 50)}${p.length > 50 ? '…' : ''}"` : ''}`;
+      });
+      return `${meus ?? 'Nada seu rodando ou na fila.'}\n\n*Fila*\n${linhas.join('\n')}\n\n*Recentes (sem cron)*\n${recentes.join('\n') || '-'}`;
+    }
+
+    case 'job': {
+      const id = Number(args[0]);
+      const texto = args.slice(1).join(' ').trim();
+      if (!id || !texto) return 'Uso: /job <id> <texto> — continua aquele job na mesma conversa dele.';
+      const j = app.fila.obter(id);
+      const flow = `${m.canal}:${chat}`;
+      if (!j || j.flow_ref !== flow) return `Job #${id} não é deste chat.`;
+      if (j.kind !== 'agent' || !j.tarefa.startsWith('agente:')) return `Job #${id} (${j.tarefa}) não é de agente; /job só continua job de agente.`;
+      const agente = j.tarefa.slice('agente:'.length);
+      const original = pedidoDe(j);
+      const novo = app.fila.enfileirar({
+        fila: 'agente', kind: 'agent', tarefa: `agente:${agente}`,
+        input: JSON.stringify({
+          chatId: chat, canal: m.canal, agente, continuaJob: id,
+          texto: `[Continuação do job #${id} — pedido original: "${original.slice(0, 800)}"]\n${texto}`,
+        }),
+        chat_id: /^-?\d+$/.test(chat) ? Number(chat) : null, max_tentativas: 1, flow_ref: flow,
+      });
+      app.cerebro.logarTurno(chat, m.canal, 'user', texto, undefined, agente);
+      const aberto = j.status === 'running' || j.status === 'queued';
+      const conversa = aberto ? 'na mesma conversa dele' : j.sessao ? 'na mesma conversa dele' : 'em conversa nova (ele não deixou conversa salva), levando o pedido original';
+      return `↪️ Continuação do #${id} virou o job #${novo.id} (${agente}), ${conversa}.${aberto ? ` Roda quando o #${id} terminar.` : ''} /status ${novo.id} acompanha.`;
     }
 
     case 'cancelar': {
@@ -186,9 +225,12 @@ export async function executarComando(app: App, m: MensagemRecebida): Promise<st
     case 'novo':
     case 'newchat':
     case 'compress': {
-      const s = app.sessoes.limpar(chat);
+      // Em ordem, sem cancelar nada (3.8.5): ver `Sessoes.marcarNovo`.
+      app.sessoes.marcarNovo(chat);
       const c = cmd === 'compress' ? 0 : app.cerebro.limparConversa(chat);
-      return `Sessões limpas: ${s}${cmd === 'compress' ? ' (histórico mantido; próximo turno começa sessão nova)' : ` · histórico apagado: ${c} turnos`}.`;
+      const abertos = jobsAbertos(app.fila, `${m.canal}:${chat}`).length;
+      return `🆕 Conversa nova a partir da próxima mensagem${cmd === 'compress' ? ' (histórico mantido)' : ` · histórico apagado: ${c} turnos`}.` +
+        (abertos ? ` ${abertos} job(s) seu(s) já aberto(s) seguem na conversa de antes e terminam normalmente.` : '');
     }
 
     case 'consolidar': {

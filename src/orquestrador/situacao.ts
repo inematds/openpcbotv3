@@ -53,6 +53,27 @@ export function textoSituacao(jobs: Job[], agora: number): string | null {
   return `📋 Situação agora (lida da fila, sem modelo):\n${linhas.join('\n')}\n\nAviso aqui quando terminar. /status <número> mostra o detalhe.`;
 }
 
+/**
+ * Aviso de job de agente LONGO ainda rodando (heartbeat de 30 min, 3.8.5): com
+ * teto de produção de horas, silêncio parecia travamento. Só agente:* (o
+ * especialista consulta:* é parte de outro pedido) e só passados `minimoSeg`.
+ */
+export function avisosAindaRodando(jobs: Job[], agora: number, minimoSeg = 25 * 60): { canal: string; chatId: string; texto: string }[] {
+  const avisos: { canal: string; chatId: string; texto: string }[] = [];
+  for (const j of jobs) {
+    if (j.status !== 'running' || !j.tarefa.startsWith('agente:') || !j.iniciado_em || agora - j.iniciado_em < minimoSeg) continue;
+    let e: { canal?: string; chatId?: string };
+    try { e = JSON.parse(j.input) as { canal?: string; chatId?: string }; } catch { continue; }
+    if (!e.chatId) continue;
+    const p = pedidoDe(j);
+    avisos.push({
+      canal: e.canal ?? 'telegram', chatId: e.chatId,
+      texto: `⏳ #${j.id} ainda rodando há ${minutos(agora - j.iniciado_em)}${p ? ` — "${p.slice(0, 80)}${p.length > 80 ? '…' : ''}"` : ''}. /status ${j.id} · /job ${j.id} <texto> complementa.`,
+    });
+  }
+  return avisos;
+}
+
 /** Marcador que a rota direta devolve quando precisaria de ferramenta. */
 export const MARCA_ESCALAR = '[ESCALAR]';
 

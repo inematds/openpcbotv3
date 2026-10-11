@@ -1,5 +1,22 @@
 # CHANGELOG — openpcbotv3
 
+## 3.8.5 — 2026-10-11
+
+Incidente da madrugada de 11/10: três pedidos seguidos morreram no timeout de 20 min retomando a mesma sessão
+gigante (~286k tokens), e o `/status` não mostrava o pedido (enterrado pelo cron `lembretes`).
+
+- `/novo` em ordem, sem cancelar: grava o momento (`prefs.sessao_novo_em`). Job criado antes segue na conversa
+  velha e não grava por cima; job criado depois começa conversa nova. Antes, o job em voo regravava a sessão velha.
+- `/job <id> <texto>`: continuação de um job de agente na conversa DAQUELE job (coluna `jobs.sessao`, migração 10),
+  na vez dele (lane agente é 1 por vez). Só job do próprio chat.
+- `/status` mostra primeiro os seus jobs abertos (pedido + tempo); recentes sem cron e com o pedido. `/status <id>`
+  mostra o pedido e se há conversa salva.
+- Teto por tipo de pedido: produção (vídeo, 9:16, publicar, render, curso…) 3 h; o resto 20 min. Zumbi do
+  heartbeat passa a ser 2× o maior teto (6 h).
+- Vigia de sessão retomada: se o transcript não for escrito em 10 min, mata com "não respondeu" (não espera as
+  3 h). Job morto por timeout ou vigia descarta a sessão do chat: a mensagem seguinte começa limpa.
+- Heartbeat (30 min) avisa no chat "⏳ #id ainda rodando há N min" para job de agente com mais de 25 min.
+
 ## 3.7.5 — 2026-10-10
 
 - Roteador (direto × agente) passa do `llama3.2` para o `qwen3.8:27b` (mesmo modelo do `geral`, já residente; sem

@@ -36,6 +36,8 @@ import { Prefs } from './config/prefs.js';
 import { Interruptores } from './orquestrador/interruptores.js';
 import { criarEntregador, criarTarefas } from './orquestrador/tarefas-fila.js';
 import { quadroDoChat } from './orquestrador/quadro.js';
+import { avisosAindaRodando } from './orquestrador/situacao.js';
+import type { Canal } from './bus/bus.js';
 import { redigir } from './canais/guarda.js';
 import { ligarTelegram } from './canais/telegram.js';
 import { ligarHttp } from './canais/http.js';
@@ -150,7 +152,13 @@ async function main(): Promise<void> {
   void probe();
   const tProbe = setInterval(() => { void probe(); }, app.cfgOllama.probe_segundos * 1000);
   const tCron = setInterval(() => { try { app.cron.tick(); } catch (e) { log(`[cron] ${(e as Error).message}`); } }, 30_000);
-  const bater = (): void => { const r = app.heartbeat.bater(`emVoo=${workers.reduce((s, w) => s + w.emVoo, 0)}`); for (const a of r.alertas) app.alertas.disparar(a); };
+  const bater = (): void => {
+    const r = app.heartbeat.bater(`emVoo=${workers.reduce((s, w) => s + w.emVoo, 0)}`);
+    for (const a of r.alertas) app.alertas.disparar(a);
+    for (const a of avisosAindaRodando(fila.listar({ fila: 'agente', status: 'running' }), agora())) {
+      bus.emit('mensagem.enviar', { canal: a.canal as Canal, chatId: a.chatId, texto: a.texto });
+    }
+  };
   bater();
   const tHb = setInterval(bater, 30 * 60_000);
   const tNotif = setInterval(() => { for (const j of fila.pendentesDeNotificacao()) void entregar(j).then(() => fila.marcarNotificado(j.id)).catch(() => {}); }, 20_000);
