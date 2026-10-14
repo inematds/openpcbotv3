@@ -1,5 +1,17 @@
 # CHANGELOG — openpcbotv3
 
+## 3.9.5 — 2026-10-14
+
+Incidente de 13/10: dois reels r7e pedidos pelo Telegram (#57172 às 00:57 e #58262 às 16:35) morreram como
+"lease vencido sem ack". O agente, a montagem (`reel7etapas.py montar`, pico de 1,49 GB num só processo) e o
+ffmpeg rodavam DENTRO do cgroup do serviço (MemoryHigh 1,5G / MemoryMax 2G): o serviço entrou em thrashing
+(pressão 96%, swap 2,8 G) e o systemd-oomd matou o bot inteiro, junto com a aventuras-fila, terminais e o Firefox.
+
+- Cada agente roda num escopo systemd próprio (`systemd-run --user --scope`, `MemoryMax=16G`, sem swap). O teto do
+  serviço volta a valer só para o bot. Estourou → morre só aquele job, com o erro "provável falta de memória".
+- `AGENTE_MEMORIA_MAX` muda o teto (`off` = comportamento antigo). `--scope` faz exec no mesmo PID: cancelar,
+  timeout e vigia continuam matando a árvore toda (testado).
+
 ## 3.8.5 — 2026-10-11
 
 Incidente da madrugada de 11/10: três pedidos seguidos morreram no timeout de 20 min retomando a mesma sessão

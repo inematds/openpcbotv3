@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { ClaudeRunner, argumentosClaude } from './runner-claude.js';
+import { ClaudeRunner, argumentosClaude, comandoComTeto } from './runner-claude.js';
 import { RUNNERS } from './runner.js';
 
 /** O caminho do sleep varia por distro; o repo já checa os dois. */
@@ -31,6 +31,35 @@ describe('argumentosClaude', () => {
     const args = argumentosClaude({ ...ctx('sonnet', 'low'), prompt: 'rm -rf / ; echo oi' });
     expect(args[args.length - 1]).toBe('rm -rf / ; echo oi');
     expect(args.join(' ')).not.toContain('&&');
+  });
+});
+
+describe('comandoComTeto (escopo systemd do agente)', () => {
+  it('sem teto: o binário direto', () => {
+    expect(comandoComTeto('claude', ['-p', 'x'])).toEqual(['claude', ['-p', 'x']]);
+  });
+  it('com teto: systemd-run --scope com MemoryMax e sem swap, binário depois de --', () => {
+    const [cmd, args] = comandoComTeto('claude', ['-p', 'x'], '16G');
+    expect(cmd).toBe('systemd-run');
+    expect(args).toContain('--scope');
+    expect(args).toContain('MemoryMax=16G');
+    expect(args).toContain('MemorySwapMax=0');
+    expect(args.join(' ')).not.toContain('-p x --'); // o prompt não vira nome do escopo
+    expect(args).toContain('--description=openpcbotv3 agente');
+    expect(args.slice(args.indexOf('--') + 1)).toEqual(['claude', '-p', 'x']);
+  });
+  // Só onde há systemd de usuário (o servidor do bot); em CI sem user bus, pula.
+  const temUserBus = !!process.env.XDG_RUNTIME_DIR && existsSync(join(process.env.XDG_RUNTIME_DIR, 'bus'));
+  it.skipIf(!temUserBus)('estourou o teto → morre só o filho, com erro de memória', async () => {
+    const r = new ClaudeRunner({
+      binario: process.execPath, memoriaMax: '64M',
+      montarArgs: () => ['-e', 'const a=[];for(;;)a.push(Buffer.alloc(8<<20,1))'],
+    });
+    await expect(r.iniciar(ctx('opus', 'high')).aguardar()).rejects.toThrow(/memória/);
+  }, 30_000);
+  it.skipIf(!temUserBus)('dentro do teto → saída normal', async () => {
+    const r = new ClaudeRunner({ binario: '/bin/echo', memoriaMax: '256M', montarArgs: () => ['RESULT: ok'] });
+    await expect(r.iniciar(ctx('opus', 'high')).aguardar()).resolves.toBe('RESULT: ok');
   });
 });
 

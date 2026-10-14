@@ -77,13 +77,15 @@ export interface Config {
   whatsappAtivo: boolean;
   slackAtivo: boolean;
   claudeBin: string;
+  /** Teto de memória do escopo systemd de cada agente (`AGENTE_MEMORIA_MAX`, padrão 16G; `off` desliga). */
+  agenteMemoriaMax?: string;
   codexBin: string;
   logLevel: string;
 }
 
 export function lerConfig(): Config {
   return {
-    versao: '3.8.5',
+    versao: '3.9.5',
     instancia: `${hostname()}:${process.pid}`,
     telegramToken: process.env.TELEGRAM_BOT_TOKEN_V3 || undefined,
     chatPermitido: process.env.ALLOWED_CHAT_ID || undefined,
@@ -100,6 +102,7 @@ export function lerConfig(): Config {
     whatsappAtivo: process.env.WHATSAPP_ENABLED === '1',
     slackAtivo: process.env.SLACK_ENABLED === '1',
     claudeBin: process.env.CLAUDE_BIN || 'claude',
+    agenteMemoriaMax: process.env.AGENTE_MEMORIA_MAX === 'off' ? undefined : (process.env.AGENTE_MEMORIA_MAX || '16G'),
     codexBin: process.env.CODEX_BIN || 'codex',
     logLevel: process.env.LOG_LEVEL || 'info',
   };

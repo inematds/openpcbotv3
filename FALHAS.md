@@ -2,6 +2,7 @@
 
 | data | o que quebrou | menor correção | prompt \| infra |
 |---|---|---|---|
+| 2026-10-14 | Reels r7e pelo bot (#57172, #58262) morreram como "lease vencido": montagem (~1,5 GB) rodava no cgroup do serviço (MemoryMax 2G), thrashing e o systemd-oomd matou o bot inteiro | agente em escopo systemd próprio com MemoryMax=16G sem swap (3.9.5) | infra |
 | 2026-10-11 | 3 mensagens seguidas no Telegram (01:08, 02:08, 02:36) morreram no timeout de 1200 s: o `lead` fazia `--resume` da sessão 054bdcc1 (~286k tokens de contexto, desde 10/10 15:22); a 2ª e a 3ª não gravaram nada no transcript | sessão do chat apagada na hora; proteção (3.8.5): vigia de 10 min em sessão retomada + timeout/vigia descarta a sessão do chat; teto 3 h só para produção | infra |
 | 2026-10-10 | Especialista só-leitura (`consulta:research`) respondeu "me perdi no contexto": não recebia o quadro do chat e não tem sessão | quadro do chat também nos especialistas (3.6.5) | prompt |
 | 2026-10-09 | Pergunta de status ("qual situação do alerta do norte com avatar") foi para a rota direta (qwen sem ferramentas), que respondeu "vou verificar…" e parou | status com job aberto respondido por código (fila); consulta/estado e fallback do roteador → agente; resposta local com promessa/[ESCALAR] não é enviada e sobe ao agente (3.5.4) | prompt |

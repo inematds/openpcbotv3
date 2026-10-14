@@ -42,8 +42,25 @@ class Buffer_ {
   }
 }
 
+/**
+ * Põe o agente num escopo systemd PRÓPRIO, com teto de memória próprio. Sem isto
+ * o agente (e o que ele abre: render, ffmpeg, Whisper) roda dentro do cgroup do
+ * serviço (MemoryMax=2G): em 13/10 dois reels r7e chegaram a ~1,7 G, o serviço
+ * entrou em thrashing e o systemd-oomd matou o BOT inteiro (jobs #57172 e #58262
+ * viraram "lease vencido"). No escopo próprio, estourou → morre só o job, com erro.
+ * `--scope` faz exec no mesmo PID: o process group e `matarArvore` seguem valendo.
+ */
+export function comandoComTeto(binario: string, args: string[], memoriaMax?: string): [string, string[]] {
+  if (!memoriaMax) return [binario, args];
+  // `--description` curta: sem ela o systemd usa a linha de comando INTEIRA (o prompt) como nome do escopo.
+  return ['systemd-run', ['--user', '--scope', '--quiet', '--collect', '--description=openpcbotv3 agente',
+    '-p', `MemoryMax=${memoriaMax}`, '-p', 'MemorySwapMax=0', '--', binario, ...args]];
+}
+
 export interface OpcoesClaudeRunner {
   binario?: string;
+  /** Teto de memória do escopo do agente (ex.: `16G`); ausente = mesmo cgroup do serviço. */
+  memoriaMax?: string;
   /** Só os testes trocam: permite exercitar timeout e teto com um processo real
    * que não seja o `claude` (que não existe no ambiente de teste). */
   montarArgs?: (ctx: ContextoExecucao) => string[];
@@ -55,12 +72,14 @@ export class ClaudeRunner implements Runner {
   private readonly binario: string;
   private readonly montarArgs: (ctx: ContextoExecucao) => string[];
   private readonly limiteSaida: number;
+  private readonly memoriaMax?: string;
 
   constructor(opts: OpcoesClaudeRunner | string = {}) {
     const o = typeof opts === 'string' ? { binario: opts } : opts;
     this.binario = o.binario ?? 'claude';
     this.montarArgs = o.montarArgs ?? argumentosClaude;
     this.limiteSaida = o.limiteSaidaBytes ?? LIMITE_SAIDA_BYTES;
+    this.memoriaMax = o.memoriaMax;
   }
 
   iniciar(ctx: ContextoExecucao): Execucao {
@@ -70,7 +89,8 @@ export class ClaudeRunner implements Runner {
     const vigia = ctx.vigia;
     const mtime = (): number => { try { return vigia ? statSync(vigia.arquivo).mtimeMs : -1; } catch { return -1; } };
     const mtimeInicial = mtime();
-    const filho = spawn(this.binario, this.montarArgs(ctx), {
+    const [cmd, args] = comandoComTeto(this.binario, this.montarArgs(ctx), this.memoriaMax);
+    const filho = spawn(cmd, args, {
       cwd: ctx.cwd,
       detached: true,
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -130,7 +150,7 @@ export class ClaudeRunner implements Runner {
 
     const promessa = new Promise<string>((resolve, reject) => {
       filho.on('error', (e) => { clearTimeout(relogioTimeout); clearInterval(relogioVigia); reject(e); });
-      filho.on('close', (code) => {
+      filho.on('close', (code, sinal) => {
         clearTimeout(relogioTimeout);
         clearInterval(relogioVigia);
         marcarFechado();
@@ -142,6 +162,9 @@ export class ClaudeRunner implements Runner {
         }
         if (cancelado) return reject(new Error('execução cancelada'));
         if (code === 0) return resolve(stdout.texto.trim());
+        if (sinal === 'SIGKILL' && this.memoriaMax) {
+          return reject(new Error(`${this.binario}: morto (SIGKILL) — provável falta de memória (teto ${this.memoriaMax} do escopo do agente)`));
+        }
         const cauda = stderr.texto.trim().slice(0, 500);
         reject(new Error(`${this.binario} saiu com código ${code}: ${cauda}`));
       });
