@@ -2,15 +2,16 @@
 name: session-handoff
 description: >-
   Use when the user wants to end a session and hand off context to a future agent. Triggers include "session handoff", "handoff", "wrap up", "wrap up session", "vou dar /clear", "encerrar sessão",
-  "passar para outro agente", "resumo final antes de limpar", "summarize before clear". Produces a structured, sanitized handoff in chat and, when the project has a portable core (handoffs/), saves it
-  as a new never-overwritten snapshot in handoffs/history/<UTC-stamp>.md and refreshes handoffs/latest.md, so a fresh agent in any runtime can continue without losing continuity.
+  "passar para outro agente", "resumo final antes de limpar", "summarize before clear". Produces a structured, sanitized handoff in chat and, when the project root has handoffs/, AGENTS.md or
+  CLAUDE.md (creating handoffs/history/ if missing), saves it with scripts/handoff-grava.py as a never-overwritten snapshot handoffs/history/<UTC-stamp>-<assunto>.md, keeps handoffs/latest.md as an
+  index of open work by subject (plus a full copy of the newest) and commits only those files (no push), so a fresh agent in any runtime can continue without losing continuity.
 ---
 
 # Session Handoff
 
 Produza um resumo de fim de sessão repetível para que o usuário possa dar `/clear` (ou trocar de runtime: Claude ↔ Codex) sem perder continuidade. O próximo agente deve conseguir continuar lendo só este resumo e os arquivos que ele aponta.
 
-É um **artefato de passagem de contexto**, não relatório de status. O público é uma instância futura de um agente, não um gestor. Esta skill **não autoriza** publicar, commitar, enviar, subir arquivos nem continuar ações externas pela metade.
+É um **artefato de passagem de contexto**, não relatório de status. O público é uma instância futura de um agente, não um gestor. Esta skill **não autoriza** publicar, fazer push, enviar, subir arquivos nem continuar ações externas pela metade. O único commit que ela faz é o do próprio handoff, feito pelo script (só o snapshot e o `latest.md`).
 
 ## Quando invocar
 
@@ -19,6 +20,10 @@ Usuário diz: "session handoff", "handoff", "wrap up", "wrap up session", "vou d
 **Intenção de `/clear`:**
 - Clara ("vou dar /clear", "vou limpar agora") com trabalho ativo → rode o handoff direto.
 - Vaga ("talvez eu limpe") → pergunte uma vez: "rodar handoff antes?"
+
+**Cópia da sessão parada (hook-longrun 1.5.1+: o pedido começa com "A sessão ficou parada"):** você é uma cópia (`--fork-session`) aberta só para gravar o handoff. Grave com o `handoff-grava.py`, responda "Handoff atualizado: <arquivo>" e pare: não continue tarefa nenhuma, não edite outros arquivos, não faça push.
+
+**Pedido pelo hook (faixa de contexto, compactação ou handoff contínuo) no meio de uma tarefa:** não é fim de sessão. Grave, avise em uma linha e **continue a tarefa que o usuário pediu** até o fim, na mesma resposta. Não pare no meio, não pergunte se continua e não peça `/clear`; sessão nova só se sugere quando a tarefa terminar.
 
 Não invoque para "organiza/otimiza a sessão" (isso é `session-statusline`) nem para "analise a memória" / "CLAUDE.md" (isso é `memory-audit`).
 
@@ -47,23 +52,36 @@ Antes de gravar, confira e declare na seção própria que o texto **não conté
 
 ## Onde gravar
 
-**Sempre** mostre o resumo no chat. **Além disso**, se a raiz do projeto tiver `handoffs/` (núcleo portátil) ou `AGENTS.md`, grave em arquivo:
+**Sempre** mostre o resumo no chat. **Além disso**, se a raiz do projeto tiver `handoffs/` (núcleo portátil), `AGENTS.md` ou `CLAUDE.md`, grave em arquivo — é de lá que o `prime` lê (`handoffs/latest.md`). Só o resumo no chat se perde no `/clear`.
+
+**Grave sempre pelo script `scripts/handoff-grava.py` desta skill** (ao lado deste SKILL.md; no Claude Code `~/.claude/skills/session-handoff/scripts/`, no Codex `~/.agents/skills/session-handoff/scripts/`). Não crie o snapshot à mão nem digite carimbo: o script usa o relógio da máquina. Em 15/10/2026 um agente pôs `T120000Z` num arquivo gravado às 07:45Z, e uma sessão paralela sobrescreveu o `latest.md` de outra.
 
 1. **Resolva a raiz do projeto** pelo contexto explícito do usuário ou pela raiz do repositório. Se ambíguo, pergunte. Nunca use a home como raiz.
-2. **Recuse symlink e travessia**: `handoffs/`, `handoffs/history/`, `handoffs/latest.md` e o arquivo novo não podem ser symlink nem sair da raiz depois de resolvidos. Se algum for, não grave: relate e mostre só no chat.
-3. **Snapshot novo, nunca sobrescrito:** `handoffs/history/AAAA-MM-DDTHHMMSSZ.md` com a hora UTC atual (ex.: `date -u +%Y-%m-%dT%H%M%SZ`). Se o nome já existir, use sufixo `-2`, `-3`… Crie com gravação exclusiva (falhar se existir), nunca edite nem apague snapshots antigos.
-4. **Preserve o legado uma vez:** se `handoffs/latest.md` existir, estiver no formato cópia integral e seu conteúdo não for igual a nenhum arquivo de `handoffs/history/`, salve-o antes como `handoffs/history/<carimbo-do-mtime>-anterior.md`.
-5. **Atualize `handoffs/latest.md`** (só depois do snapshot gravado com sucesso):
-   - formato padrão deste kit: **cópia integral** do snapshot novo (compatível com `prime`, `readback-test.sh`, `check.sh` e qualquer agente que leia `latest.md` como documento);
-   - se o `latest.md` existente já for **ponteiro de uma linha** (`handoffs/history/<arquivo>.md`, formato do kit "Use Both"), mantenha o formato e grave só a linha com o caminho relativo novo.
-6. **Leia de volta** o snapshot e o `latest.md` e confirme que batem (ou que o ponteiro resolve para o arquivo novo dentro do projeto).
-7. **Não faça commit, push nem upload** desses arquivos por conta desta skill. Informe os dois caminhos e lembre o usuário de revisar antes de compartilhar com outro provedor.
+2. **Escolha o assunto (slug)**: rode `python3 <script> --raiz <raiz> --listar`. Se o trabalho desta sessão já está no índice, **reuse o mesmo slug** (ex.: `rea-es`, nunca `rea-es-2` nem `rea-es-fechamento`). Trabalho novo: slug curto, minúsculas e hífen. Várias sessões podem gravar no mesmo projeto ao mesmo tempo; cada uma cuida só do seu assunto.
+3. **Grave**: `python3 <script> --raiz <raiz> --assunto <slug> < corpo.md` (o corpo pode vir por heredoc). Se o trabalho terminou (pronto, entregue ou abandonado pelo usuário), acrescente `--fechado`: o snapshot é gravado e o assunto sai do índice. O script:
+   - cria `handoffs/history/<AAAA-MM-DDTHHMMSSZ>-<slug>.md` com gravação exclusiva (sufixo `-2`… se existir) e nunca edita snapshot antigo;
+   - recusa symlink e caminho fora da raiz;
+   - preserva uma vez o `latest.md` legado (cópia integral que não está em `history/`) como `<carimbo-do-mtime>-anterior.md`;
+   - reescreve `handoffs/latest.md` = **índice de trabalhos abertos** (uma linha por assunto: slug · snapshot · data) + **cópia integral** do snapshot mais novo (quem lê `latest.md` como documento continua funcionando);
+   - anexa ao fim do snapshot o **bloco de estado** (`<!-- handoff-estado:inicio/fim -->`): commit atual (HEAD) e sha256 dos arquivos citados em crase no corpo e dos arquivos sujos fora de `handoffs/`. Quem grava é o script, não você: **não escreva esse bloco à mão** (se vier no corpo, o script descarta). É ele que deixa o próximo agente saber se o handoff ficou velho (`--conferir`);
+   - lê de volta e confere;
+   - se a raiz for repositório git, faz **um commit só com o snapshot e o `latest.md`** (`git commit -- <caminhos>`: o que outra pessoa deixou staged fica fora), autor = config do repo. **Nunca faz push.** `--sem-commit` desliga.
+4. **Confira a saída** do script (snapshot, assuntos abertos, linha do commit) e informe ao usuário em uma linha. Se ele falhar, mostre o erro e deixe o resumo no chat; não grave à mão.
+   **Termine a resposta com o comando de retomada pronto para copiar**, exatamente como o script imprimiu (caminho do snapshot **desta** gravação, não o slug nem "o último"):
+   ```
+   /clear
+   /prime handoffs/history/<AAAA-MM-DDTHHMMSSZ>-<slug>.md
+   ```
+   No Codex, `/new` no lugar de `/clear`. Motivo: outra sessão pode gravar um handoff mais novo no mesmo projeto, e o `/prime` sem argumento abre o mais recente, que pode não ser o seu.
+5. **Push** fica com o usuário ou com o fluxo de publicação do projeto. Lembre de revisar antes de compartilhar com outro provedor.
 
 ## Marcadores de confiança
 
 - `[confirmed]` — fato verificado nesta sessão
 - `[unverified]` — provável, mas não confirmado
 - `[?]` — incerto, depende de checagem pelo próximo agente
+
+**Ponteiro, não prosa.** Todo `[confirmed]` leva a evidência que o próximo agente confere sem confiar em você: `commit <hash>`, `teste: <comando> → <resultado>` ou `arquivo: <caminho relativo>`. Sem evidência, o item é `[unverified]`. Quem escreve o handoff é o mesmo agente que pode ter se perdido; a prova tem de estar fora do texto (git, teste, arquivo).
 
 ## Modelo — use exatamente esta estrutura, toda vez
 
@@ -79,7 +97,7 @@ Caminhos: **dentro do projeto, relativos à raiz** (o arquivo viaja entre máqui
 <de tasks/current.md, com critério de pronto>
 
 ## Estado aceito
-- [confirmed] <mudança> — <onde está, caminho relativo>
+- [confirmed] <mudança> — <onde está, caminho relativo> — evidência: <commit <hash> | teste: <comando> → <resultado> | arquivo: <caminho>>
 - (ou "nenhum")
 
 ## Proposto / tentado, não confirmado
@@ -118,6 +136,13 @@ Caminhos: **dentro do projeto, relativos à raiz** (o arquivo viaja entre máqui
 ## Mapa de retomada
 - `<caminho relativo>` — <por que ler primeiro> (3 a 6 arquivos no máximo)
 
+## Perguntas-teste
+1. Qual é a tarefa atual e o critério de pronto? → <resposta curta> — fonte: <caminho relativo ou commit>
+2. Qual foi a última decisão e por quê? → <resposta curta> — fonte: <…>
+3. O que não pode mudar (restrição do usuário ou trava)? → <resposta curta> — fonte: <…>
+4. O que está pela metade? → <resposta curta> — fonte: <…>
+5. Qual é a próxima ação e ela precisa de aprovação? → <resposta curta> — fonte: <…>
+
 ## Checagem de compartilhamento
 - Sem segredos, tokens, cookies, dados pessoais ou endpoints privados: <sim / o que foi omitido e por qual canal passar>
 ```
@@ -125,9 +150,10 @@ Caminhos: **dentro do projeto, relativos à raiz** (o arquivo viaja entre máqui
 ## Regras
 
 1. **Nunca invente estado.** Seção sem conteúdo leva "nenhum" — não omita seções. Estrutura estável é o ponto.
-2. **Nunca sobrescreva nem apague** snapshots em `handoffs/history/`.
+2. **Nunca sobrescreva nem apague** snapshots em `handoffs/history/`; grave só pelo script.
 3. **Se um plano guiou a sessão, cite-o primeiro** no "Mapa de retomada".
 4. **IDs de processos em segundo plano são críticos** — sem eles o próximo agente não os encontra.
 5. **Sem emojis, sem hype, sem retrospectiva** ("o que foi bem / mal" não entra).
 6. **Sem recomendações além da "Próxima ação exata".** O próximo agente decide.
 7. **Handoff não é autorização**: não escreva a próxima ação como ordem para deploy, publicação, envio ou compra sem dizer que precisa de confirmação do usuário.
+8. **Perguntas-teste**: sempre as 5, nesta ordem, com resposta de uma linha. A fonte é **um arquivo do projeto ou um commit, nunca o próprio handoff** (`decisions.md`, `tasks/current.md`, `goal.md`, `CLAUDE.md`, o commit…). Se a resposta só existe na conversa, grave-a antes num arquivo do projeto (ex.: a decisão em `decisions.md`) e aponte para ele, ou escreva "fonte: só nesta conversa". É por elas que o `prime` (e a sessão retomada depois de compactar) mede o que foi recuperado: quem retoma responde pelos arquivos e compara.
