@@ -85,7 +85,7 @@ export interface Config {
 
 export function lerConfig(): Config {
   return {
-    versao: '3.9.5',
+    versao: '3.10.5',
     instancia: `${hostname()}:${process.pid}`,
     telegramToken: process.env.TELEGRAM_BOT_TOKEN_V3 || undefined,
     chatPermitido: process.env.ALLOWED_CHAT_ID || undefined,

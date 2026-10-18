@@ -93,6 +93,7 @@ Especialistas em paralelo (padrão grokky): quando o roteador indica `consultar`
 | `/cron lista\|on <nome>\|off <nome>` | tarefas agendadas |
 | `/fontes` · `/fontes ingerir [gmail|agenda]` | chats observados e o que já virou memória ([docs/CONECTORES.md](docs/CONECTORES.md)) |
 | `/agentes` · `/skills` | o que está instalado |
+| `@<agente> texto` | manda direto para um agente (ex.: `@mostratec`); palavras em `gatilhos:` do `agent.yaml` fazem o mesmo |
 | `/novo` | limpa sessão do CLI e histórico do chat · `/compress` só a sessão |
 | `/consolidar` | roda a consolidação de memória agora |
 | `/parar [tudo\|agentes\|<agente>] [motivo]` · `/retomar [alvo]` | interruptores persistentes; `/parar` sozinho lista |

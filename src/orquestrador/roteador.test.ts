@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Agente } from './agentes.js';
-import { parsearDecisao } from './roteador.js';
+import { agenteExplicito, parsearDecisao } from './roteador.js';
 import { argumentosCli, interpretarSaidaCli } from './agente-cli.js';
 
 const agentes: Agente[] = [
@@ -76,5 +76,19 @@ describe('promptDe do job de agente', () => {
     expect(texto).toBe('419');
     expect(sessoes.obter('77', 'lead')).toBe('sess-1');
     expect(registro.hoje()).toMatchObject({ chamadas: 1, custoUsd: 0.03 });
+  });
+});
+
+describe('agenteExplicito (3.10.5)', () => {
+  const comProjeto: Agente[] = [...agentes, { id: 'mostratec', nome: 'Mostratec', descricao: '', modelo: 'opus', esforco: 'high', somenteLeitura: false, cwd: '/tmp', dir: '/tmp', prompt: '', soul: '', gatilhos: ['mostratec', 'mostra tec'] }];
+  it('"@id" no começo escolhe o agente', () => {
+    expect(agenteExplicito('@ops reinicia o serviço', comProjeto)).toBe('ops');
+    expect(agenteExplicito('@naoexiste oi', comProjeto)).toBeUndefined();
+  });
+  it('gatilho do yaml casa como palavra, sem diferenciar maiúscula', () => {
+    expect(agenteExplicito('Na MOSTRATEC, e o robô vigia?', comProjeto)).toBe('mostratec');
+    expect(agenteExplicito('ideia pra mostra tec: quiz', comProjeto)).toBe('mostratec');
+    expect(agenteExplicito('mostratecnologia', comProjeto)).toBeUndefined();
+    expect(agenteExplicito('qual a situação do portal?', comProjeto)).toBeUndefined();
   });
 });

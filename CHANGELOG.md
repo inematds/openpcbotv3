@@ -1,5 +1,13 @@
 # CHANGELOG — openpcbotv3
 
+## 3.10.5 — 2026-10-18
+
+Agente de projeto escolhido sem depender do roteador.
+
+- `gatilhos:` no `agent.yaml`: uma palavra da lista na mensagem manda direto para aquele agente (antes das heurísticas e do LLM).
+- `@<id>` no começo da mensagem escolhe o agente na hora (`@mostratec ...`, `@ops ...`).
+- Novo agente `mostratec` (cwd `~/projetos/mostratec`, modelo topo): trocar ideias e desenvolver o projeto INEMA na MOSTRATEC pelo Telegram.
+
 ## 3.9.5 — 2026-10-14
 
 Incidente de 13/10: dois reels r7e pedidos pelo Telegram (#57172 às 00:57 e #58262 às 16:35) morreram como

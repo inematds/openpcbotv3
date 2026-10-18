@@ -1,0 +1,9 @@
+# Agente do projeto MOSTRATEC 2026 (~/projetos/mostratec). Criado em 18/10/2026.
+# Qualquer mensagem no v3 que cite "mostratec" (ou comece com @mostratec) vem para cá.
+name: Mostratec
+description: Projeto INEMA na feira MOSTRATEC 2026 (jogos, soluções, robôs, quiz do futuro, estande) — trocar ideias e desenvolver
+model: topo
+cwd: /home/nmaldaner/projetos/mostratec
+gatilhos:
+  - mostratec
+  - mostra tec

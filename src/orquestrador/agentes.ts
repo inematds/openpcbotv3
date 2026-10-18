@@ -24,6 +24,8 @@ export interface Agente {
   soul: string;
   /** Caminho de JSON de servidores MCP só deste agente (`mcp_config` no yaml). */
   mcpConfig?: string;
+  /** Palavras que mandam a mensagem direto para este agente (`gatilhos` no yaml), antes do roteador. */
+  gatilhos?: string[];
 }
 
 export const AGENTS_DIR = path.join(RAIZ, 'agents');
@@ -63,6 +65,7 @@ export function listarAgentes(dir: string = AGENTS_DIR): Agente[] {
       prompt: prompt.slice(0, 6000),
       soul: lerSoul(d),
       mcpConfig: typeof doc.mcp_config === 'string' ? path.resolve(d, doc.mcp_config) : undefined,
+      gatilhos: Array.isArray(doc.gatilhos) ? doc.gatilhos.map(String).filter(Boolean) : undefined,
     });
   }
   // Lead genérico: o próprio openpcbot com escrita, para pedidos sem especialista.

@@ -61,6 +61,23 @@ const FERRAMENTA_RE = /\b(cria|crie|criar|edita|edite|editar|corrig|refator|comm
 /** Pedido de consulta/estado: só o agente consegue olhar (rota direta não tem ferramenta). */
 export const CONSULTA_RE = /\b(situa[çc][ãa]o|status|andamento|progresso|verific|confer|checa|cheque|d[áa] uma olhada|olha (?:o|a|se)|como (?:est[áa]|t[áa]|anda|ficou) (?:o|a|os|as)\b|pendente|pend[êe]ncia|publica|publiqu|v[íi]deo|handoff|commit|job)/i;
 
+/**
+ * Escolha explícita, antes de tudo: "@<id> ..." no começo da mensagem ou uma palavra dos
+ * `gatilhos` do agent.yaml (ex.: "mostratec") manda direto para aquele agente de projeto.
+ */
+export function agenteExplicito(mensagem: string, agentes: Agente[]): string | undefined {
+  const arroba = mensagem.match(/^\s*@([\w-]+)/);
+  if (arroba && agentes.some((a) => a.id === arroba[1].toLowerCase())) return arroba[1].toLowerCase();
+  const baixa = mensagem.toLowerCase();
+  for (const a of agentes) {
+    for (const g of a.gatilhos ?? []) {
+      const esc = g.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      if (new RegExp(`(^|[^\\p{L}\\d])${esc}($|[^\\p{L}\\d])`, 'u').test(baixa)) return a.id;
+    }
+  }
+  return undefined;
+}
+
 export async function rotear(
   gateway: GatewayLLM,
   modeloRoteador: string,
@@ -69,6 +86,8 @@ export async function rotear(
   skills: SkillInfo[],
   ctx: { chatId: string; traceId: string; quadro?: string; keepAlive?: string | number },
 ): Promise<Decisao> {
+  const explicito = agenteExplicito(mensagem, agentes);
+  if (explicito) return { rota: 'agente', agente: explicito, tier: 'premium', motivo: 'agente explícito (@ ou gatilho)', consultar: [] };
   if (CONSULTA_RE.test(mensagem)) return { rota: 'agente', agente: 'lead', tier: 'premium', motivo: 'heurística: consulta/estado', consultar: [] };
   if (mensagem.length < 12 && !FERRAMENTA_RE.test(mensagem)) return { rota: 'direto', tier: 'local', motivo: 'curta' };
   try {
