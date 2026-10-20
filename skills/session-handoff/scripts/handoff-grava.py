@@ -42,6 +42,11 @@ CITADO = re.compile(r"`([^`\s]+)`")
 EST_ARQ = re.compile(r"^- `(?P<rel>[^`]+)` · sha256:(?P<h>[0-9a-f]+|apagado|ilegivel) · (?P<tipo>citado|sujo)")
 MAX_CITADOS = 20
 MAX_SUJOS = 200
+PAR_INI = "<!-- handoff-parados:inicio -->"
+PAR_FIM = "<!-- handoff-parados:fim -->"
+PARADO_DIAS = 3      # sem handoff novo há mais que isso: sai dos abertos (fica em "Parados")
+MAX_PARADOS = 50     # teto da lista de parados no latest.md; os snapshots nunca são apagados
+TRAVA_SEG = 60
 
 
 GRANDE = 100 * 1024 * 1024
@@ -306,6 +311,54 @@ def entradas_de(texto):
     return ent
 
 
+def ler_parados(latest):
+    try:
+        txt = latest.read_text(encoding="utf-8")
+    except OSError:
+        return {}
+    if PAR_INI not in txt or PAR_FIM not in txt:
+        return {}
+    return entradas_de(txt.split(PAR_INI, 1)[1].split(PAR_FIM, 1)[0])
+
+
+def separar_parados(raiz, entradas, parados, dias, atual):
+    """Abertos sem handoff há mais de `dias` viram parados (menos o assunto desta gravação). Devolve os movidos."""
+    if dias <= 0:
+        return []
+    limite = dt.datetime.now().timestamp() - dias * 86400
+    movidos = [s for s, (arq, _) in entradas.items() if s != atual and idade(raiz, arq) < limite]
+    for s in movidos:
+        parados[s] = entradas.pop(s)
+    return movidos
+
+
+class Trava:
+    """flock exclusivo na pasta handoffs/history: vários terminais gravando o índice ao mesmo tempo
+    esperam a vez em vez de um apagar a linha do outro. Sem arquivo extra no repo."""
+
+    def __init__(self, pasta):
+        self.pasta = pasta
+        self.fd = None
+
+    def __enter__(self):
+        import fcntl
+        self.fd = os.open(self.pasta, os.O_RDONLY)
+        fim = dt.datetime.now().timestamp() + TRAVA_SEG
+        while True:
+            try:
+                fcntl.flock(self.fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                return self
+            except BlockingIOError:
+                if dt.datetime.now().timestamp() > fim:
+                    os.close(self.fd)
+                    erro(f"índice travado por outra gravação há mais de {TRAVA_SEG}s; tente de novo")
+                import time
+                time.sleep(0.05)
+
+    def __exit__(self, *_):
+        os.close(self.fd)  # fechar solta o flock
+
+
 def ler_indice(latest):
     """(entradas {slug: (arq, quando)}, formato) do latest.md atual. Se uma sessão com a skill antiga
     sobrescreveu o latest.md, o índice volta do handoffs/indice.txt (cópia gravada ao lado)."""
@@ -367,15 +420,96 @@ def ordenar(raiz, entradas):
     return sorted(entradas.items(), key=lambda kv: idade(raiz, kv[1][0]), reverse=True)
 
 
-def montar_latest(raiz, entradas, atual_rel, corpo):
+def montar_latest(raiz, entradas, atual_rel, corpo, parados=None, dias=PARADO_DIAS):
     linhas = [f"- `{s}` · {a} · {q}" for s, (a, q) in ordenar(raiz, entradas)]
     abertos = "\n".join(linhas) if linhas else "- nenhum"
+    par = ""
+    if parados:
+        lp = "\n".join(f"- `{s}` · {a} · {q}" for s, (a, q) in ordenar(raiz, parados))
+        par = (f"\n## Parados (sem handoff há mais de {dias} dias)\n\n"
+               "Fora dos abertos: o /prime não lista. Gravar um handoff com o mesmo slug volta o assunto "
+               f"para os abertos; `--fechado` tira daqui. Snapshots continuam em handoffs/history/.\n\n"
+               f"{PAR_INI}\n{lp}\n{PAR_FIM}\n")
     rodape = (f"\n---\n\nCópia integral do snapshot mais recente ({atual_rel}):\n\n{corpo}"
               if atual_rel else "\n---\n\nNenhum trabalho aberto.\n")
     return (f"# Handoffs — trabalhos abertos\n\n"
             "Cada linha é um assunto em andamento: leia o snapshot do assunto que for continuar. "
             "Gravado por handoff-grava.py.\n\n"
-            f"{INICIO}\n{abertos}\n{FIM}\n{rodape}")
+            f"{INICIO}\n{abertos}\n{FIM}\n{par}{rodape}")
+
+
+FEC_INI = "<!-- handoff-fechados:inicio -->"
+FEC_FIM = "<!-- handoff-fechados:fim -->"
+FEC_LINHA = re.compile(r"^- `(?P<slug>[a-z0-9-]+)` · (?P<arq>handoffs/history/[^ ]+\.md) · "
+                       r"(?P<quando>\d{2}/\d{2}/\d{4} \d{2}:\d{2}) · (?P<titulo>.*)$")
+
+
+def titulo_de(texto):
+    """Primeiro '# ' do snapshot, sem o prefixo 'Handoff —'; uma linha, até 120 caracteres."""
+    for ln in texto.splitlines():
+        if ln.startswith("# "):
+            t = re.sub(r"^Handoff\s*[—–:-]\s*", "", ln[2:].strip(), flags=re.I)
+            return re.sub(r"\s+", " ", t)[:120].replace("`", "'")
+    return ""
+
+
+def ler_fechados(arq):
+    """{slug: (arq, 'dd/mm/AAAA HH:MM', titulo)} de handoffs/fechados.md."""
+    try:
+        txt = arq.read_text(encoding="utf-8")
+    except OSError:
+        return {}
+    if FEC_INI in txt and FEC_FIM in txt:
+        txt = txt.split(FEC_INI, 1)[1].split(FEC_FIM, 1)[0]
+    out = {}
+    for ln in txt.splitlines():
+        m = FEC_LINHA.match(ln.strip())
+        if m:
+            out[m["slug"]] = (m["arq"], m["quando"], m["titulo"])
+    return out
+
+
+def _chave_data(q):
+    try:
+        return dt.datetime.strptime(q, "%d/%m/%Y %H:%M")
+    except ValueError:
+        return dt.datetime.min
+
+
+def gravar_fechados(arq, fechados):
+    linhas = [f"- `{s}` · {a} · {q} · {t}" for s, (a, q, t) in
+              sorted(fechados.items(), key=lambda kv: _chave_data(kv[1][1]), reverse=True)]
+    tmp = arq.with_suffix(".md.tmp")
+    tmp.write_text("# Handoffs — trabalhos fechados\n\n"
+                   "Um assunto por linha, o fechamento mais recente primeiro: slug · snapshot do fechamento · data · "
+                   "título. Para pesquisar trabalho antigo; o /prime não lê. Gravado por handoff-grava.py.\n\n"
+                   f"{FEC_INI}\n" + ("\n".join(linhas) if linhas else "- nenhum") + f"\n{FEC_FIM}\n",
+                   encoding="utf-8")
+    os.replace(tmp, arq)
+
+
+def recuperar_fechados(raiz, fechados, abertos):
+    """Fechados de antes da 1.10.3, pelo log do git (commits 'handoff: <slug> (fechado)'). Devolve os novos."""
+    if not eh_git(raiz):
+        erro("--recuperar-fechados precisa de repositório git")
+    r = git(raiz, "log", "--format=%H%x09%ct%x09%s", "--grep=^handoff: [a-z0-9-]* (fechado)$")
+    novos = []
+    for ln in r.stdout.splitlines():  # mais recente primeiro
+        h, ct, assunto = ln.split("\t", 2)
+        m = re.match(r"^handoff: ([a-z0-9-]+) \(fechado\)$", assunto)
+        if not m or m[1] in fechados or m[1] in abertos:
+            continue
+        slug = m[1]
+        nomes = git(raiz, "show", "--name-only", "--diff-filter=A", "--format=", h, "--",
+                    "handoffs/history").stdout.split()
+        arq = next((n for n in nomes if re.search(rf"-{re.escape(slug)}(-\d+)?\.md$", n)), None)
+        if not arq:
+            continue
+        p = rel_ok(raiz, arq)
+        tit = titulo_de(p.read_text(encoding="utf-8")) if p is not None and p.is_file() else ""
+        fechados[slug] = (arq, dt.datetime.fromtimestamp(int(ct)).strftime("%d/%m/%Y %H:%M"), tit)
+        novos.append(slug)
+    return novos
 
 
 def git(raiz, *args):
@@ -399,6 +533,45 @@ def commitar(raiz, caminhos, slug, fechado):
     return f"commit {autor} (sem push)"
 
 
+def arrumar(raiz, hist, latest, arq_fec, a):
+    """Sem snapshot novo: recupera fechados do git, move parados e regrava o índice (uma vez por projeto)."""
+    if not hist.is_dir():
+        erro("projeto sem handoffs/history/")
+    sem_symlink(raiz, hist)
+    for p in (latest, arq_fec, latest.with_name("indice.txt")):
+        if p.exists():
+            sem_symlink(raiz, p)
+    with Trava(hist):
+        entradas, formato = ler_indice(latest)
+        if formato != "indice":
+            print(f"latest.md sem índice (formato {formato}): nada a arrumar")
+            return
+        parados = ler_parados(latest)
+        fechados = ler_fechados(arq_fec)
+        novos = recuperar_fechados(raiz, fechados, set(entradas) | set(parados)) if eh_git(raiz) else []
+        movidos = separar_parados(raiz, entradas, parados, a.parado_dias, None)
+        par_ord = ordenar(raiz, parados)
+        parados = dict(par_ord[:MAX_PARADOS])
+        if not novos and not movidos and len(par_ord) <= MAX_PARADOS:
+            print("nada a arrumar: " + f"{len(entradas)} aberto(s), {len(parados)} parado(s), {len(fechados)} fechado(s)")
+            return
+        gravados = []
+        if novos:
+            gravar_fechados(arq_fec, fechados)
+            gravados.append(arq_fec)
+        rodape_rel = ordenar(raiz, entradas)[0][1][0] if entradas else None
+        rodape = (raiz / rodape_rel).read_text(encoding="utf-8") if rodape_rel else ""
+        tmp = latest.with_suffix(".md.tmp")
+        tmp.write_text(montar_latest(raiz, entradas, rodape_rel, rodape, parados, a.parado_dias), encoding="utf-8")
+        os.replace(tmp, latest)
+        indice = latest.with_name("indice.txt")
+        indice.write_text("".join(f"- `{s}` · {x} · {q}\n" for s, (x, q) in ordenar(raiz, entradas)), encoding="utf-8")
+        gravados += [latest, indice]
+        print(f"arrumado: {len(entradas)} aberto(s), {len(movidos)} movido(s) para parados, "
+              f"{len(novos)} fechado(s) recuperado(s)")
+        print(commitar(raiz, gravados, "arrumar-indice", False) if not a.sem_commit else "sem commit (--sem-commit)")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--assunto", help="slug estável do trabalho (ex.: rea-es); reuse o do índice")
@@ -410,6 +583,13 @@ def main():
     ap.add_argument("--sem-commit", action="store_true")
     ap.add_argument("--repo", action="append", default=[],
                     help="repositório git onde o trabalho acontece, fora da raiz do handoff (pode repetir)")
+    ap.add_argument("--fechados", action="store_true", help="lista os trabalhos fechados (handoffs/fechados.md) e sai")
+    ap.add_argument("--recuperar-fechados", action="store_true",
+                    help="preenche handoffs/fechados.md com os fechados antigos, pelo log do git")
+    ap.add_argument("--arrumar", action="store_true",
+                    help="sem snapshot novo: recupera fechados, move parados e regrava o índice (commit só desses)")
+    ap.add_argument("--parado-dias", type=int, default=int(os.environ.get("HANDOFF_PARADO_DIAS", PARADO_DIAS)),
+                    help=f"assunto sem handoff há mais que isso sai dos abertos (padrão {PARADO_DIAS}; 0 desliga)")
     a = ap.parse_args()
 
     raiz = pathlib.Path(a.raiz).absolute()
@@ -420,13 +600,41 @@ def main():
     if a.conferir:
         conferir(raiz, a.conferir)
         return
-    entradas, formato = ler_indice(latest)
-
     if a.listar:
+        entradas, formato = ler_indice(latest)
         for s, (arq, q) in ordenar(raiz, entradas):
             print(f"{s}\t{arq}\t{q}")
+        for s, (arq, q) in ordenar(raiz, ler_parados(latest)):
+            print(f"{s}\t{arq}\t{q}\tparado")
         if formato != "indice":
             print(f"(latest.md sem índice: formato {formato})", file=sys.stderr)
+        return
+
+    arq_fec = raiz / "handoffs" / "fechados.md"
+    if a.fechados:
+        for s, (arq, q, t) in sorted(ler_fechados(arq_fec).items(), key=lambda kv: _chave_data(kv[1][1]),
+                                     reverse=True):
+            print(f"{s}\t{arq}\t{q}\t{t}")
+        return
+
+    if a.recuperar_fechados:
+        hist.mkdir(parents=True, exist_ok=True)
+        sem_symlink(raiz, hist)
+        if arq_fec.exists():
+            sem_symlink(raiz, arq_fec)
+        with Trava(hist):
+            fechados = ler_fechados(arq_fec)
+            abertos = set(ler_indice(latest)[0]) | set(ler_parados(latest))
+            novos = recuperar_fechados(raiz, fechados, abertos)
+            if novos:
+                gravar_fechados(arq_fec, fechados)
+            print(f"{len(novos)} fechado(s) recuperado(s)" + (": " + ", ".join(novos) if novos else ""))
+            if novos and not a.sem_commit:
+                print(commitar(raiz, [arq_fec], "fechados-recuperados", False))
+        return
+
+    if a.arrumar:
+        arrumar(raiz, hist, latest, arq_fec, a)
         return
 
     if not a.assunto or not SLUG.match(a.assunto):
@@ -435,20 +643,12 @@ def main():
     sem_symlink(raiz, hist)
     if latest.exists():
         sem_symlink(raiz, latest)
+    if arq_fec.exists():
+        sem_symlink(raiz, arq_fec)
 
-    gravados, avisos = [], []
-    legado = preservar_legado(raiz, latest, formato)
-    if legado:
-        gravados.append(legado)
-        entradas.setdefault("anterior", (str(legado.relative_to(raiz)), quando_de(legado)))
-
-    if a.indexar:
-        snap = (raiz / a.indexar)
-        sem_symlink(raiz, snap)
-        if not snap.is_file() or snap.parent.resolve() != hist.resolve():
-            erro(f"--indexar precisa de um arquivo em handoffs/history/: {a.indexar}")
-        corpo = snap.read_text(encoding="utf-8")
-    else:
+    # Parte lenta (hash dos arquivos) fora da trava; índice, gravação e commit dentro dela.
+    avisos, corpo = [], None
+    if not a.indexar:
         corpo = sys.stdin.read()
         if len(corpo.strip()) < 200:
             erro("corpo do handoff vazio ou curto demais (stdin)")
@@ -463,7 +663,6 @@ def main():
                 erro(f"--repo precisa ser um repositório git: {r}")
             if pathlib.Path(top).resolve() != raiz.resolve() and pathlib.Path(top) not in repos:
                 repos.append(pathlib.Path(top))
-        avisos = []
         soltos = [c for c in repos_citados(raiz, corpo) if pathlib.Path(c) not in repos]
         if soltos:
             avisos.append("aviso: o handoff cita outro(s) repo(s) sem --repo: " + ", ".join(soltos)
@@ -471,45 +670,85 @@ def main():
         if not any(s in corpo for s in ("## Perguntas-teste", "## Test questions", "## Preguntas de control")):
             avisos.append("aviso: handoff sem a seção Perguntas-teste — o prime não vai dar a nota N/5; "
                           "grave de novo com as 5 perguntas do modelo.")
+        if not any(s in corpo for s in ("## Não fazer", "## Do not do", "## No hacer")):
+            avisos.append("aviso: falta a seção Não fazer (restrições e travas) — o prime não terá a lista do que "
+                          "não pode mudar; grave de novo com todas as restrições, uma por item.")
         corpo = corpo.rstrip() + "\n" + bloco_estado(raiz, corpo, repos)
-        carimbo = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H%M%SZ")
-        snap = criar_exclusivo(hist, f"{carimbo}-{a.assunto}", corpo)
-        gravados.append(snap)
 
-    rel = str(snap.relative_to(raiz))
-    if a.fechado:
-        entradas.pop(a.assunto, None)
-    else:
-        entradas[a.assunto] = (rel, quando_de(snap))
+    with Trava(hist):
+        entradas, formato = ler_indice(latest)
+        parados = ler_parados(latest)
+        gravados = []
+        legado = preservar_legado(raiz, latest, formato)
+        if legado:
+            gravados.append(legado)
+            entradas.setdefault("anterior", (str(legado.relative_to(raiz)), quando_de(legado)))
 
-    # O rodapé mostra o snapshot mais novo entre os abertos (ou este, se acabou de ser gravado).
-    if entradas:
-        mais_novo = ordenar(raiz, entradas)[0][1][0]
-        rodape_rel = rel if (not a.fechado and not a.indexar) else mais_novo
-        rodape = (raiz / rodape_rel).read_text(encoding="utf-8")
-    else:
-        rodape_rel, rodape = None, ""
-    novo = montar_latest(raiz, entradas, rodape_rel, rodape)
-    tmp = latest.with_suffix(".md.tmp")
-    tmp.write_text(novo, encoding="utf-8")
-    os.replace(tmp, latest)
-    indice = latest.with_name("indice.txt")
-    if indice.exists():
-        sem_symlink(raiz, indice)
-    indice.write_text("".join(f"- `{s}` · {a} · {q}\n" for s, (a, q) in ordenar(raiz, entradas)), encoding="utf-8")
+        if a.indexar:
+            snap = (raiz / a.indexar)
+            sem_symlink(raiz, snap)
+            if not snap.is_file() or snap.parent.resolve() != hist.resolve():
+                erro(f"--indexar precisa de um arquivo em handoffs/history/: {a.indexar}")
+        else:
+            carimbo = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H%M%SZ")
+            snap = criar_exclusivo(hist, f"{carimbo}-{a.assunto}", corpo)
+            gravados.append(snap)
 
-    # leitura de volta
-    lido, fmt = ler_indice(latest)
-    if fmt != "indice" or (not a.fechado and lido.get(a.assunto, ("",))[0] != rel):
-        erro("leitura de volta do latest.md não bate")
-    gravados += [latest, indice]
+        rel = str(snap.relative_to(raiz))
+        parados.pop(a.assunto, None)
+        fechados = ler_fechados(arq_fec)
+        antes_fec = dict(fechados)
+        if a.fechado:
+            entradas.pop(a.assunto, None)
+            fechados[a.assunto] = (rel, dt.datetime.fromtimestamp(snap.stat().st_mtime).strftime("%d/%m/%Y %H:%M"),
+                                   titulo_de(snap.read_text(encoding="utf-8")))
+        else:
+            entradas[a.assunto] = (rel, quando_de(snap))
+            fechados.pop(a.assunto, None)  # reaberto
+        if fechados != antes_fec:
+            gravar_fechados(arq_fec, fechados)
+            gravados.append(arq_fec)
+        movidos = separar_parados(raiz, entradas, parados, a.parado_dias, a.assunto)
+        par_ord = ordenar(raiz, parados)
+        cortados = len(par_ord) - MAX_PARADOS
+        parados = dict(par_ord[:MAX_PARADOS])
+
+        # O rodapé mostra o snapshot mais novo entre os abertos (ou este, se acabou de ser gravado).
+        if entradas:
+            mais_novo = ordenar(raiz, entradas)[0][1][0]
+            rodape_rel = rel if (not a.fechado and not a.indexar) else mais_novo
+            rodape = (raiz / rodape_rel).read_text(encoding="utf-8")
+        else:
+            rodape_rel, rodape = None, ""
+        novo = montar_latest(raiz, entradas, rodape_rel, rodape, parados, a.parado_dias)
+        tmp = latest.with_suffix(".md.tmp")
+        tmp.write_text(novo, encoding="utf-8")
+        os.replace(tmp, latest)
+        indice = latest.with_name("indice.txt")
+        if indice.exists():
+            sem_symlink(raiz, indice)
+        indice.write_text("".join(f"- `{s}` · {a2} · {q}\n" for s, (a2, q) in ordenar(raiz, entradas)),
+                          encoding="utf-8")
+
+        # leitura de volta
+        lido, fmt = ler_indice(latest)
+        if fmt != "indice" or (not a.fechado and lido.get(a.assunto, ("",))[0] != rel):
+            erro("leitura de volta do latest.md não bate")
+        gravados += [latest, indice]
+        resultado_commit = commitar(raiz, gravados, a.assunto, a.fechado) if not a.sem_commit \
+            else "sem commit (--sem-commit)"
 
     print(f"snapshot: {rel}")
     if legado:
         print(f"legado preservado: {legado.relative_to(raiz)}")
     print(f"latest.md: {len(lido)} assunto(s) aberto(s): {', '.join(sorted(lido)) or 'nenhum'}")
-    print(commitar(raiz, gravados, a.assunto, a.fechado) if not a.sem_commit else "sem commit (--sem-commit)")
-    for av in (avisos if not a.indexar else []):
+    if movidos:
+        print(f"{len(movidos)} assunto(s) sem handoff há mais de {a.parado_dias} dias movido(s) para os parados: "
+              + ", ".join(sorted(movidos)))
+    if cortados > 0:
+        print(f"{cortados} parado(s) mais antigo(s) saíram da lista (snapshots seguem em handoffs/history/)")
+    print(resultado_commit)
+    for av in avisos:
         print(av)
     if not a.fechado and not a.indexar:
         # Caminho exato deste snapshot: outra sessão pode gravar um handoff mais novo no mesmo projeto.
