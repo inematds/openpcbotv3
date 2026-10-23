@@ -4,7 +4,9 @@ import { Bot, GrammyError, HttpError } from 'grammy';
 
 import type { Bus } from '../bus/bus.js';
 import { novoTraceId } from '../bus/bus.js';
-import { validarTokenTelegram } from '../config/env.js';
+import { validarTokenTelegram, RAIZ } from '../config/env.js';
+import { baixarAnexo, extrairAnexo, linhaAnexo, type MsgComMidia } from './anexo.js';
+import { join } from 'node:path';
 
 export interface OpcoesTelegram {
   token: string | undefined;
@@ -15,6 +17,8 @@ export interface OpcoesTelegram {
   bus: Bus;
   log: (m: string) => void;
   agora: () => number;
+  /** Onde salvar anexos recebidos (padrão: store/anexos). */
+  dirAnexos?: string;
 }
 
 export type Papel = 'responder' | 'observar' | 'ignorar';
@@ -74,11 +78,21 @@ export async function ligarTelegram(o: OpcoesTelegram): Promise<{ parar: () => P
 
   // `message` (não `message:text`) para pegar também legenda de foto/vídeo —
   // em grupo é onde mora metade do que se quer lembrar.
-  bot.on('message', (ctx) => {
-    const texto = ctx.message.text ?? ctx.message.caption;
-    if (!texto) return;
+  bot.on('message', async (ctx) => {
+    let texto = ctx.message.text ?? ctx.message.caption ?? '';
     const chatId = String(ctx.chat.id);
     const papel = papelDoChat(chatId, o.chatsResponder, o.chatsObservar);
+    // Anexo (vídeo, foto, documento…): só baixa nos chats em que o bot responde.
+    const anexo = papel === 'responder' ? extrairAnexo(ctx.message as unknown as MsgComMidia) : null;
+    if (anexo) {
+      const r = await baixarAnexo(anexo, ctx.message.message_id, o.token as string, o.dirAnexos ?? join(RAIZ, 'store/anexos'), {
+        getFile: (id) => bot.api.getFile(id),
+        buscar: async (url) => { const resp = await fetch(url); if (!resp.ok) throw new Error(`HTTP ${resp.status}`); return resp.arrayBuffer(); },
+      });
+      o.log(`[telegram] anexo ${anexo.tipo} msg ${ctx.message.message_id}: ${r.caminho ?? `não baixado (${r.motivo})`}`);
+      texto = [texto, linhaAnexo(anexo, r)].filter(Boolean).join('\n\n');
+    }
+    if (!texto) return;
     const chat = ctx.chat as { title?: string; first_name?: string; username?: string };
     if (papel === 'ignorar') {
       if (!jaLogados.has(chatId)) {

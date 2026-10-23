@@ -1,5 +1,13 @@
 # CHANGELOG — openpcbotv3
 
+## 3.11.5 — 2026-10-23
+
+O bot passa a receber arquivos. Antes só lia texto/legenda: um vídeo mandado no chat sumia sem aviso (22/10).
+
+- `src/canais/anexo.ts`: vídeo, foto (a maior), documento, áudio, voz, vídeo redondo e GIF são baixados para `store/anexos/<data>/<msg>-<nome>` nos chats em que o bot responde; o texto que vai ao agente ganha `[anexo recebido: vídeo · 12,3 MB · salvo em <caminho>]`.
+- Acima de 20 MB (limite do Bot API do Telegram) não baixa: a linha diz `NÃO baixado` e o motivo, para o agente avisar em vez de ignorar.
+- Mensagem só com arquivo (sem legenda) agora chega ao agente. Grupos só observados continuam sem download.
+
 ## 3.10.5 — 2026-10-18
 
 Agente de projeto escolhido sem depender do roteador.
