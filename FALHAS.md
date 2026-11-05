@@ -2,6 +2,7 @@
 
 | data | o que quebrou | menor correção | prompt \| infra |
 |---|---|---|---|
+| 2026-11-05 | #89966 (tornados PR/SC): sessão retomada de 154 mil tokens parada 1h02; o hook-longrun barrou o prompt e o bot gravou o texto do hook como resposta (`done`), nada foi feito; 2ª vez (1ª #69448, 20/10) | `LONGRUN_PAUSA_TOKENS=0` no `claude` do bot + repetir 1x sem `--resume` quando a saída for "blocked by hook", senão falhar (3.11.6) | infra |
 | 2026-10-22 | Repetiu a de 14/10: o Nei mandou um vídeo pedindo r7ex 1,4x; `telegram.ts` só lia `text ?? caption`, o vídeo sumiu e o bot perguntou o tema | anexos baixados para `store/anexos/` e caminho no texto do agente; > 20 MB avisa que não baixou (3.11.5) | infra |
 | 2026-10-14 | #59209: o Nei mandou a matéria com o gráfico da Adobe em queda, mas `canais/telegram.ts` só lê `text ?? caption` — a foto foi descartada sem aviso e o reel saiu com gráfico genérico | salvar foto/documento recebido (getFile → pasta do chat) e passar o caminho ao agente; enquanto isso, avisar "recebi imagem, mas não leio anexos" | infra |
 | 2026-10-14 | #59209/#59212 (reel do gráfico em queda): o lead deixou o `reel7etapas fazer` em segundo plano e encerrou o job prometendo mandar o vídeo; o processo parou num portão às 07:04 e nada chegou ao v3 | proteção: processo longo lançado pelo agente avisa o chat ao terminar ou falhar (ou o `fazer` do reel7etapas avisa o v3 no portão reprovado); vídeo terminado à mão e enviado 14/10 19:20 | prompt + infra |

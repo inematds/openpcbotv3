@@ -6,7 +6,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type Database from 'better-sqlite3';
 
-import type { ContextoExecucao } from '../fila/runner.js';
+import type { ContextoExecucao, Execucao, Runner } from '../fila/runner.js';
 import type { Job } from '../fila/types.js';
 import type { RegistroCusto } from '../custo/registro.js';
 import { RAIZ } from '../config/env.js';
@@ -120,6 +120,44 @@ export function interpretarSaidaCli(bruto: string): SaidaCli {
   }
 }
 
+/**
+ * Saída de um `claude -p` barrado por hook (05/11/2026, job #89966: o aviso de
+ * "cache venceu" do hook-longrun saiu como resposta e o pedido morreu). Vem como
+ * texto cru ou no `result` do JSON.
+ */
+export function bloqueadoPorHook(texto: string): boolean {
+  return /^\s*\w+ operation blocked by hook\b/.test(texto);
+}
+
+/**
+ * Runner que repete UMA vez, sem `--resume`, quando um hook barra o prompt.
+ * Sessão retomada é o caso comum (sessão grande e fria); sessão nova não tem o
+ * que barrar. Se barrar de novo, `interpretarSaida` lança e o job falha.
+ */
+export function comRepeticaoSemBloqueio(base: Runner, log: (m: string) => void = () => {}): Runner {
+  return {
+    nome: base.nome,
+    iniciar(ctx: ContextoExecucao): Execucao {
+      let atual = base.iniciar(ctx);
+      let cancelado = false;
+      return {
+        aguardar: async () => {
+          const bruto = await atual.aguardar();
+          if (cancelado || !ctx.vars.OPENPCBOT_SESSION || !bloqueadoPorHook(interpretarSaidaCli(bruto).texto)) return bruto;
+          log(`[agente] hook barrou a sessão ${ctx.vars.OPENPCBOT_SESSION}; repetindo em sessão nova`);
+          await atual.limpar();
+          const { OPENPCBOT_SESSION: _velha, ...vars } = ctx.vars;
+          const { vigia: _v, ...resto } = ctx;
+          atual = base.iniciar({ ...resto, vars });
+          return atual.aguardar();
+        },
+        cancelar: async () => { cancelado = true; await atual.cancelar(); },
+        limpar: () => atual.limpar(),
+      };
+    },
+  };
+}
+
 /** Chave em `prefs`: momento do último `/novo` do chat. */
 export const CHAVE_NOVO = 'sessao_novo_em';
 
@@ -216,13 +254,15 @@ export function criarPromptDe(o: { sessoes: Sessoes; registro: RegistroCusto; cl
       prompt: montarPrompt(e, agente, o.quadro?.(job)),
       cwd,
       perfil: { motor: 'claude', modelo: job.modelo ?? agente.modelo, esforco: job.esforco ?? agente.esforco },
-      vars: { ...(sessao ? { OPENPCBOT_SESSION: sessao } : {}), ...(agente.mcpConfig && existsSync(agente.mcpConfig) ? { OPENPCBOT_MCP: agente.mcpConfig } : {}), OPENPCBOT_CHAT: e.chatId, OPENPCBOT_TRACE: e.traceId ?? '' },
+      vars: { ...(sessao ? { OPENPCBOT_SESSION: sessao } : {}), ...(agente.mcpConfig && existsSync(agente.mcpConfig) ? { OPENPCBOT_MCP: agente.mcpConfig } : {}), OPENPCBOT_CHAT: e.chatId, OPENPCBOT_TRACE: e.traceId ?? '', LONGRUN_PAUSA_TOKENS: '0' },
       timeoutMs: timeoutDoPedido(e.texto),
       // Só vigia sessão RETOMADA cujo transcript existe: caminho errado não pode matar job sadio.
       ...(transcript && existsSync(transcript) ? { vigia: { arquivo: transcript, prazoMs: VIGIA_RETOMADA_MS } } : {}),
       interpretarSaida: (bruto: string): string => {
         const s = interpretarSaidaCli(bruto);
         if (!e.chatId) throw new Error('EntradaAgente sem chatId — input do job malformado');
+        // Texto de hook não é resposta: falha o job (o Nei recebe o erro) e não grava a sessão.
+        if (bloqueadoPorHook(s.texto)) throw new Error(`hook barrou o pedido mesmo em sessão nova: ${s.texto.slice(0, 300)}`);
         o.registro.gravar({
           traceId: e.traceId, provedor: 'claude-cli', modelo: job.modelo ?? agente.modelo, tier: 'premium', agente: agente.id, jobId: job.id, chatId: e.chatId,
           tokensIn: s.tokensIn ?? 0, tokensOut: s.tokensOut ?? 0, custoUsd: s.custoUsd ?? 0, latenciaMs: Date.now() - t0, ok: true, motivoTier: 'agente CLI',

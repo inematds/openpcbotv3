@@ -1,5 +1,12 @@
 # CHANGELOG — openpcbotv3
 
+## 3.11.6 — 2026-11-05
+
+Pedido barrado por hook não morre mais calado (job #89966, tornados PR/SC: o aviso de "cache venceu" do hook-longrun saiu como resposta e o job ficou `done` sem fazer nada).
+
+- `claude -p` do bot roda com `LONGRUN_PAUSA_TOKENS=0`: o bloqueio de pausa do hook-longrun é para o terminal, não para o bot.
+- `comRepeticaoSemBloqueio` (agente-cli.ts): se um hook barrar a sessão retomada, repete UMA vez em sessão nova (sem `--resume`); se barrar de novo, o job falha com o motivo em vez de entregar o texto do hook.
+
 ## 3.11.5 — 2026-10-23
 
 O bot passa a receber arquivos. Antes só lia texto/legenda: um vídeo mandado no chat sumia sem aviso (22/10).

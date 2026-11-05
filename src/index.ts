@@ -30,7 +30,7 @@ import { logger } from './telemetria/logger.js';
 import { Cron } from './tarefas/cron.js';
 import { TarefasUsuario } from './tarefas/usuario.js';
 import { Heartbeat } from './tarefas/heartbeat.js';
-import { Sessoes, argumentosCli, criarPromptDe, TIMEOUT_AGENTE_MS } from './orquestrador/agente-cli.js';
+import { Sessoes, argumentosCli, comRepeticaoSemBloqueio, criarPromptDe, TIMEOUT_AGENTE_MS } from './orquestrador/agente-cli.js';
 import { Orquestrador } from './orquestrador/orquestrador.js';
 import { Prefs } from './config/prefs.js';
 import { Interruptores } from './orquestrador/interruptores.js';
@@ -107,7 +107,7 @@ async function main(): Promise<void> {
   orq.ligar();
 
   // Workers: um por lane, com o runner claude configurado para o v3.
-  const runnerClaude = new ClaudeRunner({ binario: cfg.claudeBin, memoriaMax: cfg.agenteMemoriaMax, montarArgs: (ctx) => argumentosCli(cfg.claudeBin, ctx) });
+  const runnerClaude = comRepeticaoSemBloqueio(new ClaudeRunner({ binario: cfg.claudeBin, memoriaMax: cfg.agenteMemoriaMax, montarArgs: (ctx) => argumentosCli(cfg.claudeBin, ctx) }), log);
   const promptDe = criarPromptDe({ sessoes: app.sessoes, registro: app.registro, claudeBin: cfg.claudeBin, bloqueiaAgente: (id) => app.interruptores.bloqueiaAgente(id), quadro: (job) => quadroDoChat(fila, job.flow_ref, agora(), job.id) });
   const entregar = criarEntregador(app);
   const workers = FILAS.map((f) => new Worker(fila, {
