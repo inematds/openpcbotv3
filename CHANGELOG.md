@@ -1,5 +1,13 @@
 # CHANGELOG — openpcbotv3
 
+## 3.12.6 — 2026-11-05
+
+Retomada sem reler a conversa inteira. Antes o bot retomava a sessão do chat por até 6 h; depois de 1 h o cache já tinha vencido e cada retomada relia tudo (job #89966: 154 mil tokens).
+
+- `src/orquestrador/resumo-sessao.ts` + cron `resumo-sessoes` (1/min): sessão parada há 40–52 min ganha um resumo de retomada escrito por uma cópia dela (`--fork-session`, cache quente, sem Bash/Edit/Write). Tentativa marcada antes de rodar: falha não repete a cada minuto; chat com job aberto é pulado.
+- `Sessoes.obter`: retoma só até 55 min (era 6 h). Depois disso, sessão nova com `[Retomada …]` = resumo + 6 últimas mensagens do chat (até 24 h; `/novo` zera).
+- Migração 11: `sessions.resumo`, `resumo_de`, `resumo_em`.
+
 ## 3.11.6 — 2026-11-05
 
 Pedido barrado por hook não morre mais calado (job #89966, tornados PR/SC: o aviso de "cache venceu" do hook-longrun saiu como resposta e o job ficou `done` sem fazer nada).

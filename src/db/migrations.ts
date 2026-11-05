@@ -303,6 +303,17 @@ export const MIGRATIONS: Migration[] = [
       ALTER TABLE jobs ADD COLUMN sessao TEXT;
     `,
   },
+  {
+    version: 11,
+    nome: 'sessions_resumo',
+    // Resumo de retomada (3.12.6): escrito aos ~45 min parada, com cache quente,
+    // e lido pela sessão nova que substitui a fria. `resumo_de` = sessão resumida.
+    sql: `
+      ALTER TABLE sessions ADD COLUMN resumo TEXT;
+      ALTER TABLE sessions ADD COLUMN resumo_de TEXT;
+      ALTER TABLE sessions ADD COLUMN resumo_em INTEGER;
+    `,
+  },
 ];
 
 const SCHEMA_CONTROLE = `

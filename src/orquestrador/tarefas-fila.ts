@@ -17,6 +17,7 @@ import { executarComando } from './comandos.js';
 import type { EntradaAgente } from './agente-cli.js';
 import type { Orquestrador } from './orquestrador.js';
 import { PREFIXO } from './quadro.js';
+import { claudeResumidor, resumirSessoesParadas } from './resumo-sessao.js';
 
 export function criarTarefas(app: App, orq: () => Orquestrador): Record<string, Tarefa> {
   return {
@@ -118,6 +119,8 @@ export function criarTarefas(app: App, orq: () => Orquestrador): Record<string, 
       await orq().responder({ canal: canal as MensagemRecebida['canal'], chatId, texto: input, traceId: `cron-${job.id}`, recebidaEm: app.agora() });
       return 'ok';
     },
+
+    'resumo-sessoes': async () => resumirSessoesParadas(app.db, app.agora(), claudeResumidor(app.cfg.claudeBin)),
 
     lembretes: async () => {
       const l = app.tarefas.lembretesVencidos();

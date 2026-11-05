@@ -12,6 +12,7 @@ import type { RegistroCusto } from '../custo/registro.js';
 import { RAIZ } from '../config/env.js';
 import { blocoSkills, skillsCacheadas } from './skills.js';
 import { agentesCacheados, type Agente } from './agentes.js';
+import { CACHE_SEG, blocoRetomada } from './resumo-sessao.js';
 
 export interface EntradaAgente {
   chatId: string;
@@ -68,13 +69,14 @@ export function identidade(): string {
   return 'Você é o openpcbot v3, assistente pessoal do Nei (PT-BR). Seja direto, prático e honesto sobre o que não conseguiu fazer.';
 }
 
-export function montarPrompt(e: EntradaAgente, agente: Agente, quadro?: string): string {
+export function montarPrompt(e: EntradaAgente, agente: Agente, quadro?: string, retomada?: string): string {
   const partes: string[] = [identidade()];
   if (agente.soul) partes.push(`[Persona do agente ${agente.nome}]\n${agente.soul}`);
   if (e.personalidade) partes.push(e.personalidade);
   if (agente.prompt) partes.push(`[Agente ${agente.nome}]\n${agente.prompt}`);
   if (e.somenteLeitura || agente.somenteLeitura) partes.push('MODO SOMENTE LEITURA: não crie, edite ou apague arquivos, não faça commit. Só leia e responda.');
   if (quadro) partes.push(quadro);
+  if (retomada) partes.push(retomada);
   if (e.memoria) partes.push(e.memoria);
   if (e.consultas && Object.keys(e.consultas).length) {
     partes.push('[Contexto dos especialistas]\n' + Object.entries(e.consultas).map(([id, t]) => `## ${id}\n${t.slice(0, 3000)}`).join('\n\n'));
@@ -185,8 +187,9 @@ export class Sessoes {
 
   obter(chatId: string, agente: string, criadoEm: number = this.agora()): string | undefined {
     const l = this.db.prepare('SELECT session_id, ultimo_uso FROM sessions WHERE chat_id = ? AND agente = ?').get(chatId, agente) as { session_id: string; ultimo_uso: number } | undefined;
-    // Sessão velha (> 6 h) não vale a pena retomar: cache do provedor já expirou (pruning ciente do TTL).
-    if (!l || this.agora() - l.ultimo_uso > 6 * 3600) return undefined;
+    // Sessão fria (> 55 min) não é retomada: o cache do provedor venceu e ela releria tudo (job #89966).
+    // A sessão nova recebe o resumo de retomada + últimas mensagens (resumo-sessao.ts).
+    if (!l || this.agora() - l.ultimo_uso > CACHE_SEG) return undefined;
     const novo = this.novoEm(chatId);
     // Job de depois do /novo não herda sessão de antes; job de antes não pega a nova.
     if (novo > 0 && (criadoEm >= novo) !== (l.ultimo_uso >= novo)) return undefined;
@@ -203,6 +206,11 @@ export class Sessoes {
     if (novo > 0 && criadoEm < novo) return false;
     this.db.prepare('INSERT INTO sessions (chat_id, agente, session_id, ultimo_uso) VALUES (?, ?, ?, ?) ON CONFLICT(chat_id, agente) DO UPDATE SET session_id = excluded.session_id, ultimo_uso = excluded.ultimo_uso').run(chatId, agente, sessionId, this.agora());
     return true;
+  }
+
+  /** Bloco de retomada para a sessão nova (ver resumo-sessao.ts). */
+  retomada(chatId: string, agente: string, criadoEm: number = this.agora()): string | undefined {
+    return blocoRetomada(this.db, chatId, agente, criadoEm, this.novoEm(chatId), this.agora());
   }
 
   limpar(chatId: string): number {
@@ -247,11 +255,14 @@ export function criarPromptDe(o: { sessoes: Sessoes; registro: RegistroCusto; cl
       : o.sessoes.obter(e.chatId, agente.id, job.criado_em);
     // Gravada já na largada: se este job morrer no timeout, `/job N` ainda acha a conversa.
     if (sessao) o.sessoes.gravarDoJob(job.id, sessao);
+    // Sem sessão para retomar porque esfriou: o resumo e as últimas mensagens seguram o fio.
+    const retomada = !sessao && !e.somenteLeitura && e.continuaJob === undefined
+      ? o.sessoes.retomada(e.chatId, agente.id, job.criado_em) : undefined;
     const cwd = existsSync(agente.cwd) ? agente.cwd : RAIZ;
     const transcript = sessao ? transcriptDe(cwd, sessao) : undefined;
     const t0 = Date.now();
     return {
-      prompt: montarPrompt(e, agente, o.quadro?.(job)),
+      prompt: montarPrompt(e, agente, o.quadro?.(job), retomada),
       cwd,
       perfil: { motor: 'claude', modelo: job.modelo ?? agente.modelo, esforco: job.esforco ?? agente.esforco },
       vars: { ...(sessao ? { OPENPCBOT_SESSION: sessao } : {}), ...(agente.mcpConfig && existsSync(agente.mcpConfig) ? { OPENPCBOT_MCP: agente.mcpConfig } : {}), OPENPCBOT_CHAT: e.chatId, OPENPCBOT_TRACE: e.traceId ?? '', LONGRUN_PAUSA_TOKENS: '0' },

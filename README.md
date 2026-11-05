@@ -74,6 +74,8 @@ ORQUESTRADOR
 GUARDA DE EXFILTRAÇÃO: todo texto que sai é varrido (tokens, keys, JWT, valores do .env) → [REDIGIDO]
 ```
 
+**Sessão do agente e pausa (3.12.6).** O `claude` do chat é retomado (`--resume`) só enquanto o cache do provedor vale: até 55 min depois da última resposta. Aos 40–52 min parada, o cron `resumo-sessoes` roda uma cópia da sessão (`--fork-session`, cache quente, sem ferramentas que escrevem) que escreve um resumo de retomada (pedido, o que foi feito com caminhos, o que falta, decisões do Nei) e guarda em `sessions.resumo`. Depois de 55 min (até 24 h), o pedido seguinte abre sessão NOVA com esse resumo + as 6 últimas mensagens do chat no prompt. `/novo` descarta tudo isso. Hook que barrar o prompt (ex.: aviso de cache vencido do hook-longrun) faz o bot repetir uma vez em sessão nova; se barrar de novo, o job falha com o motivo (3.11.6).
+
 Especialistas em paralelo (padrão grokky): quando o roteador indica `consultar`, até 2 agentes **só leitura** (ex.: `research`) rodam antes e o `lead` recebe as saídas deles no prompt. Só o lead escreve.
 
 ---
@@ -179,7 +181,7 @@ Orçamento (`config/orcamento.yaml`, `ORCAMENTO_MENSAL_USD`): aviso a 70 %, **tr
 
 ## 9. Tarefas, cron e heartbeat (`src/tarefas/`)
 
-- **Cron** vira job na fila com `idem_key = nome@ocorrência` (nunca dispara duas vezes). Sessão `isolada` (contexto limpo) ou `principal`. Padrão: `lembretes` (1 min), `indexar-memoria` (15 min), `decaimento` (3h30), `consolidacao-noturna` (4h), `backup-noturno` (4h15), `daily-8h`.
+- **Cron** vira job na fila com `idem_key = nome@ocorrência` (nunca dispara duas vezes). Sessão `isolada` (contexto limpo) ou `principal`. Padrão: `lembretes` (1 min), `resumo-sessoes` (1 min, seção 3), `indexar-memoria` (15 min), `decaimento` (3h30), `consolidacao-noturna` (4h), `backup-noturno` (4h15), `daily-8h`.
 - **Heartbeat** a cada 30 min: recupera leases vencidos, cancela zumbi (rodando > 2× o timeout de 20 min), alerta 3 falhas da mesma tarefa em 1 h.
 - **Suas tarefas** (`tarefas_usuario`): lembrete por data, resumo no `/daily`.
 
@@ -220,7 +222,7 @@ Três camadas, sempre somadas, nesta ordem no prompt:
 2. `agents/<id>/SOUL.md`: persona fixa daquele agente (opcional; precisa de restart para o registry reler).
 3. `personalidades/<nome>.md`: escolhida por chat com `/personality <nome>`; `/personality off` volta ao padrão. Vale para resposta direta e agentes.
 
-Trocar a personalidade apaga as sessões `--resume` do chat, senão o agente retomaria com a voz antiga por até 6 h. Exemplos que já vêm: `curto`, `professor`. Criar uma = um `.md` novo na pasta.
+Trocar a personalidade apaga as sessões `--resume` do chat, senão o agente retomaria com a voz antiga por até 55 min. Exemplos que já vêm: `curto`, `professor`. Criar uma = um `.md` novo na pasta.
 
 ### `/context [detail] [texto]`
 

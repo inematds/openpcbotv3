@@ -8,6 +8,8 @@ export function montarCronPadrao(app: App): void {
   const canal = 'telegram';
   const defs = [
     { nome: 'lembretes', expressao: '* * * * *', tarefa: 'lembretes', input: '', sessao: 'isolada' as const, canal, chat_id: null },
+    // Resumo de retomada (3.12.6): sessão parada há ~45 min ganha resumo com cache quente.
+    { nome: 'resumo-sessoes', expressao: '* * * * *', tarefa: 'resumo-sessoes', input: '', sessao: 'isolada' as const, canal, chat_id: null },
     { nome: 'indexar-memoria', expressao: '*/15 * * * *', tarefa: 'indexar', input: '', sessao: 'isolada' as const, canal, chat_id: null },
     { nome: 'ingestao-observados', expressao: '*/30 * * * *', tarefa: 'ingestao', input: '', sessao: 'isolada' as const, canal, chat_id: null },
     // Google: ficam CRIADOS mas desligados — ligar com /cron on depois de
