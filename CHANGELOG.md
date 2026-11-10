@@ -1,5 +1,18 @@
 # CHANGELOG — openpcbotv3
 
+## 3.13.6 — 2026-11-09
+
+Painel de monitoramento para TV e celular (pedido do Nei: "uma tela com alertas e uma interface de monitoramento… desde que não consuma máquina e tokens").
+
+- `src/painel/`: `GET /painel` (também em `/`; o antigo foi para `/dashboard`), `GET /api/painel` (9 grupos, cada um com `ok`, `gerado_em`, `dados`/`erro`, `ausentes`), `/api/painel/<grupo>`, `/api/painel/falha?bot=&id=` (resultado completo, aberto no clique).
+- Fontes só locais e com cache: `/proc`, `statfs`, `journalctl` (boots 10 min, erro de memória da GPU 5 min), banco do v3 por faixa de id, `inemaccbot.db` só leitura (`readonly`, `fileMustExist`, timeout 300 ms), `rodadas.jsonl`, `continua/estado.json`, timers, histórico do yt-pubx (fim do arquivo), filas espanhol/cidades/r7ex, limites do Claude (statusline) e do Codex (fim do registro mais novo), `fila-vaga --status --json`, `terminais --json`, topo do `pendencias.md`. Nenhum modelo, nenhuma API.
+- Alertas numa lista única (`alertas.ts`) com chave estável; erros antigos de fila/continua não acendem a TV (janelas de 24/48 h).
+- `POST /api/vagas {classe, valor}`: única escrita; exige `DASHBOARD_TOKEN_V3` + Bearer (sem token = 403, `?token=` não vale), inteiro ≥ 1 e ≤ teto, grava pelo comando `vagas` (`execFile`). Aviso para gpu > 1.
+- Sites (`~/.config/inema/painel-sites.json`): GET a cada 5 min só enquanto o painel está aberto; `PAINEL_SITES=0` desliga.
+- Alerta no Telegram pronto e desligado (`PAINEL_ALERTA_TELEGRAM=1`), sem repetir chave (`store/painel-avisados.json`).
+- `src/cli/painel-teste.ts`: sobe só o HTTP do painel numa porta de teste, sem bot nem polling.
+- 16 testes novos (`src/painel/painel.test.ts`).
+
 ## 3.12.6 — 2026-11-05
 
 Retomada sem reler a conversa inteira. Antes o bot retomava a sessão do chat por até 6 h; depois de 1 h o cache já tinha vencido e cada retomada relia tudo (job #89966: 154 mil tokens).

@@ -1,0 +1,144 @@
+// CSS do painel (INEMA: preto #0c0c10, amarelo #FACC15 só como marca/seleção,
+// títulos Sora, corpo Inter). Feito para TV 1920×1080 sem rolagem e celular em
+// uma coluna. Estado nunca só por cor: sempre com palavra ou símbolo junto.
+export const PAINEL_CSS = String.raw`
+:root{
+  --bg:#0c0c10;--bg2:#14141b;--card:#16161e;--card2:#1b1b25;--line:#272730;--line2:#34343f;
+  --txt:#e9e9ee;--mut:#9a9aa6;--fraco:#6f6f7c;--amb:#FACC15;--amb-ink:#1a1206;
+  --ok:#7CE0C6;--warm:#F2B45C;--bad:#F0918A;--bad-bg:#2a1214;--bad-line:#6b2a2c;--warm-bg:#2a2112;
+  --r-tile:14px;--r-ctl:10px;--gap:14px;
+  font-size:clamp(14px,0.9vw,19px);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--txt)}
+body{font:400 1rem/1.4 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-numeric:tabular-nums;min-height:100vh}
+h1,h2,h3,.sora{font-family:Sora,Inter,system-ui,sans-serif}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--amb);outline-offset:2px}
+a{color:var(--txt)}
+
+.app{display:grid;grid-template-rows:auto auto 1fr;height:100vh;padding:var(--gap);gap:var(--gap)}
+.topo{display:flex;align-items:center;gap:1.2rem;min-width:0}
+.marca{display:flex;align-items:baseline;gap:.6rem;min-width:0}
+.marca h1{margin:0;font-size:1.45rem;font-weight:700;letter-spacing:-.01em;white-space:nowrap}
+.marca h1 i{font-style:normal;color:var(--amb)}
+.marca .ver{color:var(--fraco);font-size:.85rem;white-space:nowrap}
+.relogio{margin-left:auto;font-family:Sora,Inter,sans-serif;font-size:1.9rem;font-weight:600;letter-spacing:-.02em;white-space:nowrap}
+.relogio small{display:block;text-align:right;font:400 .8rem Inter,sans-serif;color:var(--mut);letter-spacing:0}
+.ctl{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:999px;padding:3px;background:var(--bg2)}
+.seg button{border:0;background:transparent;padding:.35rem .85rem;border-radius:999px;cursor:pointer;color:var(--mut);font-size:.9rem;min-height:36px}
+.seg button[aria-pressed=true]{background:var(--amb);color:var(--amb-ink);font-weight:600}
+.btn{border:1px solid var(--line2);background:var(--bg2);border-radius:var(--r-ctl);padding:.4rem .9rem;cursor:pointer;min-height:38px;font-size:.9rem}
+.btn[aria-pressed=true]{border-color:var(--amb);color:var(--amb)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* Faixa de alerta: o que está errado, em frases. */
+.faixa{border-radius:var(--r-tile);padding:.75rem 1.1rem;display:flex;gap:1.1rem;align-items:flex-start;min-height:3.2rem;border:1px solid var(--line);background:var(--bg2)}
+.faixa.tem{background:var(--bad-bg);border-color:var(--bad-line)}
+.faixa .conta{font-family:Sora,Inter,sans-serif;font-weight:700;font-size:1.25rem;white-space:nowrap;padding-top:.05rem}
+.faixa.tem .conta{color:var(--bad)}
+.faixa .lista{display:flex;flex-wrap:wrap;gap:.35rem 1.4rem;max-height:3.1em;overflow:hidden;font-size:1.02rem;line-height:1.5}
+.faixa .lista span{white-space:nowrap}
+.faixa .calmo{color:var(--mut);font-size:1.02rem;padding-top:.15rem}
+
+/* Grade da visão geral: 4 colunas × 3 linhas na TV. */
+.grade{display:grid;gap:var(--gap);min-height:0;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));
+  grid-template-areas:"esp maq bot pro" "esp pub cre sit" "vag ter ter ter"}
+.t-esperando{grid-area:esp}.t-maquina{grid-area:maq}.t-bots{grid-area:bot}.t-producao{grid-area:pro}
+.t-publicacao{grid-area:pub}.t-creditos{grid-area:cre}.t-sites{grid-area:sit}.t-vagas{grid-area:vag}.t-terminais{grid-area:ter}
+
+.tile{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--r-tile);padding:.95rem 1.1rem;display:flex;flex-direction:column;gap:.45rem;min-height:0;overflow:hidden;cursor:pointer;text-align:left;width:100%}
+.tile:hover{border-color:var(--line2)}
+.tile.erro{border-color:var(--bad-line);box-shadow:inset 4px 0 0 var(--bad)}
+.tile.aviso{box-shadow:inset 4px 0 0 var(--warm)}
+.tile .cab{display:flex;align-items:center;gap:.6rem}
+.tile h2{margin:0;font-size:1rem;font-weight:600;color:var(--mut);letter-spacing:0}
+.estado{margin-left:auto;font-size:.8rem;padding:.12rem .55rem;border-radius:999px;border:1px solid var(--line2);color:var(--mut);white-space:nowrap}
+.estado.ok{color:var(--ok);border-color:#2d5249}
+.estado.erro{color:var(--bad);border-color:var(--bad-line);background:var(--bad-bg)}
+.estado.aviso{color:var(--warm);border-color:#5c4520;background:var(--warm-bg)}
+.frase{font-family:Sora,Inter,sans-serif;font-size:1.6rem;font-weight:600;line-height:1.15;letter-spacing:-.015em;margin:.1rem 0 .15rem}
+.frase.vazia{color:var(--fraco);font-weight:500;font-size:1.25rem}
+.corpo{display:flex;flex-direction:column;gap:.3rem;min-height:0;overflow:hidden;color:var(--txt)}
+.linha{display:flex;gap:.6rem;align-items:baseline;min-width:0;font-size:.98rem}
+.linha .k{color:var(--mut);white-space:nowrap}
+.linha .v{margin-left:auto;white-space:nowrap}
+.linha .tx{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.mut{color:var(--mut)}.fraco{color:var(--fraco)}
+.s-ok{color:var(--ok)}.s-erro{color:var(--bad)}.s-aviso{color:var(--warm)}
+.bar{height:.42rem;background:var(--bg2);border-radius:999px;overflow:hidden;flex:1;min-width:3rem;align-self:center}
+.bar i{display:block;height:100%;background:var(--txt);opacity:.75}
+.bar.erro i{background:var(--bad);opacity:1}.bar.aviso i{background:var(--warm);opacity:1}
+.sem{color:var(--fraco);font-size:.88rem}
+.mais{color:var(--fraco);font-size:.88rem;margin-top:auto}
+
+/* Modos: lista / ícones / imagens. */
+.icones{display:flex;flex-wrap:wrap;gap:.55rem;align-content:flex-start;overflow:hidden}
+.ico{width:4.6rem;display:flex;flex-direction:column;align-items:center;gap:.25rem;font-size:.78rem;color:var(--mut);text-align:center}
+.ico b{width:3.2rem;height:3.2rem;border-radius:12px;display:grid;place-items:center;font:700 1.35rem Sora,Inter,sans-serif;color:#0c0c10}
+.ico span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ico.erro b{outline:3px solid var(--bad);outline-offset:2px}
+.cartoes{display:grid;grid-template-columns:repeat(auto-fill,minmax(11rem,1fr));gap:.6rem;overflow:hidden;align-content:start}
+.cartao{background:var(--card2);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.cartao .img{aspect-ratio:16/9;background:var(--bg2) center/cover no-repeat;display:grid;place-items:center;font:700 2.2rem Sora,Inter,sans-serif;color:#0c0c10}
+.cartao .txt{padding:.45rem .6rem .55rem;font-size:.85rem;line-height:1.3;display:flex;flex-direction:column;gap:.1rem;min-width:0}
+.cartao .txt b{font-weight:600;font-size:.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cartao .txt span{color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cartao.erro{border-color:var(--bad-line)}
+.cartoes.horiz{grid-template-columns:1fr;gap:.45rem}
+.cartoes.horiz .cartao{flex-direction:row;align-items:center}
+.cartoes.horiz .img{width:7.5rem;flex:none;font-size:1.5rem}
+.cartoes.horiz .txt b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.t-terminais .cartoes{grid-template-columns:repeat(auto-fill,minmax(14rem,1fr))}
+.t-terminais .cartao .img{aspect-ratio:21/9}
+
+/* Detalhe do grupo (folha por cima da grade). */
+.folha{position:fixed;inset:0;background:rgba(6,6,9,.72);display:none;padding:var(--gap);z-index:5}
+.folha.aberta{display:block}
+.folha .caixa{background:var(--bg);border:1px solid var(--line2);border-radius:16px;height:100%;max-width:1500px;margin:0 auto;display:flex;flex-direction:column;overflow:hidden}
+.folha .cabf{display:flex;align-items:center;gap:1rem;padding:1rem 1.3rem;border-bottom:1px solid var(--line)}
+.folha h2{margin:0;font-size:1.5rem;font-weight:700}
+.folha .fechar{margin-left:auto}
+.folha .conteudo{padding:1.1rem 1.3rem 2rem;overflow:auto;display:grid;gap:1.4rem;grid-template-columns:repeat(auto-fit,minmax(min(100%,26rem),1fr));align-content:start}
+.sec{display:flex;flex-direction:column;gap:.4rem;min-width:0}
+.sec h3{margin:0 0 .3rem;font-size:1.05rem;font-weight:600;color:var(--mut)}
+.sec.larga{grid-column:1/-1}
+table{border-collapse:collapse;width:100%;font-size:.95rem}
+td,th{padding:.38rem .5rem;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--mut);font-weight:500}
+td.n{text-align:right;white-space:nowrap}
+pre{white-space:pre-wrap;word-break:break-word;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:.8rem;font:400 .85rem/1.45 "JetBrains Mono",ui-monospace,monospace;max-height:60vh;overflow:auto;margin:0}
+.link{background:none;border:0;padding:0;color:var(--txt);text-decoration:underline;text-decoration-color:var(--amb);text-underline-offset:3px;cursor:pointer}
+.vaga{display:grid;grid-template-columns:7rem 1fr auto;gap:.8rem;align-items:center;padding:.55rem 0;border-bottom:1px solid var(--line)}
+.vaga .nome{font:600 1.1rem Sora,Inter,sans-serif}
+.passo{display:inline-flex;align-items:center;gap:.4rem}
+.passo .btn{min-width:42px;font-size:1.1rem;padding:.2rem .6rem}
+.passo output{min-width:2.2rem;text-align:center;font:700 1.3rem Sora,Inter,sans-serif}
+.nota{font-size:.9rem;color:var(--mut)}
+.nota.aviso{color:var(--warm)}
+input[type=password]{background:var(--card);border:1px solid var(--line2);border-radius:var(--r-ctl);color:var(--txt);padding:.45rem .7rem;font:inherit;min-height:38px;width:min(100%,22rem)}
+.erroapi{color:var(--bad)}
+
+/* Celular e telas estreitas: uma coluna, rolagem livre. */
+@media (max-width: 900px){
+  :root{font-size:16px}
+  .app{height:auto;min-height:100vh}
+  .topo{flex-wrap:wrap}
+  .marca{flex-wrap:wrap;row-gap:.1rem}
+  .marca .ver{white-space:normal}
+  .linha{flex-wrap:wrap;column-gap:.6rem;row-gap:0}
+  .linha .v{white-space:normal;text-align:right}
+  .linha .tx{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .relogio{font-size:1.4rem}
+  .grade{grid-template-columns:1fr;grid-template-rows:none;grid-template-areas:"esp" "maq" "bot" "pro" "pub" "cre" "sit" "vag" "ter"}
+  .tile{max-height:none}
+  .faixa{flex-direction:column;gap:.3rem}
+  .faixa .lista{max-height:none;flex-direction:column;gap:.25rem}
+  .faixa .lista span{white-space:normal}
+  .vaga{grid-template-columns:1fr auto}
+  .vaga .info{grid-column:1/-1}
+}
+@media (max-width: 900px) and (orientation: portrait){ .ctl{width:100%} }
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+`;

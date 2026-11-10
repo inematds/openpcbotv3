@@ -39,13 +39,15 @@ Sem token do Telegram o serviço sobe mesmo assim com HTTP (`127.0.0.1:3142`) e 
 | O quê | Como |
 |---|---|
 | Health (o hub `wifi` consome) | `GET http://127.0.0.1:3142/health` |
-| Dashboard | `http://127.0.0.1:3142/` |
+| Painel de monitoramento (TV/celular) | `http://127.0.0.1:3142/` ou `/painel` · JSON em `/api/painel` (ver "O processo do painel" na seção 11) |
+| Dashboard antigo | `http://127.0.0.1:3142/dashboard` |
+| Testar o painel sem ligar o bot | `npx tsx src/cli/painel-teste.ts 3199` (só HTTP do painel, banco só leitura) |
 | Falar com o bot sem Telegram | `npm run cli -- "mensagem"` ou `POST /mensagem {"texto":"..."}` |
 | Logs | `journalctl --user -u openpcbotv3 -f -o cat` |
 | Restart após mudar `src/` ou `.env` | `bash scripts/instalar-servico.sh` |
 | Diagnóstico | `npm run doctor` (config) · `npm run doctor -- --deep` (probes reais: manda mensagem no Telegram e roda um job) |
 | Parar tudo agora | `/parar tudo <motivo>` no chat; `/retomar` libera |
-| Testes | `npm test` (202) |
+| Testes | `npm test` (278) |
 
 ---
 
@@ -242,7 +244,7 @@ No `agents/<id>/agent.yaml`, `mcp_config: mcp.json` (caminho relativo à pasta) 
 
 - **Telegram** (grammy): só o `ALLOWED_CHAT_ID`; markdown simples vira HTML; mensagens longas fatiadas; 409 vira log, não loop.
 - **CLI**: stdin/stdout quando há TTY ou `--cli`.
-- **HTTP**: `127.0.0.1` por padrão (`POST /mensagem` dispara agente com permissões). Expor na LAN só com `HTTP_BIND_V3=0.0.0.0` **e** `DASHBOARD_TOKEN_V3`.
+- **HTTP**: `127.0.0.1` por padrão (`POST /mensagem` dispara agente com permissões). Expor na LAN só com `HTTP_BIND_V3=0.0.0.0` **e** `DASHBOARD_TOKEN_V3`. Rotas do painel em `src/painel/http-painel.ts` (`/painel`, `/api/painel[/<grupo>]`, `/api/painel/falha`, `POST /api/vagas`).
 - **Slack**: Web API via fetch, probe de OAuth no doctor; desligado até o corte (token é do v2).
 - **WhatsApp**: stub que recusa enquanto o v2 está ativo (sessão única do número; whatsapp-web.js sobe um Chromium). Implementação real na fase 8, em daemon separado.
 
@@ -252,7 +254,23 @@ No `agents/<id>/agent.yaml`, `mcp_config: mcp.json` (caminho relativo à pasta) 
 
 Logs pino JSON no journal. `GET /health` devolve `ok` (Ollama online, RAM ≥ 10 GB, heartbeat < 90 min) mais fila, modelos, RAM, orçamento. Alertas com dedupe de 30 min por chave, entregues no chat permitido do Telegram: Ollama fora, RAM baixa, lease morto, zumbi, 3 falhas, orçamento 70 %/100 %.
 
-Dashboard (`/`): health, Ollama/RAM, fila por lane, custo 14 dias (sparkline) e por tier/agente, memória, jobs recentes. Atualiza a cada 10 s.
+Dashboard antigo (`/dashboard`): health, Ollama/RAM, fila por lane, custo 14 dias (sparkline) e por tier/agente, memória, jobs recentes. Atualiza a cada 10 s.
+
+### Painel de monitoramento (3.13.6, `src/painel/`)
+
+Tela para ficar aberta numa TV (1920×1080 sem rolagem) ou no celular (uma coluna). Nove grupos: Esperando você · Máquina · Bots · Produção · Publicação · Créditos e logins · Sites · Vagas · Terminais. Clique abre o detalhe. Produção, Publicação e Terminais têm três modos (Lista, Ícones, Imagens), guardados no navegador. Faixa de alerta no topo; "Voz" (pt-BR, desligada por padrão) fala só alerta novo.
+
+Não gasta token nem modelo: só lê `/proc`, `statfs`, o banco do v3, o `inemaccbot.db` (somente leitura), o fim dos JSONL, `journalctl`/`systemctl --user` e os comandos `fila-vaga`/`terminais` do hub, tudo com cache (painel 5 s, timers 60 s, GPU 5 min, boots 10 min). Medido: ~10 ms e ~20 ms de CPU por leitura quente; a primeira leitura fria ~250 ms.
+
+**O processo do painel, do início ao fim**
+
+1. ⚙️ O navegador pede `GET /api/painel` a cada 15 s (troca só o cartão que mudou).
+2. ⚙️ `agregador.ts` coleta cada grupo isolado; fonte ausente vira "sem dados" no cartão, nunca erro 500.
+3. ⚙️ `alertas.ts` aplica as regras (lista única): disco > 90 %, memória < 10 GB, GPU sem memória na última hora, reinício < 6 h, job/rodada falhou (24 h), rodada presa > 90 min, fila com erro recente (48 h), site fora, limite > 80 %, serviço parado, terminal interrompido, aviso manual a ≤ 2 dias.
+4. ⚙️ Sites: um GET por site a cada 5 min, só enquanto alguém olha o painel (`PAINEL_SITES=0` desliga). Lista em `~/.config/inema/painel-sites.json`.
+5. 🧠 Avisos manuais (ex.: "OAuth YouTube: conferir") em `~/.config/inema/painel-avisos.json` (`[{titulo, ate, nivel}]`).
+6. 🧠 Vagas: o Nei muda no detalhe de Vagas (−/+) ou no terminal com `vagas <classe> <n>`. O painel chama o mesmo comando (`execFile`, sem shell); exige `DASHBOARD_TOKEN_V3` e o token no cabeçalho Bearer. Sem token, a tela fica só leitura.
+7. ⚙️ Alerta no Telegram: pronto e DESLIGADO (`PAINEL_ALERTA_TELEGRAM=1` liga; nunca repete a mesma chave, estado em `store/painel-avisados.json`).
 
 Backup noturno: `VACUUM INTO` + `age` (se `AGE_RECIPIENT`) ou gzip, retenção 14, em `store/backups/`.
 
@@ -277,7 +295,10 @@ Backup noturno: `VACUUM INTO` + `age` (se `AGE_RECIPIENT`) ou gzip, retenção 1
 | `TELEGRAM_BOT_TOKEN_V3` | | token próprio; o do v2 é recusado |
 | `PORT_V3` | 3142 | |
 | `HTTP_BIND_V3` | 127.0.0.1 | |
-| `DASHBOARD_TOKEN_V3` | | protege `/` e `/api/*` |
+| `DASHBOARD_TOKEN_V3` | | protege `/` e `/api/*`; sem ele o `POST /api/vagas` responde 403 |
+| `PAINEL_SITES` | 1 | `0` desliga a checagem dos sites |
+| `PAINEL_ALERTA_TELEGRAM` | 0 | `1` liga o aviso de alerta novo no Telegram (aguarda OK do Nei) |
+| `VAGAS_ARQ` | `~/.config/inema/vagas.json` | mesmo override do comando `vagas` |
 | `PISO_RAM_GB` | 40 | GB livres para carregar modelo grande |
 | `ORCAMENTO_MENSAL_USD` | 50 | |
 | `SLACK_ENABLED` / `WHATSAPP_ENABLED` | 0 | |
@@ -295,6 +316,7 @@ YAML em `config/`: `ollama.yaml` (papéis, piso, probe), `precos.yaml` (USD/1M t
 src/
   bus/           barramento de eventos tipado
   canais/        telegram · cli · http(+dashboard) · slack · whatsapp(stub) · guarda de exfiltração
+  painel/        painel de monitoramento: fontes/ (máquina, bots, produção, publicação, créditos, sites, vagas, terminais) · alertas · tela/
   fila/          store/worker/runner portados do inemaccbot (lanes: chat, agente, ollama, cron, io)
   orquestrador/  orquestrador · roteador · comandos · agente-cli · skills · agentes · tarefas-fila
   ollama/        gestor (registry, preflight, probe) · cliente HTTP · ram

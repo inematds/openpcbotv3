@@ -1,5 +1,6 @@
 // HTTP na porta própria (3142): GET /health (o hub `wifi` consome), GET /status,
-// GET /api/* (dashboard), GET / (dashboard HTML), POST /mensagem (canal http:
+// GET /api/* (dashboard), GET / e /painel (painel de monitoramento, src/painel/),
+// GET /dashboard (dashboard antigo), POST /api/vagas (só com Bearer), POST /mensagem (canal http:
 // texto entra no bus, resposta volta na mesma requisição). Token opcional
 // via `DASHBOARD_TOKEN_V3` para tudo que não é /health.
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
@@ -9,6 +10,13 @@ import { novoTraceId } from '../bus/bus.js';
 import { FILAS } from '../fila/filas.js';
 import { rssMb } from '../ollama/ram.js';
 import { DASHBOARD_HTML } from '../dashboard/html.js';
+import { CONCORRENCIAS } from '../fila/filas.js';
+import { RAIZ } from '../config/env.js';
+import { tratarPainel } from '../painel/http-painel.js';
+import { PAINEL_HTML } from '../painel/tela/pagina.js';
+import { caminhosPadrao, depsPadrao } from '../painel/tipos.js';
+import { telegramLigado } from '../painel/telegram-alerta.js';
+import { homedir } from 'node:os';
 
 function json(res: ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
@@ -46,15 +54,26 @@ export function ligarHttp(app: App): Server {
     return h === `Bearer ${token}` || url.searchParams.get('token') === token;
   };
 
+  // Painel de monitoramento (3.13.6): só leitura de arquivos locais e do banco; a única escrita é POST /api/vagas.
+  const chatAlerta = app.cfg.chatPermitido;
+  const painel = depsPadrao({
+    db: app.db, versao: app.cfg.versao, concorrenciaV3: { ...CONCORRENCIAS }, caminhos: caminhosPadrao(homedir(), RAIZ),
+    enviarTelegram: telegramLigado() && chatAlerta ? (texto) => app.bus.emit('mensagem.enviar', { canal: 'telegram', chatId: chatAlerta, texto }) : undefined,
+  });
+
   const srv = createServer(async (req, res) => {
     const url = new URL(req.url ?? '/', 'http://x');
     try {
       if (url.pathname === '/health') { const h = montarHealth(app); json(res, h.ok ? 200 : 503, h); return; }
       if (!autorizado(req, url)) { json(res, 401, { erro: 'token' }); return; }
 
-      if (url.pathname === '/' || url.pathname === '/dashboard') {
+      if (url.pathname === '/') {
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(PAINEL_HTML); return;
+      }
+      if (url.pathname === '/dashboard') {
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(DASHBOARD_HTML); return;
       }
+      if (await tratarPainel(req, res, url, painel)) return;
       if (url.pathname === '/status' || url.pathname === '/api/fila') {
         json(res, 200, { lanes: FILAS.map((f) => ({ lane: f, queued: app.fila.listar({ fila: f, status: 'queued' }).length, running: app.fila.listar({ fila: f, status: 'running' }).length })), recentes: app.fila.listar({ limite: 30 }).map((j) => ({ ...j, input: undefined, resultado: j.resultado?.slice(0, 200) })) });
         return;
