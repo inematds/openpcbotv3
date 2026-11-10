@@ -6,7 +6,7 @@ import { cpus } from 'node:os';
 import type { DepsPainel } from '../tipos.js';
 
 export interface DadosMaquina {
-  memoria: { total_gb: number; disponivel_gb: number; swap_usado_gb: number } | null;
+  memoria: { total_gb: number; disponivel_gb: number; swap_usado_gb: number; cache_gb?: number; livre_gb?: number } | null;
   carga: { m1: number; m5: number; m15: number; nucleos: number } | null;
   disco: { total_gb: number; livre_gb: number; usado_pct: number } | null;
   boot_em: number | null;
@@ -20,7 +20,7 @@ export function lerMeminfo(texto: string): DadosMaquina['memoria'] {
   const v: Record<string, number> = {};
   for (const l of texto.split('\n')) { const m = /^(\w+):\s+(\d+)/.exec(l); if (m) v[m[1]] = Number(m[2]); }
   if (!v.MemTotal) return null;
-  return { total_gb: gb(v.MemTotal), disponivel_gb: gb(v.MemAvailable ?? v.MemFree ?? 0), swap_usado_gb: gb((v.SwapTotal ?? 0) - (v.SwapFree ?? 0)) };
+  return { total_gb: gb(v.MemTotal), disponivel_gb: gb(v.MemAvailable ?? v.MemFree ?? 0), swap_usado_gb: gb((v.SwapTotal ?? 0) - (v.SwapFree ?? 0)), cache_gb: gb(v.Cached ?? 0), livre_gb: gb(v.MemFree ?? 0) };
 }
 
 /** `journalctl --list-boots` (JSON ou texto): início de cada boot → epoch. */

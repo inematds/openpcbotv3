@@ -1,5 +1,6 @@
 // Página do painel: HTML + CSS + JS inline, sem build nem CDN obrigatório
 // (Sora/Inter do Google Fonts com fallback de sistema).
+import { CHAT_HTML, JS_CHAT } from './script-chat.js';
 import { PAINEL_CSS } from './estilo.js';
 import { JS_AJUDA, JS_LACO } from './script-base.js';
 import { JS_GRUPOS } from './script-grupos.js';
@@ -7,7 +8,7 @@ import { JS_GRUPOS } from './script-grupos.js';
 const GRUPOS = ['esperando', 'maquina', 'bots', 'producao', 'publicacao', 'creditos', 'sites', 'vagas', 'terminais'];
 
 /** JS completo do cliente (exportado para o teste de sintaxe). */
-export const PAINEL_JS = `(function(){'use strict';\n${JS_AJUDA}\n${JS_GRUPOS}\n${JS_LACO}\n})();`;
+export const PAINEL_JS = `(function(){'use strict';\n${JS_AJUDA}\n${JS_GRUPOS}\n${JS_CHAT}\n${JS_LACO}\n})();`;
 
 export const PAINEL_HTML = `<!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8">
@@ -23,6 +24,7 @@ export const PAINEL_HTML = `<!doctype html>
   <div class="ctl" role="group" aria-label="Como mostrar produção, publicação e terminais">
     <div class="seg"><button data-modo="lista" aria-pressed="true">Lista</button><button data-modo="icones" aria-pressed="false">Ícones</button><button data-modo="imagens" aria-pressed="false">Imagens</button></div>
     <button class="btn" id="voz" aria-pressed="false">Voz desligada</button>
+    <button class="btn" id="conversar" title="Falar com o bot ou com um terminal">Conversar</button>
     <button class="btn" id="organizar" aria-pressed="false" title="Trocar os quadros de lugar (fica guardado neste aparelho)">Organizar</button>
     <button class="btn" id="restaurar" hidden>Restaurar padrão</button>
     <span id="dica-org" hidden>Toque num quadro e depois no lugar para onde ele vai (ou arraste). Clique Pronto ao terminar.</span>
@@ -40,5 +42,6 @@ ${GRUPOS.map((g) => `  <div class="tile t-${g}" id="t-${g}" data-abrir="${g}" ro
   <div class="caixa"><div class="cabf"><h2 id="folha-titulo"></h2><button class="btn fechar" id="fechar">Fechar (Esc)</button></div>
   <div class="conteudo" id="folha-conteudo"></div></div>
 </div>
+${CHAT_HTML}
 <script>${PAINEL_JS}</script>
 </body></html>`;

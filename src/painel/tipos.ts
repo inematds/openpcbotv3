@@ -77,6 +77,8 @@ export interface DepsPainel {
   fetch: typeof fetch;
   /** Sites ligados? (`PAINEL_SITES=0` desliga). */
   sitesLigado: boolean;
+  /** Conversa com o bot pelo painel (PAINEL_CHAT=1). */
+  conversa?: import('./conversa.js').Conversa;
   /** Token Bearer que libera o POST /api/vagas; sem token = 403. */
   token?: string;
   /** Servidor do painel com login (3143): a sessão autentica o POST /api/vagas. */

@@ -65,6 +65,14 @@ body.organizando .grade .tile *{pointer-events:none}
 .tci{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#0c0c10;font-weight:700;font-size:.8rem}
 .tile[data-rola] .corpo{-webkit-mask-image:linear-gradient(#000 78%,transparent);mask-image:linear-gradient(#000 78%,transparent)}
 .tile[data-rola]::after{content:attr(data-rola);position:absolute;right:1.1rem;bottom:.45rem;font-size:.78rem;color:var(--amb);background:var(--card);padding:0 .4rem;border-radius:6px}
+.chat{position:fixed;right:12px;bottom:12px;top:12px;width:min(560px,calc(100vw - 24px));z-index:60;display:flex;flex-direction:column;gap:.45rem;background:var(--bg2);border:1px solid var(--line2);border-radius:var(--r-tile);padding:.8rem;box-shadow:0 18px 60px rgba(0,0,0,.55)}
+.chat[hidden]{display:none}
+.chatcab{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}.chatcab select{flex:1;min-width:10rem;background:var(--card);color:var(--txt);border:1px solid var(--line2);border-radius:var(--r-ctl);padding:.35rem}
+.chatmsgs{flex:1;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:.5rem;background:var(--card)}
+.cb{margin:.3rem 0;max-width:92%}.cb p{margin:.1rem 0 0;white-space:pre-wrap;overflow-wrap:anywhere}.cbv{margin-left:auto;text-align:right}.cbv p{background:rgba(250,204,21,.12);border-radius:10px;padding:.35rem .55rem;display:inline-block;text-align:left}.cbb p{background:var(--card2);border-radius:10px;padding:.35rem .55rem}
+.chattela{margin:0;white-space:pre-wrap;font:12px/1.35 ui-monospace,monospace;color:#d7e7f0}
+.chatin{display:flex;gap:.4rem}.chatin textarea{flex:1;background:var(--card);color:var(--txt);border:1px solid var(--line2);border-radius:var(--r-ctl);padding:.45rem;font:inherit;resize:vertical}
+.chatteclas{display:flex;gap:.3rem;flex-wrap:wrap}.chatteclas[hidden]{display:none}.chatst{font-size:.8rem;min-height:1em}
 .rolar{margin:0;font-size:.78rem;color:var(--mut)}
 .btn.quente{border-color:var(--amb);color:var(--amb)}
 .convc{max-height:60vh;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:.6rem .8rem;background:var(--card)}

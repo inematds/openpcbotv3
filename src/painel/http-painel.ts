@@ -7,6 +7,7 @@
 //   GET  /api/painel/terminal?id=&n= conversa de uma sessão registrada, só leitura
 //   GET  /api/painel/falha?bot=&id=  resultado completo de uma falha (aberto no clique)
 //   POST /api/vagas {classe, valor}  única escrita: exige Bearer SEMPRE (sem token = 403)
+import { conversaLigada } from './conversa.js';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 
 import { montarPainel, type Painel } from './agregador.js';
@@ -67,6 +68,10 @@ export async function tratarPainel(req: IncomingMessage, res: ServerResponse, ur
     try { bruto = await corpo(req); } catch { json(res, 413, { erro: 'corpo grande demais' }); return true; }
     const r = await mudarVagas(d, req.headers.authorization, bruto);
     json(res, r.status, r.corpo);
+    return true;
+  }
+  if (p === '/api/painel/chat' && req.method === 'GET') {
+    json(res, 200, { ligado: conversaLigada() && !!d.conversa, msgs: d.conversa ? d.conversa.desde(Number(url.searchParams.get('desde')) || 0) : [] });
     return true;
   }
   if (p === '/api/painel/terminal/tela' || p === '/api/painel/terminal/enviar') {

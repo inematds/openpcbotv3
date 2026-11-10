@@ -17,6 +17,7 @@ import { tratarPainel } from '../painel/http-painel.js';
 import { PAINEL_HTML } from '../painel/tela/pagina.js';
 import { caminhosPadrao, depsPadrao } from '../painel/tipos.js';
 import { telegramLigado } from '../painel/telegram-alerta.js';
+import { CHAT_ID, Conversa } from '../painel/conversa.js';
 import { ligarServidorPainel } from '../painel/servidor-painel.js';
 import { configAccess, VerificadorAccess } from '../painel/auth/cf-access.js';
 import { Sessoes } from '../painel/auth/sessoes.js';
@@ -61,8 +62,11 @@ export function ligarHttp(app: App): Server {
 
   // Painel de monitoramento (3.13.6): só leitura de arquivos locais e do banco; a única escrita é POST /api/vagas.
   const chatAlerta = app.cfg.chatPermitido;
+  // Conversa do painel (PAINEL_CHAT=1): entra no bot como canal http, chat "painel"; respostas (inclusive de jobs) voltam pelo bus.
+  const conversa = new Conversa((texto) => app.bus.emit('mensagem.recebida', { canal: 'http', chatId: CHAT_ID, texto, traceId: novoTraceId(), recebidaEm: app.agora() }));
+  app.bus.on('mensagem.enviar', (m) => { if (m.canal === 'http' && m.chatId === CHAT_ID) conversa.guardar('bot', m.texto); });
   const painel = depsPadrao({
-    db: app.db, versao: app.cfg.versao, concorrenciaV3: { ...CONCORRENCIAS }, caminhos: caminhosPadrao(homedir(), RAIZ),
+    db: app.db, versao: app.cfg.versao, conversa, concorrenciaV3: { ...CONCORRENCIAS }, caminhos: caminhosPadrao(homedir(), RAIZ),
     enviarTelegram: telegramLigado() && chatAlerta ? (texto) => app.bus.emit('mensagem.enviar', { canal: 'telegram', chatId: chatAlerta, texto }) : undefined,
   });
 
@@ -131,7 +135,7 @@ export function ligarHttp(app: App): Server {
   // para a LAN (PAINEL_BIND) ou para o túnel; a 3142 acima fica no loopback.
   const portaPainel = Number(process.env.PAINEL_PORT ?? 3143);
   if (Number.isInteger(portaPainel) && portaPainel > 0 && portaPainel !== app.cfg.porta) {
-    const depsSessao = depsPadrao({ db: app.db, versao: app.cfg.versao, concorrenciaV3: { ...CONCORRENCIAS }, caminhos: caminhosPadrao(homedir(), RAIZ), porSessao: true });
+    const depsSessao = depsPadrao({ db: app.db, versao: app.cfg.versao, conversa, concorrenciaV3: { ...CONCORRENCIAS }, caminhos: caminhosPadrao(homedir(), RAIZ), porSessao: true });
     const cfa = configAccess();
     const srvPainel = ligarServidorPainel({
       deps: depsSessao,

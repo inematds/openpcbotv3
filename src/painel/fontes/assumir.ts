@@ -2,8 +2,8 @@
 // (tmux próprio, servidor "inema"). Ver a tela = `tmux capture-pane`; digitar = `tmux send-keys`.
 // Liga só com PAINEL_ASSUMIR=1. Na 3143 a sessão de login + CSRF autenticam; na 3142 vale o Bearer.
 // Cada envio vai para ~/.local/share/inema/painel-assumir.log (início do texto, nunca inteiro).
-import { appendFileSync, mkdirSync, readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
+import { basename, dirname, join } from 'node:path';
 
 import type { DepsPainel } from '../tipos.js';
 import { mascarar, SID } from './sessoes.js';
@@ -78,4 +78,26 @@ export async function enviarAoPane(d: DepsPainel, pane: string, corpoBruto: stri
 export function paneDoId(vivos: { session_id: string; tmux?: string | null }[], id: string): string | null {
   if (!SID.test(id)) return null;
   return vivos.find((s) => s.session_id === id)?.tmux ?? null;
+}
+
+/** Abre uma sessão NOVA do Claude no tmux "inema" numa pasta de ~/projetos (botão "Novo terminal" da conversa).
+ * Mesmas travas do Assumir (PAINEL_ASSUMIR=1, CSRF na 3143). A pasta tem de existir e ficar dentro de ~/projetos. */
+export async function novoTerminal(d: DepsPainel, corpoBruto: string, quem: string, home = process.env.HOME ?? ''): Promise<Resposta> {
+  if (!assumirLigado()) return { status: 403, corpo: { erro: 'Assumir desligado (PAINEL_ASSUMIR=1 liga)' } };
+  let pasta = '';
+  try { pasta = String((JSON.parse(corpoBruto || '{}') as { pasta?: unknown }).pasta ?? '').trim(); } catch { return { status: 400, corpo: { erro: 'JSON inválido' } }; }
+  const raiz = realpathSync(join(home, 'projetos'));
+  let real = '';
+  try { real = realpathSync(pasta.startsWith('/') ? pasta : join(raiz, pasta)); } catch { return { status: 404, corpo: { erro: 'pasta não existe' } }; }
+  if (!(real === raiz || real.startsWith(raiz + '/')) || !statSync(real).isDirectory()) return { status: 400, corpo: { erro: 'só pastas dentro de ~/projetos' } };
+  const nome = `cc-${basename(real).replace(/[^\w-]/g, '').slice(0, 30) || 'projetos'}-${Date.now() % 100000}`;
+  const conf = join(home, '.config/inema/tmux-cc.conf');
+  const r = await d.exec('tmux', [...TMUX_SERVIDOR, ...(existsSync(conf) ? ['-f', conf] : []), 'new-session', '-d', '-s', nome, '-c', real, `bash ${join(home, 'projetos/cc.sh')}`], 8000);
+  if (!r.ok) return { status: 500, corpo: { erro: `tmux falhou: ${(r.stderr || '').slice(0, 200)}` } };
+  try {
+    const log = join(dirname(d.caminhos.terminaisEstado), '..', 'painel-assumir.log');
+    mkdirSync(dirname(log), { recursive: true });
+    appendFileSync(log, `${new Date().toISOString()} ${quem} NOVO ${nome} ${real}\n`, { mode: 0o600 });
+  } catch { /* log é extra */ }
+  return { status: 200, corpo: { ok: true, nome, pasta: real, aviso: 'a sessão aparece em Terminais em até ~30 s' } };
 }

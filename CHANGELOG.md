@@ -1,5 +1,12 @@
 # CHANGELOG — openpcbotv3
 
+## 3.21.10 — 2026-11-10
+
+Conversar pelo painel e alerta de GPU explicado (Nei: "seria legal eu poder ter um chat no painel falando com o bot ou um terminal"; "olha sobre o erro no painel").
+
+- **Conversar** (EM TESTE, `PAINEL_CHAT=1`): gaveta no clássico. "🤖 Bot (v3)" manda o texto ao bot como canal http, chat `painel` (mesmo caminho do /mensagem, sem abrir a 3142), e as respostas — inclusive de jobs — voltam pelo bus para a gaveta. "🖥 sessão" mostra a tela ao vivo de uma sessão no tmux do painel e digita nela (Esc, Ctrl+C, ↑ ↓, Enter). "+ Novo terminal" abre o Claude numa pasta de `~/projetos` (`POST /api/painel/terminal/novo`, só com PAINEL_ASSUMIR=1). CSRF igual ao Assumir; log em `~/.local/share/inema/painel-chat.log` (início do texto, mascarado). Testado: "Responda apenas com a frase: painel ok" → "🏠 painel ok" em 26 s.
+- Alerta "GPU sem memória" diz quanto da RAM está presa em cache de disco; quadro Máquina mostra a linha "Cache de disco" quando passa de 16 GB (a GPU usa a mesma RAM; com cache alto o driver nega bloco grande mesmo com "disponível" alto).
+
 ## 3.20.10 — 2026-11-10
 
 Terminais não ficam mais cortados no quadro (Nei: "os terminais ficam cortados").

@@ -9,6 +9,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 
 import { enviarComId, painelEmCache, tratarPainel } from './http-painel.js';
 import { mudarVagas } from './fontes/vagas.js';
+import { novoTerminal } from './fontes/assumir.js';
 import { JARVIS_HTML } from './tela/jarvis.js';
 import { PAINEL_HTML } from './tela/pagina.js';
 import type { DepsPainel } from './tipos.js';
@@ -156,7 +157,9 @@ export function criarServidorPainel(o: OpcoesServidor): Server {
       const ehApi = (p === '/api/painel' || p.startsWith('/api/painel/')) && m === 'GET';
       const ehVagas = p === '/api/vagas';
       const ehEnviar = p === '/api/painel/terminal/enviar';
-      if (!ehTela && !ehApi && !ehVagas && !ehEnviar) { json(res, 404, { erro: 'rota' }); return; }
+      const ehChat = p === '/api/painel/chat' && m === 'POST';
+      const ehNovo = p === '/api/painel/terminal/novo';
+      if (!ehTela && !ehApi && !ehVagas && !ehEnviar && !ehChat && !ehNovo) { json(res, 404, { erro: 'rota' }); return; }
 
       const quem = await autenticado(req, res);
       if (!quem) {
@@ -170,6 +173,22 @@ export function criarServidorPainel(o: OpcoesServidor): Server {
         let bruto = '';
         try { bruto = await corpo(req, 8192); } catch { json(res, 413, { erro: 'grande' }); return; }
         const r = await enviarComId(o.deps, bruto, `${quem.via}:${ipCliente(req)}`);
+        json(res, r.status, r.corpo); return;
+      }
+      if (ehNovo) {
+        if (m !== 'POST') { json(res, 405, { erro: 'use POST' }); return; }
+        if (req.headers['x-painel'] !== '1' || !mesmaOrigem(req)) { json(res, 403, { erro: 'pedido sem a marca do painel (CSRF)' }); return; }
+        let bruto = '';
+        try { bruto = await corpo(req); } catch { json(res, 413, { erro: 'grande' }); return; }
+        const r = await novoTerminal(o.deps, bruto, `${quem.via}:${ipCliente(req)}`);
+        json(res, r.status, r.corpo); return;
+      }
+      if (ehChat) {
+        if (req.headers['x-painel'] !== '1' || !mesmaOrigem(req)) { json(res, 403, { erro: 'pedido sem a marca do painel (CSRF)' }); return; }
+        if (!o.deps.conversa) { json(res, 503, { erro: 'conversa não ligada neste servidor' }); return; }
+        let bruto = '';
+        try { bruto = await corpo(req, 8192); } catch { json(res, 413, { erro: 'grande' }); return; }
+        const r = o.deps.conversa.enviar(bruto, `${quem.via}:${ipCliente(req)}`);
         json(res, r.status, r.corpo); return;
       }
       if (ehVagas) {

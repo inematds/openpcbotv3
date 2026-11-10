@@ -5,13 +5,14 @@ var G={};
 G.maquina={tile:function(d){var m=d.memoria,k=d.disco,c=d.carga,gp=d.gpu_oom,h='';
   var fr=m?'<p class="frase">'+n(m.disponivel_gb)+' GB livres de '+n(m.total_gb,0)+'</p>':'<p class="frase vazia">sem leitura de memória</p>';
   if(m)h+='<div class="linha"><span class="k">Memória em uso</span>'+barra(100*(1-m.disponivel_gb/m.total_gb),95)+'<span class="v">'+Math.round(100*(1-m.disponivel_gb/m.total_gb))+'%</span></div>';
+  if(m&&m.cache_gb!=null&&m.cache_gb>=16)h+=linha('Cache de disco',n(m.cache_gb)+' GB','s-aviso');
   if(k)h+='<div class="linha"><span class="k">Disco</span>'+barra(k.usado_pct,90)+'<span class="v">'+k.usado_pct+'% · '+k.livre_gb+' GB livres</span></div>';
   if(c)h+=linha('Carga',n(c.m1,2)+' em '+c.nucleos+' núcleos');
   h+=linha('Ligada',d.boot_em?ha(d.boot_em):'–');
   h+=linha('GPU sem memória',gp.erro?esc(gp.erro):gp.ultimas_24h?(gp.ultimas_24h+' em 24 h, última '+hm(gp.ultima_em)):'nenhum em 24 h',gp.ultima_hora?'s-erro':gp.ultimas_24h?'s-aviso':'');
   return{frase:fr,corpo:h}},
  detalhe:function(d){var m=d.memoria||{},k=d.disco||{},c=d.carga||{},gp=d.gpu_oom;
-  return sec('Agora',tabela(['Medida','Valor'],[['Memória disponível',n(m.disponivel_gb)+' GB de '+n(m.total_gb,0)+' GB'],['Swap em uso',n(m.swap_usado_gb)+' GB'],['Disco da raiz',(k.usado_pct??'–')+'% usado, '+(k.livre_gb??'–')+' GB livres de '+(k.total_gb??'–')],['Carga 1/5/15 min',n(c.m1,2)+' / '+n(c.m5,2)+' / '+n(c.m15,2)+' ('+(c.nucleos||'–')+' núcleos)'],['Ligada desde',quando(d.boot_em)+' ('+ha(d.boot_em)+')']]))
+  return sec('Agora',tabela(['Medida','Valor'],[['Memória disponível',n(m.disponivel_gb)+' GB de '+n(m.total_gb,0)+' GB'],['Cache de disco',(m.cache_gb!=null?n(m.cache_gb)+' GB (conta como disponível, mas a GPU usa a mesma RAM e pode falhar com cache alto)':'–')],['Swap em uso',n(m.swap_usado_gb)+' GB'],['Disco da raiz',(k.usado_pct??'–')+'% usado, '+(k.livre_gb??'–')+' GB livres de '+(k.total_gb??'–')],['Carga 1/5/15 min',n(c.m1,2)+' / '+n(c.m5,2)+' / '+n(c.m15,2)+' ('+(c.nucleos||'–')+' núcleos)'],['Ligada desde',quando(d.boot_em)+' ('+ha(d.boot_em)+')']]))
   +sec('Reinícios recentes',d.reinicios.erro?'<p class="sem">'+esc(d.reinicios.erro)+'</p>':tabela(['Início do boot'],d.reinicios.em.slice().reverse().map(function(t){return[quando(t)+' <span class="mut">('+ha(t)+')</span>']})))
   +sec('GPU sem memória (kernel, 24 h)',gp.erro?'<p class="sem">'+esc(gp.erro)+'</p>':tabela(['Últimas 24 h','Última hora','Último'],[[gp.ultimas_24h,gp.ultima_hora,quando(gp.ultima_em)]]))}};
 
