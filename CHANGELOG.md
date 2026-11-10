@@ -1,5 +1,14 @@
 # CHANGELOG — openpcbotv3
 
+## 3.17.7 — 2026-11-10
+
+Sessão dentro do painel clássico (Nei: "quando abri a sessão veio o painel do Jarvis mas eu estava no clássico; ter a visão dos dados, ver o conteúdo do terminal e editar o terminal").
+
+- Clássico › Terminais: clicar na sessão abre ali mesmo, com abas **Dados** (quem abriu, modelo, contexto, custo, processo, último pedido/resposta) · **Conteúdo** (conversa só leitura, 5 s) · **Terminal** (tela ao vivo 2 s + digitar, Enter/Esc/Ctrl+C/↑/↓). "← Lista" volta; "abrir no Jarvis" continua como opção.
+- O redesenho automático do detalhe (15 s) não apaga a sessão aberta nem o texto que está sendo digitado.
+- `~/projetos/cct.sh` ao lado do `cc.sh` (o `cct` do `.bashrc` usa ele).
+- Testado no navegador pela 3143 com login: abas, tela ao vivo e envio → o Claude respondeu.
+
 ## 3.16.7 — 2026-11-10
 
 Assumir sessão pelo painel, EM TESTE (Nei: "clicar nele para ver detalhe ou assumir ou visualizar"; "quero testar, depois podemos aumentar a segurança").

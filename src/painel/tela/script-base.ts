@@ -49,13 +49,14 @@ function desenhar(){var d=E.dados;if(!d)return;
   Object.keys(NOMES).forEach(function(nome){var el=document.getElementById('t-'+nome),t=tile(nome);if(el.className!==t.cls)el.className=t.cls;if(E.tiles[nome]!==t.html){el.innerHTML=t.html;E.tiles[nome]=t.html}});
   if(E.aberto)desenharFolha(false)}
 function desenharFolha(forcar){var nome=E.aberto,d=E.dados,c=document.getElementById('folha-conteudo');if(!nome||!d)return;
+  if(E.sessao&&nome==='terminais'){if(forcar&&typeof sessaoMostrar==='function')sessaoMostrar();return}
   var a=document.activeElement;if(!forcar&&a&&a.tagName==='INPUT'&&c.contains(a))return;
   var g=d.grupos[nome],h;try{h=g&&g.ok?G[nome].detalhe(g.dados,g):sec('Sem dados','<p class="sem">'+esc(g&&g.erro||'fonte ausente')+'</p>',1)}catch(e){h=sec('Erro ao desenhar','<p class="erroapi">'+esc(e.message)+'</p>',1)}
   var al=d.alertas.filter(function(x){return x.grupo===nome});if(al.length)h=sec('Alertas deste grupo',al.map(function(x){return'<div class="linha"><span class="tx">'+simb(x.nivel)+' '+esc(x.texto)+'</span></div>'}).join(''),1)+h;
   h+=sem(g)?sec('Fontes sem dados',sem(g),1):'';
   if(forcar||E.folha!==h){c.innerHTML=h;E.folha=h}}
-function abrir(nome){E.aberto=nome;E.folha='';document.getElementById('folha-titulo').textContent=NOMES[nome];var f=document.getElementById('folha');f.classList.add('aberta');desenharFolha(true);document.getElementById('fechar').focus()}
-function fechar(){var n=E.aberto;E.aberto=null;document.getElementById('folha').classList.remove('aberta');if(n)document.getElementById('t-'+n).focus()}
+function abrir(nome){if(typeof pararSessao==='function'){pararSessao();E.sessao=null}E.aberto=nome;E.folha='';document.getElementById('folha-titulo').textContent=NOMES[nome];var f=document.getElementById('folha');f.classList.add('aberta');desenharFolha(true);document.getElementById('fechar').focus()}
+function fechar(){var n=E.aberto;E.aberto=null;if(typeof pararSessao==='function'){pararSessao();E.sessao=null}document.getElementById('folha').classList.remove('aberta');if(n)document.getElementById('t-'+n).focus()}
 var falados={};try{JSON.parse(LS.get('painel.falados','[]')).forEach(function(k){falados[k]=1})}catch(e){}
 function vozNovos(al){var novos=al.filter(function(a){return!falados[a.chave]});novos.forEach(function(a){falados[a.chave]=1});
   var ks=Object.keys(falados);if(ks.length>400)ks=ks.slice(-400);LS.set('painel.falados',JSON.stringify(ks));

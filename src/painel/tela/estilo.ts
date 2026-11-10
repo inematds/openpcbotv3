@@ -33,6 +33,15 @@ a{color:var(--txt)}
 .seg button[aria-pressed=true]{background:var(--amb);color:var(--amb-ink);font-weight:600}
 .btn{border:1px solid var(--line2);background:var(--bg2);border-radius:var(--r-ctl);padding:.4rem .9rem;cursor:pointer;min-height:38px;font-size:.9rem}
 .btn[aria-pressed=true]{border-color:var(--amb);color:var(--amb)}
+.abas{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+.btn.quente{border-color:var(--amb);color:var(--amb)}
+.convc{max-height:60vh;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:.6rem .8rem;background:var(--card)}
+.mc{padding:.4rem 0;border-bottom:1px solid var(--line)}
+.mc span{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+.mc p{margin:.15rem 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.mc.voce span{color:var(--amb)}.mc.ferramenta p,.mc.resultado p{font:400 .82rem/1.4 "JetBrains Mono",ui-monospace,monospace;color:var(--mut)}
+#c-tela{background:#000;color:#d7e7f0;white-space:pre;max-height:55vh}
+.assumirc textarea{width:100%;box-sizing:border-box;background:var(--bg2);color:var(--txt);border:1px solid var(--amb);border-radius:10px;padding:.6rem;font:inherit;resize:vertical;margin-bottom:.5rem}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 
 /* Faixa de alerta: o que está errado, em frases. */
