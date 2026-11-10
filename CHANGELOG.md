@@ -7,6 +7,9 @@ Versão JARVIS do painel (Nei: "quero o painel do jarvis como mais uma versão�
 - Rota nova `GET /jarvis` (na 3142 e na 3143 com o mesmo login): visual HUD do kit `jarvis-painel` (núcleo com anéis, partida "bom dia", voz pt-BR, barra Bom dia/Status/O que espera/Modo foco, teclas 1–4) lendo o mesmo `/api/painel`.
 - Esquerda: os 8 sistemas com uma frase de cada grupo, próximos timers (sem os de 5 min) e últimos publicados. Direita: alertas + "esperando você"; Visto/Depois só marcam no navegador. Núcleo fica vermelho quando há erro; alerta novo vira fala.
 - Botão "Versão Jarvis" no painel clássico e "Painel clássico" no Jarvis. A tela não escreve nada (sem `/api/vagas`).
+- Chave **Lista · Ícones · Gráficos** (tecla 5 alterna): ícones com o número principal de cada sistema; gráficos com medidores de memória/disco/carga/limites, barras de publicação por canal, blocos de vagas, linha do tempo das próximas 12 h e bolinhas dos sites.
+- Clique em qualquer item (linha, ícone, gráfico, timer, publicado ou "esperando você") abre um quadro com a explicação do sistema em português simples, todos os números e os alertas dele; botão Falar lê o resumo.
+- Voz mais rápida: 1,3× por padrão, botão "Velocidade" troca 1,0/1,3/1,6/2,0× (guardado no navegador).
 - `src/painel/tela/jarvis.ts` + 3 testes (`src/painel/jarvis.test.ts`).
 
 ## 3.13.7 — 2026-11-09
