@@ -47,7 +47,8 @@ Sem token do Telegram o serviço sobe mesmo assim com HTTP (`127.0.0.1:3142`) e 
 | Restart após mudar `src/` ou `.env` | `bash scripts/instalar-servico.sh` |
 | Diagnóstico | `npm run doctor` (config) · `npm run doctor -- --deep` (probes reais: manda mensagem no Telegram e roda um job) |
 | Parar tudo agora | `/parar tudo <motivo>` no chat; `/retomar` libera |
-| Testes | `npm test` (282) |
+| Testes | `npm test` (298) |
+| Senha do painel (porta 3143) | `npm run painel-senha` (ou `-- --gerar`) |
 
 ---
 
@@ -271,6 +272,24 @@ Não gasta token nem modelo: só lê `/proc`, `statfs`, o banco do v3, o `inemac
 5. 🧠 Avisos manuais (ex.: "OAuth YouTube: conferir") em `~/.config/inema/painel-avisos.json` (`[{titulo, ate, nivel}]`).
 6. 🧠 Vagas: o Nei muda no detalhe de Vagas (−/+) ou no terminal com `vagas <classe> <n>`. O painel chama o mesmo comando (`execFile`, sem shell); exige `DASHBOARD_TOKEN_V3` e o token no cabeçalho Bearer. Sem token, a tela fica só leitura.
 7. ⚙️ Alerta no Telegram: pronto e DESLIGADO (`PAINEL_ALERTA_TELEGRAM=1` liga; nunca repete a mesma chave, estado em `store/painel-avisados.json`).
+
+**Painel pela rede local / túnel, com senha (3.13.7)**
+
+A porta **3142 nunca sai do loopback**: ela tem o `POST /mensagem`, que chega a um agente com permissão total. Para a LAN ou para o túnel (ccc.inema.pro) existe a **porta própria do painel, 3143**, que só serve login, painel e vagas (qualquer outra rota → 404).
+
+1. 🧠 Definir a senha (uma vez): `npm run painel-senha` (pede duas vezes, sem mostrar) ou `npm run painel-senha -- --gerar` (cria uma forte e a escreve UMA vez em `~/.config/inema/painel-senha-inicial.txt`; leia, guarde e apague). Só o hash scrypt fica em `~/.config/inema/painel-senha.json` (600). Trocar a senha derruba todas as sessões.
+2. ⚙️ Para a rede local, no `.env` do v3: `PAINEL_BIND=0.0.0.0` (porta `PAINEL_PORT=3143`). Sem senha definida o painel recusa sair do loopback. Depois: `bash scripts/instalar-servico.sh`.
+3. 🧠 Abrir `http://<IP-da-máquina>:3143/` → tela de login. O aparelho fica lembrado por 365 dias, renovados a cada uso; o navegador pode guardar a senha. "Sair deste aparelho" e "Sair de todos" no topo do painel.
+4. 🧠 Com sessão, as vagas mudam pelo detalhe de Vagas (sem token Bearer; CSRF por `X-Painel` + Origin).
+5. ⚙️ Túnel (depois): cloudflared aponta `ccc.inema.pro` para `http://127.0.0.1:3143`. O cookie ganha `Secure` com `X-Forwarded-Proto: https`; o limite de tentativas usa `CF-Connecting-IP`.
+6. 🧠 Google (depois): criar a aplicação no Cloudflare Access e definir `PAINEL_CF_ACCESS_AUD`, `PAINEL_CF_ACCESS_TEAM` e `PAINEL_EMAILS` (lista de e-mails aceitos). Sem essas três, o caminho Google fica desligado.
+
+| variável | padrão | |
+|---|---|---|
+| `PAINEL_PORT` | 3143 | `0` desliga o servidor do painel |
+| `PAINEL_BIND` | 127.0.0.1 | `0.0.0.0` para a LAN (exige senha) |
+| `PAINEL_SENHA_ARQ` | `~/.config/inema/painel-senha.json` | |
+| `PAINEL_CF_ACCESS_AUD` / `PAINEL_CF_ACCESS_TEAM` / `PAINEL_EMAILS` | | login Google via Cloudflare Access |
 
 Backup noturno: `VACUUM INTO` + `age` (se `AGE_RECIPIENT`) ou gzip, retenção 14, em `store/backups/`.
 

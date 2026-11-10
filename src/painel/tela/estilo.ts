@@ -10,6 +10,8 @@ export const PAINEL_CSS = String.raw`
   font-size:clamp(14px,0.9vw,19px);
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
+#sair form{margin:0}
 html,body{margin:0;background:var(--bg);color:var(--txt)}
 body{font:400 1rem/1.4 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-numeric:tabular-nums;min-height:100vh}
 h1,h2,h3,.sora{font-family:Sora,Inter,system-ui,sans-serif}

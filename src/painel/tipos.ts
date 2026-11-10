@@ -69,6 +69,8 @@ export interface DepsPainel {
   sitesLigado: boolean;
   /** Token Bearer que libera o POST /api/vagas; sem token = 403. */
   token?: string;
+  /** Servidor do painel com login (3143): a sessão autentica o POST /api/vagas. */
+  porSessao?: boolean;
   /** Envio de alerta ao Telegram (só usado com PAINEL_ALERTA_TELEGRAM=1). */
   enviarTelegram?: (texto: string) => void;
 }

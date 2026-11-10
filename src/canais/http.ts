@@ -3,6 +3,7 @@
 // GET /dashboard (dashboard antigo), POST /api/vagas (só com Bearer), POST /mensagem (canal http:
 // texto entra no bus, resposta volta na mesma requisição). Token opcional
 // via `DASHBOARD_TOKEN_V3` para tudo que não é /health.
+// O painel com login para LAN/túnel mora em OUTRA porta (PAINEL_PORT, 3143): src/painel/servidor-painel.ts.
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 
 import type { App } from '../app.js';
@@ -16,7 +17,11 @@ import { tratarPainel } from '../painel/http-painel.js';
 import { PAINEL_HTML } from '../painel/tela/pagina.js';
 import { caminhosPadrao, depsPadrao } from '../painel/tipos.js';
 import { telegramLigado } from '../painel/telegram-alerta.js';
+import { ligarServidorPainel } from '../painel/servidor-painel.js';
+import { configAccess, VerificadorAccess } from '../painel/auth/cf-access.js';
+import { Sessoes } from '../painel/auth/sessoes.js';
 import { homedir } from 'node:os';
+import { resolve } from 'node:path';
 
 function json(res: ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
@@ -121,5 +126,19 @@ export function ligarHttp(app: App): Server {
   }
   const bindFinal = (bind !== '127.0.0.1' && bind !== 'localhost' && !token) ? '127.0.0.1' : bind;
   srv.listen(app.cfg.porta, bindFinal, () => app.log(`[http] ouvindo em ${bindFinal}:${app.cfg.porta}`));
+
+  // Painel em porta própria (3.13.7): só login + painel + vagas. É ESTA porta que pode ir
+  // para a LAN (PAINEL_BIND) ou para o túnel; a 3142 acima fica no loopback.
+  const portaPainel = Number(process.env.PAINEL_PORT ?? 3143);
+  if (Number.isInteger(portaPainel) && portaPainel > 0 && portaPainel !== app.cfg.porta) {
+    const depsSessao = depsPadrao({ db: app.db, versao: app.cfg.versao, concorrenciaV3: { ...CONCORRENCIAS }, caminhos: caminhosPadrao(homedir(), RAIZ), porSessao: true });
+    const cfa = configAccess();
+    const srvPainel = ligarServidorPainel({
+      deps: depsSessao,
+      sessoes: new Sessoes(resolve(RAIZ, 'store/painel-sessoes.json')),
+      access: cfa ? new VerificadorAccess(cfa) : null,
+    }, portaPainel, process.env.PAINEL_BIND, app.log);
+    srv.on('close', () => srvPainel.close());
+  }
   return srv;
 }

@@ -71,8 +71,9 @@ export async function coletarVagas(d: DepsPainel) {
   return {
     dados: {
       classes: montarClasses(status, vj),
-      pode_mudar: !!d.token && existsSync(d.caminhos.scriptVagas),
-      motivo_so_leitura: !d.token ? 'defina o token para mudar vagas' : !existsSync(d.caminhos.scriptVagas) ? 'comando vagas ainda não instalado' : null,
+      pode_mudar: (!!d.token || !!d.porSessao) && existsSync(d.caminhos.scriptVagas),
+      por_sessao: !!d.porSessao,
+      motivo_so_leitura: !d.token && !d.porSessao ? 'defina o token para mudar vagas' : !existsSync(d.caminhos.scriptVagas) ? 'comando vagas ainda não instalado' : null,
       dica: 'no terminal: vagas <classe> <n>',
       internas: { openpcbotv3: d.concorrenciaV3, inemaccbot: accbot },
     },
@@ -83,9 +84,12 @@ export async function coletarVagas(d: DepsPainel) {
 export type RespostaVagas = { status: number; corpo: Record<string, unknown> };
 
 /** Valida e aplica `POST /api/vagas`. `authorization` é o cabeçalho cru (só Bearer vale). */
-export async function mudarVagas(d: DepsPainel, authorization: string | undefined, corpoBruto: string): Promise<RespostaVagas> {
-  if (!d.token) return { status: 403, corpo: { erro: 'defina o token para mudar vagas', dica: 'no terminal: vagas <classe> <n>' } };
-  if (authorization !== `Bearer ${d.token}`) return { status: 401, corpo: { erro: 'token Bearer obrigatório' } };
+export async function mudarVagas(d: DepsPainel, authorization: string | undefined, corpoBruto: string, porSessao = false): Promise<RespostaVagas> {
+  // Na porta do painel (3143) a sessão de login já autenticou; na 3142 vale só o Bearer.
+  if (!porSessao) {
+    if (!d.token) return { status: 403, corpo: { erro: 'defina o token para mudar vagas', dica: 'no terminal: vagas <classe> <n>' } };
+    if (authorization !== `Bearer ${d.token}`) return { status: 401, corpo: { erro: 'token Bearer obrigatório' } };
+  }
   let b: { classe?: unknown; valor?: unknown };
   try { b = JSON.parse(corpoBruto || '{}') as typeof b; } catch { return { status: 400, corpo: { erro: 'JSON inválido' } }; }
   const classe = typeof b.classe === 'string' ? b.classe : '';

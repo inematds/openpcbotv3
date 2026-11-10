@@ -64,17 +64,20 @@ function vozNovos(al){var novos=al.filter(function(a){return!falados[a.chave]});
   try{var u=new SpeechSynthesisUtterance('Atenção. '+txt);u.lang='pt-BR';speechSynthesis.speak(u)}catch(e){}}
 var primeira=true;
 async function ler(){try{var r=await fetch('/api/painel',{headers:hdr(),cache:'no-store'});
-  if(r.status===401){pedirToken();return}
+  if(r.status===401){var j401={};try{j401=await r.json()}catch(e){}if(j401.login){location.href='/login';return}pedirToken();return}
   if(!r.ok)throw new Error('HTTP '+r.status);E.dados=await r.json();E.erro=null;
   // Na primeira leitura os alertas que já existem contam como vistos: a voz fala só o que aparecer depois.
   if(primeira){E.dados.alertas.forEach(function(a){falados[a.chave]=1});primeira=false}else vozNovos(E.dados.alertas);
+  // Na porta com login (3143) a resposta traz a sessão: mostra "Sair".
+  var sair=document.getElementById('sair'),ss=E.dados.sessao;if(sair){sair.hidden=!ss||ss.via!=='senha';
+    var bt=document.getElementById('sair-todos-btn');if(bt&&ss)bt.textContent='Sair de todos ('+plural(ss.aparelhos||1,'aparelho','aparelhos')+')'}
   desenhar()}catch(e){E.erro=e.message;document.getElementById('ver').textContent='sem conexão com o bot ('+e.message+') — tento de novo em 15 s'}}
 function pedirToken(){var f=document.getElementById('faixa');f.className='faixa tem';f.innerHTML='<span class="conta">Token</span><div><p class="calmo" style="margin:0 0 .4rem">Este painel pede o token do bot (DASHBOARD_TOKEN_V3). Ele fica guardado só neste navegador.</p><input type="password" id="tok-faixa" aria-label="Token do painel"> <button class="btn" id="tok-ok">Entrar</button></div>';
   document.getElementById('tok-ok').onclick=function(){LS.set('painel.token',document.getElementById('tok-faixa').value.trim());E.tiles._faixa='';ler()}}
 async function mudarVaga(classe,valor){
   if(classe==='gpu'&&valor>1&&!confirm('A máquina só foi medida estável com 1 vaga de GPU. Mudar gpu para '+valor+' mesmo assim?'))return;
   E.msgVaga='Gravando '+classe+' = '+valor+'…';desenharFolha(true);
-  try{var r=await fetch('/api/vagas',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},hdr()),body:JSON.stringify({classe:classe,valor:valor})});var j=await r.json();
+  try{var r=await fetch('/api/vagas',{method:'POST',headers:Object.assign({'Content-Type':'application/json','X-Painel':'1'},hdr()),body:JSON.stringify({classe:classe,valor:valor})});var j=await r.json();
     E.msgVaga=r.ok?('Gravado: '+classe+' = '+valor+(j.aviso?' — '+j.aviso:'')):('Não mudou: '+(j.erro||('HTTP '+r.status)));}catch(e){E.msgVaga='Não mudou: '+e.message}
   E.tiles={};await ler();desenharFolha(true)}
 async function verFalha(bot,id){var c=document.getElementById('falha-'+bot+'-'+id);if(!c)return;c.style.display='block';c.textContent='carregando…';
@@ -91,5 +94,6 @@ document.addEventListener('click',function(ev){var t=ev.target.closest('[data-mo
   if(t.id==='fechar'){fechar();return}
   if(t.id==='tok-salvar'){LS.set('painel.token',document.getElementById('tok').value.trim());E.msgVaga='Token guardado neste navegador.';desenharFolha(true)}});
 document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&E.aberto)fechar();var t=ev.target;if((ev.key==='Enter'||ev.key===' ')&&t.dataset&&t.dataset.abrir&&t.tagName!=='BUTTON'){ev.preventDefault();abrir(t.dataset.abrir)}});
+var st=document.getElementById('sair-todos');if(st)st.addEventListener('submit',function(ev){if(!confirm('Sair de todos os aparelhos? Cada um vai pedir a senha de novo.'))ev.preventDefault()});
 marcarModo();marcarVoz();relogio();setInterval(relogio,1000);ler();setInterval(ler,15000);
 `;

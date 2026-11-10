@@ -23,6 +23,7 @@ export const PAINEL_HTML = `<!doctype html>
   <div class="ctl" role="group" aria-label="Como mostrar produção, publicação e terminais">
     <div class="seg"><button data-modo="lista" aria-pressed="true">Lista</button><button data-modo="icones" aria-pressed="false">Ícones</button><button data-modo="imagens" aria-pressed="false">Imagens</button></div>
     <button class="btn" id="voz" aria-pressed="false">Voz desligada</button>
+    <span id="sair" hidden class="ctl"><form method="post" action="/logout"><button class="btn" type="submit">Sair deste aparelho</button></form><form method="post" action="/logout?todos=1" id="sair-todos"><button class="btn" type="submit" id="sair-todos-btn">Sair de todos</button></form></span>
   </div>
   <div class="relogio" id="hora">--:--<small id="data"></small></div>
 </header>

@@ -36,7 +36,7 @@ function modoRodadas(lista,max){var l=lista.slice(0,max);if(!l.length)return'<p 
   if(E.modo==='imagens')return'<div class="cartoes">'+l.map(function(r){var e=rodadaEstado(r);return cartao(null,inicial(r.unidade),cor(r.unidade),r.unidade,(e[0]==='erro'?'✕ ':e[0]==='ok'?'✓ ':'… ')+e[1]+' · '+hm(r.inicio||r.fim),e[0]==='erro')}).join('')+'</div>';
   return l.map(function(r){var e=rodadaEstado(r);return linhaTx(simb(e[0])+' '+esc(r.unidade)+' <span class="fraco">'+hm(r.inicio||r.fim)+'</span>',esc(e[1]),'s-'+e[0])}).join('')}
 G.producao={tile:function(d,g){var h=d.hoje,feitas=h.filter(function(r){return r.fim!=null}).length,sem=g.ausentes&&g.ausentes.indexOf('rodadas.jsonl')>=0;
-  var fr=d.presas.length?'<p class="frase s-erro">'+plural(d.presas.length,'rodada parada','rodadas paradas')+'</p>':sem?'<p class="frase vazia">placar de rodadas ainda não existe</p>':h.length?'<p class="frase">'+feitas+' de '+h.length+' rodadas terminaram hoje</p>':'<p class="frase vazia">nenhuma rodada hoje</p>';
+  var fr=d.presas.length?'<p class="frase s-erro">'+plural(d.presas.length,'rodada parada','rodadas paradas')+'</p>':sem?'<p class="frase vazia">placar de rodadas ainda não existe</p>':h.length?'<p class="frase">'+feitas+' de '+h.length+' rodadas fechadas hoje</p>':'<p class="frase vazia">nenhuma rodada hoje</p>';
   var c=modoRodadas(d.presas.concat(h.filter(function(r){return!r.presa})),E.modo==='lista'?4:8);
   var ab=d.esperas.filter(function(e){return e.estado==='esperando'||e.estado==='rodando'}).length;
   c+=linha('Esperas do continua',ab?ab+' abertas':'nenhuma aberta');
@@ -88,16 +88,16 @@ G.vagas={tile:function(d){var cl=d.classes;
   var h=cl.slice(0,5).map(function(c){return linha(esc(c.classe),(c.ocupadas!=null?c.ocupadas:'–')+' de '+(c.vagas!=null?c.vagas:'–')+(c.dono?' · '+esc(c.dono):''),c.ocupadas&&c.vagas&&c.ocupadas>=c.vagas?'s-aviso':'')}).join('');
   h+='<div class="sem">'+(d.pode_mudar?'clique para mudar':'só leitura: '+esc(d.motivo_so_leitura||''))+'</div>';
   return{frase:fr,corpo:h}},
- detalhe:function(d){var pode=d.pode_mudar&&!!tok();
+ detalhe:function(d){var pode=d.pode_mudar&&(d.por_sessao||!!tok());
   var h=d.classes.length?d.classes.map(function(c){var v=c.vagas||0,teto=c.teto;
     return'<div class="vaga"><span class="nome">'+esc(c.classe)+'</span><span class="info mut">'+(c.ocupadas!=null?c.ocupadas+' em uso':'uso desconhecido')+(c.dono?' por '+esc(c.dono):'')+(c.esperando?', '+c.esperando+' esperando':'')+(teto!=null?' · teto '+teto:' · sem teto')+(c.classe==='gpu'&&v>1?'<div class="nota aviso">! máquina só medida estável com 1</div>':'')+'</span>'
     +'<span class="passo"><button class="btn" aria-label="Diminuir '+esc(c.classe)+'" data-vaga="'+esc(c.classe)+':'+(v-1)+'"'+(!pode||v<=1?' disabled':'')+'>−</button><output>'+(c.vagas!=null?v:'–')+'</output><button class="btn" aria-label="Aumentar '+esc(c.classe)+'" data-vaga="'+esc(c.classe)+':'+(v+1)+'"'+(!pode||teto==null||v>=teto?' disabled':'')+'>+</button></span></div>'}).join(''):'<p class="sem">sem vagas.json nem fila-vaga ainda</p>';
   if(E.msgVaga)h+='<p class="nota">'+esc(E.msgVaga)+'</p>';
   if(!d.pode_mudar)h+='<p class="nota">Só leitura: '+esc(d.motivo_so_leitura||'')+'. Para mudar agora, '+esc(d.dica)+'.</p>';
-  else if(!tok())h+='<p class="nota">Informe o token abaixo para liberar os botões.</p>';
+  else if(!d.por_sessao&&!tok())h+='<p class="nota">Informe o token abaixo para liberar os botões.</p>';
   var tk='<p class="nota">O token (DASHBOARD_TOKEN_V3) fica só neste navegador e vai no cabeçalho Bearer.</p><div class="ctl"><input type="password" id="tok" aria-label="Token do painel" value=""><button class="btn" id="tok-salvar">Guardar token</button></div>';
   var it=d.internas,tab=function(o){return o?tabela(['Fila','Ao mesmo tempo'],Object.keys(o).map(function(k){return[esc(k),o[k]]})):'<p class="sem">sem dados</p>'};
-  return sec('Vagas por classe',h,1)+sec('Token',tk)+sec('Concorrência interna do openpcbotv3 (só leitura)',tab(it.openpcbotv3))+sec('Concorrência interna do inemaccbot (só leitura)',tab(it.inemaccbot))}};
+  return sec('Vagas por classe',h,1)+(d.por_sessao?'':sec('Token',tk))+sec('Concorrência interna do openpcbotv3 (só leitura)',tab(it.openpcbotv3))+sec('Concorrência interna do inemaccbot (só leitura)',tab(it.inemaccbot))}};
 
 function modoTerminais(l,max){l=l.slice(0,max);if(!l.length)return'<p class="sem">nenhuma sessão aberta</p>';
   if(E.modo==='icones')return'<div class="icones">'+l.map(function(t){return ico(inicial(t.projeto),t.projeto,cor(t.projeto),false,t.projeto+' · '+t.tipo+' · '+ha(t.inicio))}).join('')+'</div>';

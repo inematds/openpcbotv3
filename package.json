@@ -1,6 +1,6 @@
 {
   "name": "openpcbotv3",
-  "version": "3.13.6",
+  "version": "3.13.7",
   "description": "openpcbot v3 — assistente pessoal multicanal com fila durável, gestor do Ollama, custo por chamada e cérebro com aprendizado",
   "type": "module",
   "main": "dist/index.js",
@@ -12,7 +12,8 @@
     "test": "vitest run",
     "doctor": "tsx src/cli/doctor.ts",
     "cli": "tsx src/cli/chat.ts",
-    "jev": "tsx src/cli/jev.ts"
+    "jev": "tsx src/cli/jev.ts",
+    "painel-senha": "tsx src/cli/painel-senha.ts"
   },
   "dependencies": {
     "better-sqlite3": "^12.11.1",

@@ -2,6 +2,7 @@
 
 | data | o que quebrou | menor correção | prompt \| infra |
 |---|---|---|---|
+| 2026-11-09 | Login do painel (3143) recusado no navegador como "outra origem": `Referrer-Policy: no-referrer` faz o navegador mandar `Origin: null` no POST do formulário (os testes com fetch passavam) | `Referrer-Policy: same-origin`; conferir login com navegador real, não só fetch | prompt |
 | 2026-11-09 | `package-lock.json` parado em 3.11.5 enquanto `package.json`/`env.ts` iam a 3.12.6 (bump sem o lock) | bump de versão inclui os 2 campos `version` do lock (feito no 3.13.6) | prompt |
 | 2026-11-05 | #89966 (tornados PR/SC): sessão retomada de 154 mil tokens parada 1h02; o hook-longrun barrou o prompt e o bot gravou o texto do hook como resposta (`done`), nada foi feito; 2ª vez (1ª #69448, 20/10) | `LONGRUN_PAUSA_TOKENS=0` no `claude` do bot + repetir 1x sem `--resume` quando a saída for "blocked by hook", senão falhar (3.11.6) | infra |
 | 2026-10-22 | Repetiu a de 14/10: o Nei mandou um vídeo pedindo r7ex 1,4x; `telegram.ts` só lia `text ?? caption`, o vídeo sumiu e o bot perguntou o tema | anexos baixados para `store/anexos/` e caminho no texto do agente; > 20 MB avisa que não baixou (3.11.5) | infra |

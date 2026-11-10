@@ -1,5 +1,19 @@
 # CHANGELOG — openpcbotv3
 
+## 3.13.7 — 2026-11-09
+
+Painel pela rede local e pronto para o túnel (Nei: "quero o painel acessando pelo 192.168 e pelo ccc.inema.pro com uma senha ou autenticado pelo Google"; "salve ela no PC para não ficar toda hora autenticando").
+
+- Servidor do painel em porta PRÓPRIA (`PAINEL_PORT`, 3143; `0` desliga), `src/painel/servidor-painel.ts`. Só existem `/login`, `/logout`, `/` e `/painel`, `/api/painel*`, `POST /api/vagas`; qualquer outra rota (inclusive `/mensagem`, `/api/fila`, `/health`) → 404. A 3142 não mudou e continua no loopback.
+- `PAINEL_BIND` (padrão `127.0.0.1`): fora do loopback só sobe com senha definida; sem senha, loga e fica em 127.0.0.1.
+- Senha: só o hash scrypt em `~/.config/inema/painel-senha.json` (600), conferência em tempo constante. `npm run painel-senha` (sem eco) ou `-- --gerar` (senha forte escrita UMA vez em `painel-senha-inicial.txt`, 600; nada impresso).
+- Sessão: cookie HttpOnly, SameSite=Lax, `Secure` quando o túnel manda `X-Forwarded-Proto: https`; 365 dias deslizantes (cada uso estende, cookie regravado no máximo 1×/dia); só o SHA-256 do token em `store/painel-sessoes.json` (600), sobrevive a reinício; trocar a senha derruba todas. "Sair deste aparelho" e "Sair de todos (N aparelhos)" no topo.
+- Login compatível com o gerenciador de senhas (usuário fixo "painel" oculto + `current-password`). 5 erros por IP em 15 min → 15 min bloqueado (`CF-Connecting-IP`/`X-Forwarded-For` só valem vindo de 127.0.0.1).
+- `POST /api/vagas` na 3143: a sessão autentica (sem Bearer), com CSRF (cabeçalho `X-Painel: 1` + Origin do próprio host). Na 3142 a regra do token segue igual.
+- Google via Cloudflare Access (desligado sem `PAINEL_CF_ACCESS_AUD` + `PAINEL_CF_ACCESS_TEAM`): JWT `Cf-Access-Jwt-Assertion` conferido (RS256 contra as chaves do time, cache 1 h; `aud`, `iss`, `exp`, `nbf`; e-mail em `PAINEL_EMAILS`).
+- Cabeçalhos: CSP (inline + Google Fonts + miniaturas do YouTube), `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy: same-origin`, `no-store`.
+- 16 testes novos (`src/painel/auth.test.ts`): login, bloqueio, 404 fora da lista, bind, JWT válido/expirado/aud/e-mail/assinatura, CSRF, renovação deslizante e persistência após recriar o servidor, sair de todos.
+
 ## 3.13.6 — 2026-11-09
 
 Painel de monitoramento para TV e celular (pedido do Nei: "uma tela com alertas e uma interface de monitoramento… desde que não consuma máquina e tokens").
