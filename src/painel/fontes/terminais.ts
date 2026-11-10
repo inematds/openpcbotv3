@@ -2,6 +2,7 @@
 // `terminais --json` (do hub wifi). Mais as pendências do topo do hub.
 import type { DepsPainel } from '../tipos.js';
 import { corta, lerTexto, paraEpoch } from '../util.js';
+import { detalharSessoes, type InfoSessao } from './sessoes.js';
 
 export interface Terminal { session_id: string; pid: number | null; cwd: string; projeto: string; inicio: number | null; tipo: string; tty: string | null }
 
@@ -31,9 +32,14 @@ export async function coletarTerminais(d: DepsPainel) {
     const r = await d.exec(d.caminhos.scriptTerminais, ['--interrompidos', '--json'], 5000);
     return r.stdout.trim() ? lerTerminais(r.stdout) : null;
   });
+  const info: Record<string, InfoSessao> = await d.cache.obter('term:info', 20_000, async () => ({
+    ...(await detalharSessoes(d, vivos ?? [], true)),
+    ...(await detalharSessoes(d, interrompidos ?? [], false)),
+  }));
+  const junta = (t: Terminal) => ({ ...t, ...(info[t.session_id] ?? {}) });
   if (vivos === null) ausentes.push('terminais');
   if (interrompidos === null) ausentes.push('terminais interrompidos');
-  return { dados: { vivos: vivos ?? [], interrompidos: interrompidos ?? [], miniatura: null as string | null }, ausentes };
+  return { dados: { vivos: (vivos ?? []).map(junta), interrompidos: (interrompidos ?? []).map(junta), miniatura: null as string | null }, ausentes };
 }
 
 /** Itens do topo de pendencias.md: cada `- **título**` ou `### título` antes de "## Resolvidas". */

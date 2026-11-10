@@ -1,5 +1,16 @@
 # CHANGELOG — openpcbotv3
 
+## 3.15.7 — 2026-11-10
+
+Terminais com tudo da sessão (Nei: "nos terminais temos que ter mais informações e se clicar abrir todas… leitura apenas ou interação"; "definir se a sessão é física ou por agente e quem está disparando/controlando").
+
+- A statusline grava um retrato por sessão em `~/.local/share/inema/terminais/estado/<id>.json` (modelo, esforço, modo rápido, contexto %, tokens, custo equivalente, tempos, linhas +/−, projeto ativo, versão). Sem token nem credencial.
+- `src/painel/fontes/sessoes.ts`: junta retrato + processo (`ps`: CPU, memória, tempo) + transcript (última atividade, último pedido/resposta, modelo, `entrypoint` cli × sdk-cli) + **origem**: física (você no terminal pts/N, ou SSH) × agente (timer/serviço do systemd pelo cgroup, bot v3, inemaccbot, vigia continua, outra sessão do Claude, Codex, script), com a cadeia de processos pais.
+- `GET /api/painel/terminal?id=&n=`: conversa da sessão **só leitura** (você/claude/ferramenta/resultado, sem pensamento nem sub-agentes, segredos mascarados). Só sessões registradas.
+- Jarvis: Terminais mostra "N suas · M de agentes"; o detalhe lista as sessões (👤/🤖) e cada uma abre tudo, com "Ver conversa (só leitura)" atualizando a cada 5 s. `/jarvis#term:<id>` abre direto. Painel clássico: tabela com quem abriu, modelo, contexto, custo, último pedido e "ver tudo".
+- Interação (digitar na sessão pelo painel): não ligada — decisão de segurança pendente.
+- 6 testes novos (`src/painel/sessoes.test.ts`).
+
 ## 3.14.7 — 2026-11-10
 
 Versão JARVIS do painel (Nei: "quero o painel do jarvis como mais uma versão… crie a versão jarvis no painel").

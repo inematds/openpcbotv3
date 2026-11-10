@@ -21,6 +21,8 @@ export interface Caminhos {
   scriptFilaVaga: string;
   scriptVagas: string;
   scriptTerminais: string;
+  claudeProjetos: string;
+  terminaisEstado: string;
   pendencias: string;
   inemaccbotDb: string;
   inemaccbotFilas: string;
@@ -45,6 +47,8 @@ export function caminhosPadrao(home = homedir(), raizBot = process.cwd()): Camin
     scriptFilaVaga: h('projetos/wifi/scripts/fila-vaga'),
     scriptVagas: h('projetos/wifi/scripts/vagas'),
     scriptTerminais: h('projetos/wifi/scripts/terminais'),
+    claudeProjetos: h('.claude/projects'),
+    terminaisEstado: resolve(process.env.TERMINAIS_DIR || h('.local/share/inema/terminais'), 'estado'),
     pendencias: h('projetos/wifi/pendencias.md'),
     inemaccbotDb: h('projetos/inemaccbot/inemaccbot.db'),
     inemaccbotFilas: h('projetos/inemaccbot/src/fila/filas.ts'),

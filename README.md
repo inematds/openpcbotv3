@@ -275,6 +275,8 @@ Não gasta token nem modelo: só lê `/proc`, `statfs`, o banco do v3, o `inemac
 
 **Versão JARVIS (3.14.7):** `/jarvis` mostra os mesmos dados no visual HUD do kit jarvis-painel (núcleo com anéis, bom dia falado, teclas 1–4). Mesmo login; botão "Versão Jarvis" no painel e "Painel clássico" para voltar. Só lê.
 
+**Terminais (3.15.7):** cada sessão mostra quem abriu (👤 você no terminal × 🤖 agente: timer, bot, outra sessão), modelo, contexto, custo e último pedido, lidos do retrato que a statusline grava em `~/.local/share/inema/terminais/estado/` e do transcript. A conversa abre só para leitura (`/api/painel/terminal`, segredos mascarados).
+
 **Painel pela rede local / túnel, com senha (3.13.7)**
 
 A porta **3142 nunca sai do loopback**: ela tem o `POST /mensagem`, que chega a um agente com permissão total. Para a LAN ou para o túnel (ccc.inema.pro) existe a **porta própria do painel, 3143**, que só serve login, painel e vagas (qualquer outra rota → 404).

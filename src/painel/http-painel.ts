@@ -4,12 +4,15 @@
 //   GET  /jarvis                     mesma leitura no visual JARVIS (núcleo, voz, bom dia)
 //   GET  /api/painel                 todos os grupos + alertas
 //   GET  /api/painel/<grupo>         um grupo
+//   GET  /api/painel/terminal?id=&n= conversa de uma sessão registrada, só leitura
 //   GET  /api/painel/falha?bot=&id=  resultado completo de uma falha (aberto no clique)
 //   POST /api/vagas {classe, valor}  única escrita: exige Bearer SEMPRE (sem token = 403)
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 
 import { montarPainel, type Painel } from './agregador.js';
 import { falhaCompletaAccbot, falhaCompletaV3 } from './fontes/bots.js';
+import { acharTranscript, lerConversa, SID } from './fontes/sessoes.js';
+import { lerFim } from './util.js';
 import { mudarVagas } from './fontes/vagas.js';
 import { JARVIS_HTML } from './tela/jarvis.js';
 import { PAINEL_HTML } from './tela/pagina.js';
@@ -53,6 +56,20 @@ export async function tratarPainel(req: IncomingMessage, res: ServerResponse, ur
     try { bruto = await corpo(req); } catch { json(res, 413, { erro: 'corpo grande demais' }); return true; }
     const r = await mudarVagas(d, req.headers.authorization, bruto);
     json(res, r.status, r.corpo);
+    return true;
+  }
+  if (p === '/api/painel/terminal') {
+    // Conversa de uma sessão registrada, SÓ LEITURA (últimas mensagens, segredos mascarados).
+    const id = url.searchParams.get('id') ?? '';
+    const n = Math.min(300, Math.max(10, Number(url.searchParams.get('n')) || 80));
+    if (!SID.test(id)) { json(res, 400, { erro: 'id inválido' }); return true; }
+    const painel = await painelEmCache(d);
+    const t = painel.grupos.terminais.dados;
+    const conhecida = [...(t?.vivos ?? []), ...(t?.interrompidos ?? [])].some((s) => s.session_id === id);
+    if (!conhecida) { json(res, 404, { erro: 'sessão não registrada' }); return true; }
+    const arq = acharTranscript(d.caminhos.claudeProjetos, id);
+    if (!arq) { json(res, 404, { erro: 'conversa não encontrada' }); return true; }
+    json(res, 200, { id, mensagens: lerConversa(lerFim(arq, 1_500_000) ?? '', n) });
     return true;
   }
   if (p === '/api/painel/falha') {
