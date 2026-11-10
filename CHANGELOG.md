@@ -1,5 +1,12 @@
 # CHANGELOG — openpcbotv3
 
+## 3.20.10 — 2026-11-10
+
+Terminais não ficam mais cortados no quadro (Nei: "os terminais ficam cortados").
+
+- No quadro da visão geral cada sessão ocupa 2 linhas (projeto + nome; contexto · ativo há · modelo · pasta), com a cor do projeto na borda: cabem ~12 sessões no lugar onde cabiam 4. Os cartões completos continuam no detalhe.
+- Se ainda passar do quadro, o fim esmaece e aparece "role ↓ para ver mais".
+
 ## 3.20.9 — 2026-11-10
 
 Organizar a tela (Nei: "painel tem mover ou tem reorganizar a tela?").

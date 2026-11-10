@@ -47,6 +47,7 @@ function desenhar(){var d=E.dados;if(!d)return;
   else hf='<span class="conta s-ok">✓</span><span class="calmo">Nada pedindo atenção agora. Última leitura às '+hm(d.gerado_em)+'.</span>';
   f.className='faixa'+(al.length?' tem':'');if(E.tiles._faixa!==hf){f.innerHTML=hf;E.tiles._faixa=hf}
   Object.keys(NOMES).forEach(function(nome){var el=document.getElementById('t-'+nome),t=tile(nome);if(el.className!==t.cls)el.className=t.cls;if(E.tiles[nome]!==t.html){el.innerHTML=t.html;E.tiles[nome]=t.html}});
+  marcarRolagem();
   if(E.aberto)desenharFolha(false)}
 function desenharFolha(forcar){var nome=E.aberto,d=E.dados,c=document.getElementById('folha-conteudo');if(!nome||!d)return;
   if(E.sessao&&nome==='terminais'){if(forcar&&typeof sessaoMostrar==='function')sessaoMostrar();return}
@@ -96,6 +97,10 @@ document.addEventListener('click',function(ev){var t=ev.target.closest('[data-mo
   if(t.id==='tok-salvar'){LS.set('painel.token',document.getElementById('tok').value.trim());E.msgVaga='Token guardado neste navegador.';desenharFolha(true)}});
 document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&E.aberto)fechar();var t=ev.target;if((ev.key==='Enter'||ev.key===' ')&&t.dataset&&t.dataset.abrir&&t.tagName!=='BUTTON'){ev.preventDefault();abrir(t.dataset.abrir)}});
 var st=document.getElementById('sair-todos');if(st)st.addEventListener('submit',function(ev){if(!confirm('Sair de todos os aparelhos? Cada um vai pedir a senha de novo.'))ev.preventDefault()});
+// Quadro com mais conteúdo do que cabe: esmaece embaixo e mostra "role ↓" (antes parecia cortado).
+function marcarRolagem(){var el=document.getElementById('t-terminais');if(!el)return;var c=el.querySelector('.corpo');if(!c)return;
+  var falta=c.scrollHeight-c.clientHeight-c.scrollTop>4;if(falta)el.setAttribute('data-rola','role ↓ para ver mais');else el.removeAttribute('data-rola')}
+if(typeof document!=='undefined')document.addEventListener('scroll',function(ev){if(ev.target&&ev.target.classList&&ev.target.classList.contains('corpo'))marcarRolagem()},true);
 // Organizar: cada quadro pode trocar de lugar com outro (os lugares têm tamanhos fixos: o da esquerda é alto,
 // o de baixo é largo). Fica guardado neste aparelho. Arrastar com o mouse ou tocar num e depois no outro.
 var AREAS={esperando:'esp',maquina:'maq',bots:'bot',producao:'pro',publicacao:'pub',creditos:'cre',sites:'sit',vagas:'vag',terminais:'ter'};

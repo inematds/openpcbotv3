@@ -58,6 +58,13 @@ body.organizando .grade .tile{outline:2px dashed var(--amb);outline-offset:-2px;
 body.organizando .grade .tile *{pointer-events:none}
 .grade .tile[data-esc]{outline:3px solid var(--amb);box-shadow:0 0 0 6px rgba(250,204,21,.18)}
 #dica-org{font-size:.85rem;color:var(--amb);max-width:22rem;line-height:1.25}
+.tcs{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:.35rem .9rem}
+.tc{display:flex;gap:.45rem;align-items:center;min-width:0;cursor:pointer;padding:.1rem .3rem .1rem .45rem;border-left:3px solid var(--c);border-radius:4px}
+.tc:hover{background:var(--bg2)}.tc.tcimg{background:var(--card2);border-left-width:8px}
+.tcx{min-width:0;flex:1}.tc1,.tc2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tc1{font-size:.92rem}.tc2{font-size:.78rem;color:var(--mut)}
+.tci{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#0c0c10;font-weight:700;font-size:.8rem}
+.tile[data-rola] .corpo{-webkit-mask-image:linear-gradient(#000 78%,transparent);mask-image:linear-gradient(#000 78%,transparent)}
+.tile[data-rola]::after{content:attr(data-rola);position:absolute;right:1.1rem;bottom:.45rem;font-size:.78rem;color:var(--amb);background:var(--card);padding:0 .4rem;border-radius:6px}
 .rolar{margin:0;font-size:.78rem;color:var(--mut)}
 .btn.quente{border-color:var(--amb);color:var(--amb)}
 .convc{max-height:60vh;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:.6rem .8rem;background:var(--card)}
