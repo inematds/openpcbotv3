@@ -65,6 +65,10 @@ export const REGRAS: Regra[] = [
     .map((e) => ({ chave: `espera:${e.chave}:${e.estado}`, nivel: 'aviso' as const, texto: e.estado === 'falhou' ? `Espera ${e.chave} falhou` : `Espera ${e.chave} passou do teto de ${e.teto_h} h` })) },
   { id: 'fila-erro', grupo: 'publicacao', avaliar: (g) => (g.publicacao.dados?.filas ?? [])
     .flatMap((f) => f.erros_recentes.map((e) => ({ chave: `fila-erro:${f.nome}:${e.id}`, nivel: 'aviso' as const, texto: `Fila ${f.nome}: "${e.nome}" deu erro` }))) },
+  // continua com estado.json vazio/corrompido = vigia parado (10/11 00:29: disco cheio zerou o arquivo e ninguém viu).
+  { id: 'fila-ilegivel', grupo: 'publicacao', avaliar: (g) => (g.publicacao.dados?.filas_itens ?? [])
+    .filter((f) => f.problema && /VAZIO|corrompido/.test(f.problema))
+    .map((f) => ({ chave: `fila-ilegivel:${f.chave}`, nivel: 'erro' as const, texto: `${f.nome}: ${f.problema}` })) },
   { id: 'site-fora', grupo: 'sites', avaliar: (g) => (g.sites.dados?.sites ?? [])
     .filter((s) => !s.ok).map((s) => ({ chave: `site-fora:${host(s.url)}`, nivel: 'erro' as const, texto: `${host(s.url)} fora do ar (${s.erro ?? 'sem resposta'})` })) },
   { id: 'limite', grupo: 'creditos', avaliar: (g) => {

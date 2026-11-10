@@ -1,6 +1,7 @@
 // Publicação: histórico do yt-pubx (só o fim do JSONL) e filas de publicação
 // (espanhol, cidades, r7ex). Registros antigos sem todos os campos são aceitos.
 import type { DepsPainel } from '../tipos.js';
+import { coletarFilas } from './filas.js';
 import { corta, inicioDoDia, lerFim, lerJson, linhasJson, paraEpoch } from '../util.js';
 
 const ID_YT = /^[\w-]{11}$/;
@@ -72,5 +73,5 @@ export function coletarPublicacao(d: DepsPainel) {
   }
   const hojePorCanal: Record<string, number> = {};
   for (const u of hoje) hojePorCanal[u.canal] = (hojePorCanal[u.canal] ?? 0) + 1;
-  return { dados: { hoje: hoje.length, hoje_por_canal: hojePorCanal, semana_por_canal: semana, ultimos, filas }, ausentes };
+  return { dados: { hoje: hoje.length, hoje_por_canal: hojePorCanal, semana_por_canal: semana, ultimos, filas, filas_itens: coletarFilas(d) }, ausentes };
 }

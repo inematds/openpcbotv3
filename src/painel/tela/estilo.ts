@@ -51,6 +51,9 @@ a{color:var(--txt)}
 .t-terminais .corpo{overflow-y:auto;scrollbar-width:thin;padding-right:.3rem}
 .t-terminais .tcard{display:flex}
 .t-terminais .tcard .img{height:auto;width:46px;flex:none;font-size:1.3rem}
+.chip{display:inline-block;border:1px solid var(--line2);border-radius:999px;padding:.05rem .55rem;font-size:.82rem;margin:0 .2rem .2rem 0}
+.filacab{margin:.1rem 0 .2rem}.filaonde{font-size:.8rem;margin-bottom:.4rem;overflow-wrap:anywhere}
+.subt{font:600 1.15rem Sora,Inter,sans-serif;margin:.2rem 0 .6rem;grid-column:1/-1}
 .rolar{margin:0;font-size:.78rem;color:var(--mut)}
 .btn.quente{border-color:var(--amb);color:var(--amb)}
 .convc{max-height:60vh;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:.6rem .8rem;background:var(--card)}

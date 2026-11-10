@@ -13,6 +13,9 @@ export interface Caminhos {
   filaEspanhol: string;
   filaCidades: string;
   filaR7ex: string;
+  filaLives11: string;
+  filaAventuras: string;
+  raizProjetos: string;
   ccLimites: string;
   codexSessoes: string;
   avisos: string;
@@ -38,6 +41,9 @@ export function caminhosPadrao(home = homedir(), raizBot = process.cwd()): Camin
     filaEspanhol: h('projetos/wifi/fila-espanhol/fila.json'),
     filaCidades: h('projetos/wifi/fila-cidades/fila.json'),
     filaR7ex: h('projetos/r7ex/fila/fila.json'),
+    filaLives11: h('projetos/metricool-pub2/lives11/fila.json'),
+    filaAventuras: h('projetos/aventurasinemavideo/privado/fila_publicar.txt'),
+    raizProjetos: h('projetos'),
     ccLimites: `/tmp/cc_limits_${process.getuid?.() ?? 1000}.json`,
     codexSessoes: h('.codex-2/sessions'),
     avisos: h('.config/inema/painel-avisos.json'),

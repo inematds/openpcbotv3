@@ -1,5 +1,13 @@
 # CHANGELOG — openpcbotv3
 
+## 3.19.9 — 2026-11-10
+
+Filas item por item (Nei: "quero poder ver o que está nas filas, qual os estados").
+
+- Fonte nova `fontes/filas.ts` (só leitura): r7ex, espanhol, cidades, lives11→Metricool, aventuras (txt), marcadores `PUBLICAR_PENDENTE` dos virais e esperas do continua, todas com os mesmos estados (na fila · publicando · feito · erro · retirado), canal, quando, tentativas e o fim da mensagem de erro.
+- Quadro Publicação: linha "Filas: N publicando · N na fila · N com erro". Detalhe: uma seção por fila com contagem por estado, quem consome e quando, caminho do arquivo e a lista (abertos primeiro + 5 feitos mais recentes).
+- Alerta novo `fila-ilegivel`: `estado.json` do continua vazio ou corrompido vira erro na faixa (em 10/11 00:29 o disco cheio zerou o arquivo e o painel mostrava "nenhuma espera" com o vigia parado).
+
 ## 3.18.9 — 2026-11-10
 
 Quadro de terminais cabe qualquer número de sessões (Nei: "nas imagens ele corta embaixo, e se crescer como será colocar todos ali").
