@@ -88,12 +88,14 @@ a{color:var(--txt)}
 .cartao .txt b{font-weight:600;font-size:.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cartao .txt span{color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cartao.erro{border-color:var(--bad-line)}
+.corpo>.cartoes,.corpo>.icones{flex-shrink:0}
 .cartoes.horiz{grid-template-columns:1fr;gap:.45rem}
 .cartoes.horiz .cartao{flex-direction:row;align-items:center}
 .cartoes.horiz .img{width:7.5rem;flex:none;font-size:1.5rem}
 .cartoes.horiz .txt b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .t-terminais .cartoes{grid-template-columns:repeat(auto-fill,minmax(14rem,1fr))}
 .t-terminais .cartao .img{aspect-ratio:21/9}
+.t-producao .cartoes.horiz .img{aspect-ratio:auto;height:2.9rem;width:4.5rem}
 
 /* Detalhe do grupo (folha por cima da grade). */
 .folha{position:fixed;inset:0;background:rgba(6,6,9,.72);display:none;padding:var(--gap);z-index:5}

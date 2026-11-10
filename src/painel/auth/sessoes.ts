@@ -86,7 +86,9 @@ export function lerCookie(cabecalho: string | undefined, nome: string): string |
   if (!cabecalho) return undefined;
   for (const parte of cabecalho.split(';')) {
     const i = parte.indexOf('=');
-    if (i > 0 && parte.slice(0, i).trim() === nome) return decodeURIComponent(parte.slice(i + 1).trim());
+    if (i > 0 && parte.slice(0, i).trim() === nome) {
+      try { return decodeURIComponent(parte.slice(i + 1).trim()); } catch { return undefined; } // "%" malformado = sem cookie
+    }
   }
   return undefined;
 }

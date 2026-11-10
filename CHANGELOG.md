@@ -12,7 +12,7 @@ Painel pela rede local e pronto para o túnel (Nei: "quero o painel acessando pe
 - `POST /api/vagas` na 3143: a sessão autentica (sem Bearer), com CSRF (cabeçalho `X-Painel: 1` + Origin do próprio host). Na 3142 a regra do token segue igual.
 - Google via Cloudflare Access (desligado sem `PAINEL_CF_ACCESS_AUD` + `PAINEL_CF_ACCESS_TEAM`): JWT `Cf-Access-Jwt-Assertion` conferido (RS256 contra as chaves do time, cache 1 h; `aud`, `iss`, `exp`, `nbf`; e-mail em `PAINEL_EMAILS`).
 - Cabeçalhos: CSP (inline + Google Fonts + miniaturas do YouTube), `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy: same-origin`, `no-store`.
-- 16 testes novos (`src/painel/auth.test.ts`): login, bloqueio, 404 fora da lista, bind, JWT válido/expirado/aud/e-mail/assinatura, CSRF, renovação deslizante e persistência após recriar o servidor, sair de todos.
+- 19 testes novos (`src/painel/auth.test.ts`): login, bloqueio, 404 fora da lista, bind (inclusive `ligarServidorPainel` com listen real), JWT válido/expirado/aud/e-mail/assinatura, freio de 5 min quando as chaves do Access não carregam, cookie malformado, CSRF, renovação deslizante e persistência após recriar o servidor, sair de todos.
 
 ## 3.13.6 — 2026-11-09
 

@@ -31,7 +31,9 @@ export class VerificadorAccess {
   private async certs(forcar: boolean): Promise<(JsonWebKey & { kid?: string })[]> {
     const t = this.agora();
     if (this.chaves && !forcar && t - this.chaves.em < 3600) return this.chaves.keys;
-    if (forcar && t - this.ultimaBusca < 300 && this.chaves) return this.chaves.keys;
+    // Freio de 5 min entre buscas — também quando as chaves nunca carregaram (time errado ou Cloudflare fora):
+    // sem isso, cada pedido com o cabeçalho faria 2 buscas externas de até 8 s.
+    if (t - this.ultimaBusca < 300 && (forcar || !this.chaves)) return this.chaves?.keys ?? [];
     this.ultimaBusca = t;
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), 8000);

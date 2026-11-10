@@ -31,17 +31,18 @@ G.bots={tile:function(d){var fl=falhasDe(d),v=d.v3,a=d.inemaccbot,rod=(v?v.jobs.
   +sec('Falhas das últimas 24 h',hf,1)}};
 
 function rodadaEstado(r){if(r.presa)return['erro','parada há '+dur(r.aberta_min*60)];if(r.fim==null)return['aviso','rodando há '+dur((r.aberta_min||0)*60)];if(r.resultado==='falhou')return['erro','falhou'];return['ok',r.resultado.replace('_',' ')+(r.dur_s!=null?', '+dur(r.dur_s):'')]}
-function modoRodadas(lista,max){var l=lista.slice(0,max);if(!l.length)return'<p class="sem">nenhuma rodada registrada hoje</p>';
+function modoRodadas(lista,max,horiz){var l=lista.slice(0,max);if(!l.length)return'<p class="sem">nenhuma rodada registrada hoje</p>';
   if(E.modo==='icones')return'<div class="icones">'+l.map(function(r){var e=rodadaEstado(r);return ico(inicial(r.unidade),r.unidade,cor(r.unidade),e[0]==='erro',r.unidade+': '+e[1])}).join('')+'</div>';
-  if(E.modo==='imagens')return'<div class="cartoes">'+l.map(function(r){var e=rodadaEstado(r);return cartao(null,inicial(r.unidade),cor(r.unidade),r.unidade,(e[0]==='erro'?'✕ ':e[0]==='ok'?'✓ ':'… ')+e[1]+' · '+hm(r.inicio||r.fim),e[0]==='erro')}).join('')+'</div>';
+  if(E.modo==='imagens')return'<div class="cartoes'+(horiz?' horiz':'')+'">'+l.map(function(r){var e=rodadaEstado(r);return cartao(null,inicial(r.unidade),cor(r.unidade),r.unidade,(e[0]==='erro'?'✕ ':e[0]==='ok'?'✓ ':'… ')+e[1]+' · '+hm(r.inicio||r.fim),e[0]==='erro')}).join('')+'</div>';
   return l.map(function(r){var e=rodadaEstado(r);return linhaTx(simb(e[0])+' '+esc(r.unidade)+' <span class="fraco">'+hm(r.inicio||r.fim)+'</span>',esc(e[1]),'s-'+e[0])}).join('')}
 G.producao={tile:function(d,g){var h=d.hoje,feitas=h.filter(function(r){return r.fim!=null}).length,sem=g.ausentes&&g.ausentes.indexOf('rodadas.jsonl')>=0;
-  var fr=d.presas.length?'<p class="frase s-erro">'+plural(d.presas.length,'rodada parada','rodadas paradas')+'</p>':sem?'<p class="frase vazia">placar de rodadas ainda não existe</p>':h.length?'<p class="frase">'+feitas+' de '+h.length+' rodadas fechadas hoje</p>':'<p class="frase vazia">nenhuma rodada hoje</p>';
-  var c=modoRodadas(d.presas.concat(h.filter(function(r){return!r.presa})),E.modo==='lista'?4:8);
+  var fr=d.presas.length?'<p class="frase s-erro">'+plural(d.presas.length,'rodada parada','rodadas paradas')+'</p>':sem?'<p class="frase vazia">placar de rodadas ainda não existe</p>':h.length?'<p class="frase">'+feitas+' de '+h.length+' rodadas fechadas</p>':'<p class="frase vazia">nenhuma rodada hoje</p>';
+  var mx=E.modo==='lista'?4:E.modo==='icones'?8:2;
+  var c=modoRodadas(d.presas.concat(h.filter(function(r){return!r.presa})),mx,true);
   var ab=d.esperas.filter(function(e){return e.estado==='esperando'||e.estado==='rodando'}).length;
   c+=linha('Esperas do continua',ab?ab+' abertas':'nenhuma aberta');
-  if(d.timers[0])c+=linha('Próximo timer',esc(d.timers[0].unidade)+' às '+hm(d.timers[0].proxima));
-  return{frase:fr,corpo:c+mais(h.length,E.modo==='lista'?4:8)}},
+  if(d.timers[0]&&E.modo!=='imagens')c+=linha('Próximo timer',esc(d.timers[0].unidade)+' às '+hm(d.timers[0].proxima));
+  return{frase:fr,corpo:c+mais(h.length,mx)}},
  detalhe:function(d){var todas=d.presas.concat(d.hoje.filter(function(r){return!r.presa}));
   var lst=E.modo==='lista'?tabela(['Unidade','Edição','Início','Fim','Resultado'],todas.map(function(r){var e=rodadaEstado(r);return[esc(r.unidade),esc(r.edicao||''),hm(r.inicio),hm(r.fim),'<span class="s-'+e[0]+'">'+simb(e[0])+' '+esc(e[1])+'</span>'+(r.motivo?'<div class="mut">'+esc(r.motivo)+'</div>':'')]})):modoRodadas(todas,200);
   return sec('Rodadas de hoje',lst,1)

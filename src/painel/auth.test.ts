@@ -10,7 +10,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { VerificadorAccess, hostTime } from './auth/cf-access.js';
 import { conferirSenha, gerarHash, gravarHash, lerHash } from './auth/senha.js';
 import { Limitador, Sessoes } from './auth/sessoes.js';
-import { bindEfetivo, criarServidorPainel } from './servidor-painel.js';
+import { bindEfetivo, criarServidorPainel, ligarServidorPainel } from './servidor-painel.js';
 import { caminhosPadrao, type DepsPainel } from './tipos.js';
 import { Cache, type Executor } from './util.js';
 
@@ -246,6 +246,41 @@ describe('aparelho lembrado: 365 dias deslizantes', () => {
     await fetch(`${b}/logout?todos=1`, { method: 'POST', redirect: 'manual' });
     expect((await fetch(`${b}/api/painel/sites`, { headers: { Cookie: ck3 } })).status).toBe(200);
     await fechar(s);
+  });
+});
+
+describe('bordas', () => {
+  it('ligarServidorPainel com 0.0.0.0 e sem senha escuta só em 127.0.0.1 e loga "recusado"', async () => {
+    const logs: string[] = [];
+    const deps: DepsPainel = { versao: 't', caminhos: caminhosPadrao(dir, dir), exec: async () => ({ ok: false, stdout: '', stderr: '', codigo: null }), agora: () => T, cache: new Cache(), concorrenciaV3: {}, fetch: certsFetch, sitesLigado: false };
+    const s = ligarServidorPainel({ deps, sessoes: new Sessoes(null), arqSenha: join(dir, 'nao-existe.json') }, 0, '0.0.0.0', (m) => logs.push(m));
+    await new Promise<void>((r) => s.once('listening', () => r()));
+    const end = s.address() as AddressInfo;
+    await new Promise((r) => s.close(r));
+    expect(end.address).toBe('127.0.0.1');
+    expect(logs.join('\n')).toMatch(/recusado/);
+  });
+  it('cookie com "%" malformado não derruba o servidor (vira sem sessão)', async () => {
+    const deps: DepsPainel = { versao: 't', caminhos: caminhosPadrao(dir, dir), exec: async () => ({ ok: false, stdout: '', stderr: '', codigo: null }), agora: () => T, cache: new Cache(), concorrenciaV3: {}, fetch: certsFetch, sitesLigado: false };
+    gravarHash(await gerarHash(SENHA), arqSenha);
+    const s = criarServidorPainel({ deps, sessoes: new Sessoes(null), arqSenha });
+    await new Promise<void>((r) => s.listen(0, '127.0.0.1', r));
+    const b = `http://127.0.0.1:${(s.address() as AddressInfo).port}`;
+    const l = await fetch(`${b}/login`, { headers: { Cookie: 'painel_sessao=%E0%A4%A' } });
+    const a = await fetch(`${b}/api/painel`, { headers: { Cookie: 'painel_sessao=%E0%A4%A' } });
+    await new Promise((r) => s.close(r));
+    expect(l.status).toBe(200);
+    expect(a.status).toBe(401);
+  });
+  it('Access com chaves que não carregam: no máximo 1 busca externa a cada 5 min', async () => {
+    let n = 0; let t = T;
+    const falha = (async () => { n++; throw new Error('fora'); }) as unknown as typeof fetch;
+    const v = new VerificadorAccess(ACCESS, falha, () => t);
+    for (let i = 0; i < 10; i++) expect(await v.conferir(jwt(corpoOk))).toBeNull();
+    expect(n).toBe(1);
+    t += 301;
+    await v.conferir(jwt(corpoOk));
+    expect(n).toBe(2);
   });
 });
 
