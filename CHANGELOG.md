@@ -1,5 +1,11 @@
 # CHANGELOG — openpcbotv3
 
+## 3.20.9 — 2026-11-10
+
+Organizar a tela (Nei: "painel tem mover ou tem reorganizar a tela?").
+
+- Botão **Organizar** no clássico: tocar num quadro e depois em outro troca os dois de lugar (ou arrastar com o mouse); **Pronto** sai do modo, **Restaurar padrão** volta ao original. Os lugares mantêm o tamanho (esquerda alta, baixo largo), então dá para pôr Terminais ou Publicação no lugar grande. Fica guardado neste aparelho (localStorage `painel.layout`); vale também no celular (ordem da coluna).
+
 ## 3.19.9 — 2026-11-10
 
 Filas item por item (Nei: "quero poder ver o que está nas filas, qual os estados").

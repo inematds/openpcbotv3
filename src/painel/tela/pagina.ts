@@ -23,6 +23,9 @@ export const PAINEL_HTML = `<!doctype html>
   <div class="ctl" role="group" aria-label="Como mostrar produção, publicação e terminais">
     <div class="seg"><button data-modo="lista" aria-pressed="true">Lista</button><button data-modo="icones" aria-pressed="false">Ícones</button><button data-modo="imagens" aria-pressed="false">Imagens</button></div>
     <button class="btn" id="voz" aria-pressed="false">Voz desligada</button>
+    <button class="btn" id="organizar" aria-pressed="false" title="Trocar os quadros de lugar (fica guardado neste aparelho)">Organizar</button>
+    <button class="btn" id="restaurar" hidden>Restaurar padrão</button>
+    <span id="dica-org" hidden>Toque num quadro e depois no lugar para onde ele vai (ou arraste). Clique Pronto ao terminar.</span>
     <a class="btn" href="/jarvis" style="text-decoration:none;display:inline-flex;align-items:center" title="Mesmos dados no visual JARVIS">Versão Jarvis</a>
     <span id="sair" hidden class="ctl"><form method="post" action="/logout"><button class="btn" type="submit">Sair deste aparelho</button></form><form method="post" action="/logout?todos=1" id="sair-todos"><button class="btn" type="submit" id="sair-todos-btn">Sair de todos</button></form></span>
   </div>

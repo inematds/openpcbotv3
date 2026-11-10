@@ -96,5 +96,27 @@ document.addEventListener('click',function(ev){var t=ev.target.closest('[data-mo
   if(t.id==='tok-salvar'){LS.set('painel.token',document.getElementById('tok').value.trim());E.msgVaga='Token guardado neste navegador.';desenharFolha(true)}});
 document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&E.aberto)fechar();var t=ev.target;if((ev.key==='Enter'||ev.key===' ')&&t.dataset&&t.dataset.abrir&&t.tagName!=='BUTTON'){ev.preventDefault();abrir(t.dataset.abrir)}});
 var st=document.getElementById('sair-todos');if(st)st.addEventListener('submit',function(ev){if(!confirm('Sair de todos os aparelhos? Cada um vai pedir a senha de novo.'))ev.preventDefault()});
+// Organizar: cada quadro pode trocar de lugar com outro (os lugares têm tamanhos fixos: o da esquerda é alto,
+// o de baixo é largo). Fica guardado neste aparelho. Arrastar com o mouse ou tocar num e depois no outro.
+var AREAS={esperando:'esp',maquina:'maq',bots:'bot',producao:'pro',publicacao:'pub',creditos:'cre',sites:'sit',vagas:'vag',terminais:'ter'};
+function lerLayout(){var m;try{m=JSON.parse(LS.get('painel.layout','{}'))||{}}catch(e){m={}}
+  var usadas=Object.keys(AREAS).map(function(g){return m[g]||AREAS[g]}),ok=Object.keys(AREAS).every(function(g){return usadas.indexOf(AREAS[g])>=0});return ok?m:{}}
+function aplicarLayout(){var m=lerLayout();Object.keys(AREAS).forEach(function(g){var el=document.getElementById('t-'+g);if(el)el.style.gridArea=m[g]||''})}
+function trocarQuadros(a,b){if(!a||!b||a===b)return;var m=lerLayout(),aa=m[a]||AREAS[a],ab=m[b]||AREAS[b];m[a]=ab;m[b]=aa;LS.set('painel.layout',JSON.stringify(m));aplicarLayout()}
+function marcarOrg(){var on=document.body.classList.contains('organizando'),b=document.getElementById('organizar'),r=document.getElementById('restaurar');
+  if(b){b.textContent=on?'Pronto':'Organizar';b.setAttribute('aria-pressed',on?'true':'false')}if(r)r.hidden=!on;var dc=document.getElementById('dica-org');if(dc)dc.hidden=!on;
+  Object.keys(AREAS).forEach(function(g){var el=document.getElementById('t-'+g);if(el){el.draggable=on;el.removeAttribute('data-esc')}});E.escolhido=null}
+document.addEventListener('click',function(ev){var t=ev.target.closest('#organizar,#restaurar');
+  if(t&&t.id==='organizar'){document.body.classList.toggle('organizando');marcarOrg();return}
+  if(t&&t.id==='restaurar'){LS.set('painel.layout','{}');aplicarLayout();marcarOrg();return}
+  if(!document.body.classList.contains('organizando'))return;var q=ev.target.closest('.grade .tile');if(!q)return;
+  ev.preventDefault();ev.stopPropagation();var g=q.id.replace(/^t-/,'');
+  if(!E.escolhido){E.escolhido=g;q.setAttribute('data-esc','1');return}
+  var a=E.escolhido;var ea=document.getElementById('t-'+a);if(ea)ea.removeAttribute('data-esc');E.escolhido=null;trocarQuadros(a,g)},true);
+document.addEventListener('dragstart',function(ev){var q=ev.target.closest&&ev.target.closest('.grade .tile');if(!q||!document.body.classList.contains('organizando'))return;E.arrasta=q.id.replace(/^t-/,'');try{ev.dataTransfer.setData('text/plain',E.arrasta)}catch(e){}});
+document.addEventListener('dragover',function(ev){if(E.arrasta&&ev.target.closest&&ev.target.closest('.grade .tile'))ev.preventDefault()});
+document.addEventListener('drop',function(ev){var q=ev.target.closest&&ev.target.closest('.grade .tile');if(!q||!E.arrasta)return;ev.preventDefault();trocarQuadros(E.arrasta,q.id.replace(/^t-/,''));E.arrasta=null});
+document.addEventListener('dragend',function(){E.arrasta=null});
+aplicarLayout();
 marcarModo();marcarVoz();relogio();setInterval(relogio,1000);ler();setInterval(ler,15000);
 `;

@@ -54,6 +54,10 @@ a{color:var(--txt)}
 .chip{display:inline-block;border:1px solid var(--line2);border-radius:999px;padding:.05rem .55rem;font-size:.82rem;margin:0 .2rem .2rem 0}
 .filacab{margin:.1rem 0 .2rem}.filaonde{font-size:.8rem;margin-bottom:.4rem;overflow-wrap:anywhere}
 .subt{font:600 1.15rem Sora,Inter,sans-serif;margin:.2rem 0 .6rem;grid-column:1/-1}
+body.organizando .grade .tile{outline:2px dashed var(--amb);outline-offset:-2px;cursor:grab}
+body.organizando .grade .tile *{pointer-events:none}
+.grade .tile[data-esc]{outline:3px solid var(--amb);box-shadow:0 0 0 6px rgba(250,204,21,.18)}
+#dica-org{font-size:.85rem;color:var(--amb);max-width:22rem;line-height:1.25}
 .rolar{margin:0;font-size:.78rem;color:var(--mut)}
 .btn.quente{border-color:var(--amb);color:var(--amb)}
 .convc{max-height:60vh;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:.6rem .8rem;background:var(--card)}
