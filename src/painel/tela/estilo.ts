@@ -46,6 +46,12 @@ a{color:var(--txt)}
 .tcard .img{height:70px;display:grid;place-items:center;font:700 2rem Sora,sans-serif;color:#0c0c10}
 .tcard .txt{padding:.5rem .6rem}
 .term:hover,.tic:hover,.tcard:hover{border-color:var(--amb)}
+/* Quadro de terminais na visão geral: todas as sessões, rolando dentro do quadro, em colunas. */
+.terms{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:0 1.2rem}
+.t-terminais .corpo{overflow-y:auto;scrollbar-width:thin;padding-right:.3rem}
+.t-terminais .tcard{display:flex}
+.t-terminais .tcard .img{height:auto;width:46px;flex:none;font-size:1.3rem}
+.rolar{margin:0;font-size:.78rem;color:var(--mut)}
 .btn.quente{border-color:var(--amb);color:var(--amb)}
 .convc{max-height:60vh;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:.6rem .8rem;background:var(--card)}
 .mc{padding:.4rem 0;border-bottom:1px solid var(--line)}

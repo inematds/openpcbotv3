@@ -1,5 +1,11 @@
 # CHANGELOG — openpcbotv3
 
+## 3.18.9 — 2026-11-10
+
+Quadro de terminais cabe qualquer número de sessões (Nei: "nas imagens ele corta embaixo, e se crescer como será colocar todos ali").
+
+- O quadro mostra TODAS as sessões (antes 4), da mais recente para a mais antiga, rolando dentro do quadro; Lista em colunas em vez de uma por linha; Imagens com a faixa de cor ao lado (cartão mais baixo).
+
 ## 3.18.8 — 2026-11-10
 
 Terminais mostram onde cada sessão trabalha (Nei: "embaixo o nome de onde está trabalhando: a pasta e o projeto, modelo e contexto e ativo"; "nos ícones e imagens não aparece, na lista falta o nome do projeto"; "pode ter estas sessões pelo painel Jarvis também").

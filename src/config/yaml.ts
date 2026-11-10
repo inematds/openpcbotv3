@@ -57,7 +57,7 @@ export const OLLAMA_DEFAULT: ConfigOllama = {
   papeis: {
     roteador: { modelo: 'llama3.2', keep_alive: '10m' },
     // MESMA tag do v2 (.env OLLAMA_MODEL) — um só modelo residente serve os dois bots.
-    geral: { modelo: 'qwen3.8:27b', keep_alive: -1, residente: true },
+    geral: { modelo: 'qwen3.8:27b', keep_alive: '30m', residente: true },
     embed: { modelo: 'bge-m3', keep_alive: '10m' },
     pesado: { modelo: 'llama3.1:70b', ativo: false },
   },
