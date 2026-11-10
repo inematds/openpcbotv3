@@ -77,7 +77,8 @@ export async function coletarMaquina(d: DepsPainel): Promise<DadosMaquina> {
     const total = s.blocks * s.bsize, livre = s.bavail * s.bsize;
     disco = { total_gb: Math.round(total / 1e9), livre_gb: Math.round(livre / 1e9), usado_pct: Math.round(100 * (1 - livre / total)) };
   } catch { /* idem */ }
-  try { boot = Math.round(d.agora() - Number(readFileSync('/proc/uptime', 'utf8').split(' ')[0])); } catch { /* idem */ }
+  // `btime` é fixo e inteiro (agora − uptime oscilaria 1 s e mudaria a chave do alerta de reinício).
+  try { const m = /^btime (\d+)/m.exec(readFileSync('/proc/stat', 'utf8')); boot = m ? Number(m[1]) : null; } catch { /* idem */ }
   const [rb, g] = await Promise.all([reinicios(d), gpuOom(d)]);
   return { memoria, carga, disco, boot_em: boot, reinicios: rb, gpu_oom: g };
 }

@@ -178,8 +178,11 @@ describe('POST /api/vagas', () => {
     expect(chamadas).toEqual([]);
   });
   it('válido → chama `vagas <classe> <n>` sem shell e avisa gpu > 1', async () => {
-    const r = await mudarVagas(base('t0k'), 'Bearer t0k', '{"classe":"gpu","valor":2}');
+    const d = base('t0k');
+    await d.cache.obter('painel', 60_000, () => 'velho');
+    const r = await mudarVagas(d, 'Bearer t0k', '{"classe":"gpu","valor":2}');
     expect(r.status).toBe(200);
+    expect(d.cache.ultimo('painel')).toBeUndefined();
     expect(r.corpo.aviso).toMatch(/estável com 1/);
     expect(chamadas).toEqual([[script, 'gpu', '2']]);
   });

@@ -47,7 +47,7 @@ Sem token do Telegram o serviço sobe mesmo assim com HTTP (`127.0.0.1:3142`) e 
 | Restart após mudar `src/` ou `.env` | `bash scripts/instalar-servico.sh` |
 | Diagnóstico | `npm run doctor` (config) · `npm run doctor -- --deep` (probes reais: manda mensagem no Telegram e roda um job) |
 | Parar tudo agora | `/parar tudo <motivo>` no chat; `/retomar` libera |
-| Testes | `npm test` (278) |
+| Testes | `npm test` (282) |
 
 ---
 

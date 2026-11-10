@@ -11,7 +11,7 @@ Painel de monitoramento para TV e celular (pedido do Nei: "uma tela com alertas 
 - Sites (`~/.config/inema/painel-sites.json`): GET a cada 5 min só enquanto o painel está aberto; `PAINEL_SITES=0` desliga.
 - Alerta no Telegram pronto e desligado (`PAINEL_ALERTA_TELEGRAM=1`), sem repetir chave (`store/painel-avisados.json`).
 - `src/cli/painel-teste.ts`: sobe só o HTTP do painel numa porta de teste, sem bot nem polling.
-- 16 testes novos (`src/painel/painel.test.ts`).
+- 20 testes novos (`src/painel/painel.test.ts`, `src/painel/tela.test.ts`: desenhos do cliente nos 3 modos com dados reais, rota de falha).
 
 ## 3.12.6 — 2026-11-05
 

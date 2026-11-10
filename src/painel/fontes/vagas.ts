@@ -101,6 +101,7 @@ export async function mudarVagas(d: DepsPainel, authorization: string | undefine
   if (!existsSync(d.caminhos.scriptVagas)) return { status: 503, corpo: { erro: 'comando vagas não instalado' } };
   const r = await d.exec(d.caminhos.scriptVagas, [classe, String(valor)], 8000);
   if (!r.ok) return { status: 500, corpo: { erro: 'o comando vagas recusou', saida: (r.stderr || r.stdout || r.erro || '').slice(0, 500) } };
-  d.cache.apagar('vagas:status'); d.cache.apagar('grupo:vagas');
+  // Sem isso a tela diria "Gravado" e mostraria o valor antigo por até 5 s (cache do painel).
+  d.cache.apagar('vagas:status'); d.cache.apagar('painel');
   return { status: 200, corpo: { ok: true, classe, valor, aviso: classe === 'gpu' && valor > 1 ? 'máquina só medida estável com 1' : null, saida: r.stdout.slice(0, 500) } };
 }
