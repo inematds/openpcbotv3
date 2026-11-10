@@ -1,5 +1,12 @@
 # CHANGELOG — openpcbotv3
 
+## 3.18.8 — 2026-11-10
+
+Terminais mostram onde cada sessão trabalha (Nei: "embaixo o nome de onde está trabalhando: a pasta e o projeto, modelo e contexto e ativo"; "nos ícones e imagens não aparece, na lista falta o nome do projeto"; "pode ter estas sessões pelo painel Jarvis também").
+
+- Clássico (Lista, Ícones e Imagens): título = projeto em que a sessão está trabalhando (o "→ X" da statusline; senão o da pasta) + nome da sessão + tmux; embaixo, sem cortar: 📁 pasta · 🧠 modelo/esforço e contexto · ⏱ ativa há / aberta há. Clicar na sessão no cartão abre direto as abas Dados/Conteúdo/Terminal.
+- Jarvis: "Sessões do Claude" na coluna da esquerda — lista (com ctx), ícones e, em Gráficos, barras de contexto por sessão; clicar abre o detalhe com Visualizar, Tela ao vivo e Assumir.
+
 ## 3.17.7 — 2026-11-10
 
 Sessão dentro do painel clássico (Nei: "quando abri a sessão veio o painel do Jarvis mas eu estava no clássico; ter a visão dos dados, ver o conteúdo do terminal e editar o terminal").

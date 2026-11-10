@@ -193,7 +193,12 @@ function numero(nome){var d=dg(nome);if(!d)return['–','sem dados'];
   if(nome==='sites'){var s=d.sites||[];return[s.length?s.filter(function(x){return x.ok}).length+'/'+s.length:'…','no ar']}
   if(nome==='vagas'){var o=0,t=0;(d.classes||[]).forEach(function(c){if(c.classe==='gpu'||c.classe==='render'){o+=c.ocupadas||0;t+=c.vagas||0}});return[o+'/'+t,'gpu + render']}
   if(nome==='terminais'){var vv=d.vivos||[],ff=vv.filter(function(t){return t.origem&&t.origem.tipo==='fisica'}).length;return[ff+' · '+(vv.length-ff),'você · agentes']}return['–','']}
-function icones(){return'<div class="ics">'+sistemas().map(function(s){var v=numero(s.nome);return'<button type="button" class="ic '+s.estado+'" data-det="sis:'+s.nome+'" title="'+esc(s.frase)+'"><span class="gl" aria-hidden="true">'+GLIFO[s.nome]+'</span><b>'+esc(v[0])+'</b><small>'+esc(v[1])+'</small><i>'+esc(NOMES[s.nome])+'</i></button>'}).join('')+'</div>'}
+function sesJ(){var td=dg('terminais')||{};return td.vivos||[]}
+function projS(t){return(t.retrato&&t.retrato.ativo)||t.projeto||'?'}
+function emoS(t){var o=t.origem||{};return o.tipo==='fisica'?'👤':o.tipo==='agente'?'🤖':'·'}
+function atS(t){var r=t.retrato||{},x=t.transcript||{};return x.ultima_atividade||r.em||t.inicio}
+function subS(t){var r=t.retrato||{},x=t.transcript||{};return String(t.cwd||'').replace(/^\/home\/[^\/]+\//,'~/')+' · '+(r.modelo||x.modelo||'modelo ?')+(r.esforco?'/'+r.esforco:'')+' · ativo '+ha(atS(t))}
+function icones(){return'<div class="ics">'+sistemas().map(function(s){var v=numero(s.nome);return'<button type="button" class="ic '+s.estado+'" data-det="sis:'+s.nome+'" title="'+esc(s.frase)+'"><span class="gl" aria-hidden="true">'+GLIFO[s.nome]+'</span><b>'+esc(v[0])+'</b><small>'+esc(v[1])+'</small><i>'+esc(NOMES[s.nome])+'</i></button>'}).join('')+'</div>'+(sesJ().length?'<h3>Sessões do Claude</h3><div class="ics">'+sesJ().map(function(t){var r=t.retrato||{};return'<button type="button" class="ic" data-det="term:'+esc(t.session_id)+'" title="'+esc(subS(t))+'"><span class="gl" aria-hidden="true">'+emoS(t)+'</span><b>'+esc(projS(t))+'</b><small>'+esc((r.modelo||'?')+(r.ctx_pct!=null?' · '+r.ctx_pct+'%':''))+'</small><i>'+esc(ha(atS(t)))+'</i></button>'}).join('')+'</div>':'')}
 function anel(pct,rot,gr){var p=Math.max(0,Math.min(100,Number(pct)||0)),C=2*Math.PI*34,cor=p>=90?'#ff5d6c':p>=75?'#ffb020':'#5fe3ff';
   return'<div class="g-anel" data-det="sis:'+gr+'" tabindex="0" title="'+esc(rot)+' '+n(pct,0)+'%"><svg viewBox="0 0 84 84" aria-hidden="true"><circle cx="42" cy="42" r="34" class="trilho"></circle><circle cx="42" cy="42" r="34" class="val" style="color:'+cor+';stroke:'+cor+';stroke-dasharray:'+(C*p/100).toFixed(1)+' '+C.toFixed(1)+'"></circle></svg><b>'+n(pct,0)+'%</b><span>'+esc(rot)+'</span></div>'}
 function graficos(){var h='',m=dg('maquina'),cr=dg('creditos'),pb=dg('publicacao'),vg=dg('vagas'),pr=dg('producao'),st=dg('sites'),an=[];
@@ -209,6 +214,7 @@ function graficos(){var h='',m=dg('maquina'),cr=dg('creditos'),pb=dg('publicacao
     ev.forEach(function(t,i){var x=(100*(t.proxima-ag)/J),lin=0;for(var z=0;z<3;z++){if(ult[z]==null||x-ult[z]>3){lin=z;break}lin=z}ult[lin]=x;tl+='<span class="mk'+(lin===1?' al':lin===2?' al al2':'')+'" style="left:'+x.toFixed(1)+'%" title="'+esc(t.unidade)+' às '+hm(t.proxima)+'"></span>'});
     h+='<h3>Próximas 12 horas</h3><div class="gbox" data-det="sis:producao" tabindex="0"><div class="tl">'+tl+'</div><div class="tlleg">'+(ev.slice(0,10).map(function(t){return'<span><b>'+hm(t.proxima)+'</b> '+esc(t.unidade)+'</span>'}).join('')||'<span>nenhum timer nas próximas 12 h</span>')+'</div></div>'}
   if(st&&(st.sites||[]).length){var fora=st.sites.filter(function(s){return!s.ok});h+='<h3>Sites</h3><div class="gbox st" data-det="sis:sites" tabindex="0">'+st.sites.map(function(s){return'<i class="'+(s.ok?'':'fora')+'" title="'+esc(String(s.url).replace(/^https?:\/\//,''))+(s.ok?' · '+s.ms+' ms':' · '+(s.erro||'fora'))+'"></i>'}).join('')+'<small>'+(fora.length?'fora: '+esc(fora.map(function(s){return String(s.url).replace(/^https?:\/\//,'')}).join(', ')):st.sites.length+' no ar')+'</small></div>'}
+  var ss=sesJ();if(ss.length)h+='<h3>Sessões do Claude · contexto usado</h3><div class="gbox barras">'+ss.map(function(t){var c=(t.retrato||{}).ctx_pct;return'<div class="bl" data-det="term:'+esc(t.session_id)+'" title="'+esc(subS(t))+'"><span>'+emoS(t)+' '+esc(projS(t))+'</span><span class="tr"><i style="width:'+Math.max(2,c||0)+'%;'+(c>=85?'background:#ff5d6c':c>=70?'background:#ffb020':'')+'"></i></span><b>'+(c!=null?c+'%':'–')+'</b></div>'}).join('')+'</div>';
   return h||'<p class="sub">sem dados para desenhar</p>'}
 function marcarModo(){document.querySelectorAll('[data-modo]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.modo===MODO))})}
 function trocarModo(m){MODO=m;LS.set('jarvis.modo',m);marcarModo();desenhar()}
@@ -325,6 +331,7 @@ function desenhar(){if(!D)return;var c=contagem(),sis=sistemas(),ordem={erro:0,a
   $('ver').textContent='v'+D.versao+' · leitura '+hm(D.gerado_em);
   $('subSis').textContent=c.total+' sistemas · '+c.ok+' ok'+(c.erros?' · '+plural(c.erros,'erro','erros'):'')+(c.avisos?' · '+plural(c.avisos,'aviso','avisos'):'');
   $('listaSis').innerHTML=sis.slice().sort(function(a,b){return ordem[a.estado]-ordem[b.estado]}).map(function(s){return'<li data-det="sis:'+s.nome+'" tabindex="0"><span class="ponto '+s.estado+'" aria-hidden="true"></span><span class="nome">'+esc(NOMES[s.nome])+'</span><span class="rot '+s.estado+'">'+ROT[s.estado]+'</span><span class="acao">'+esc(s.frase)+'</span></li>'}).join('');
+  $('listaSes').innerHTML=sesJ().map(function(t){var r=t.retrato||{},rec=Date.now()/1000-atS(t)<120;return'<li data-det="term:'+esc(t.session_id)+'" tabindex="0"><span class="ponto '+(rec?'rodando':'')+'" aria-hidden="true"></span><span class="nome">'+emoS(t)+' '+esc(projS(t))+(t.tmux?' · tmux':'')+'</span><span class="rot">'+(r.ctx_pct!=null?'ctx '+r.ctx_pct+'%':'')+'</span><span class="acao">'+esc(subS(t))+'</span></li>'}).join('')||'<li><span></span><span class="acao">nenhuma sessão aberta</span></li>';
   var tm=(D.grupos.producao&&D.grupos.producao.dados&&D.grupos.producao.dados.timers)||[],agora=Date.now()/1000;
   $('listaTim').innerHTML=tm.filter(function(t){return t.proxima&&t.proxima>agora-60&&!/watchdog|vigia|ocioso|^continua$|-producao$/.test(t.unidade)}).sort(function(a,b){return a.proxima-b.proxima}).slice(0,8).map(function(t){return'<li data-det="sis:producao" tabindex="0"><span class="ponto info" aria-hidden="true"></span><span class="nome">'+esc(t.unidade)+'</span><span class="rot">'+hm(t.proxima)+'</span><span class="acao">última: '+esc(t.ultima?ha(t.ultima):'ainda não rodou')+'</span></li>'}).join('')||'<li><span></span><span class="acao">nenhum timer à vista</span></li>';
   var ult=(D.grupos.publicacao&&D.grupos.publicacao.dados&&D.grupos.publicacao.dados.ultimos)||[];
@@ -443,6 +450,7 @@ export const JARVIS_HTML = `<!doctype html>
         <div id="vis" class="oculto"></div>
         <div id="modoLista">
           <ul class="lista" id="listaSis"></ul>
+          <h3>Sessões do Claude</h3><ul class="lista" id="listaSes"></ul>
           <h3>Próximos timers</h3><ul class="lista" id="listaTim"></ul>
           <h3>Últimos publicados</h3><ul class="lista" id="listaPub"></ul>
         </div>

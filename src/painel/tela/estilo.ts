@@ -34,6 +34,18 @@ a{color:var(--txt)}
 .btn{border:1px solid var(--line2);background:var(--bg2);border-radius:var(--r-ctl);padding:.4rem .9rem;cursor:pointer;min-height:38px;font-size:.9rem}
 .btn[aria-pressed=true]{border-color:var(--amb);color:var(--amb)}
 .abas{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+.term,.tic,.tcard{cursor:pointer;min-width:0}
+.term{padding:.4rem 0;border-bottom:1px solid var(--line)}
+.tt{font-size:.98rem;overflow-wrap:anywhere}
+.tl{display:block;font-size:.82rem;color:var(--mut);overflow-wrap:anywhere;line-height:1.35}
+.tics{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.6rem}
+.tic{display:flex;gap:.6rem;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:.55rem}
+.tic>b{flex:none;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:#0c0c10;font-weight:700}
+.tcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:.7rem}
+.tcard{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card)}
+.tcard .img{height:70px;display:grid;place-items:center;font:700 2rem Sora,sans-serif;color:#0c0c10}
+.tcard .txt{padding:.5rem .6rem}
+.term:hover,.tic:hover,.tcard:hover{border-color:var(--amb)}
 .btn.quente{border-color:var(--amb);color:var(--amb)}
 .convc{max-height:60vh;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:.6rem .8rem;background:var(--card)}
 .mc{padding:.4rem 0;border-bottom:1px solid var(--line)}
