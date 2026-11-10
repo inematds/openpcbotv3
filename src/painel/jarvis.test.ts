@@ -16,11 +16,12 @@ describe('tela JARVIS', () => {
     expect(JARVIS_JS).not.toContain('${');
   });
 
-  it('a página lê /api/painel, volta ao clássico e não escreve nada no servidor', () => {
+  it('a página lê /api/painel, volta ao clássico e só escreve pelo Assumir (com X-Painel)', () => {
     expect(JARVIS_HTML).toContain("fetch('/api/painel'");
     expect(JARVIS_HTML).toContain('href="/painel"');
     expect(JARVIS_JS).not.toContain('/api/vagas');
-    expect(JARVIS_JS).not.toMatch(/method:\s*'POST'/);
+    expect(JARVIS_JS.match(/method:'POST'/g)?.length).toBe(1);
+    expect(JARVIS_JS).toMatch(/fetch\('\/api\/painel\/terminal\/enviar',\{method:'POST'[^}]*'X-Painel':'1'/);
   });
 
   it('GET /jarvis responde a tela', async () => {

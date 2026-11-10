@@ -2,6 +2,7 @@
 // `terminais --json` (do hub wifi). Mais as pendências do topo do hub.
 import type { DepsPainel } from '../tipos.js';
 import { corta, lerTexto, paraEpoch } from '../util.js';
+import { assumirLigado, paneDaSessao, panesTmux } from './assumir.js';
 import { detalharSessoes, type InfoSessao } from './sessoes.js';
 
 export interface Terminal { session_id: string; pid: number | null; cwd: string; projeto: string; inicio: number | null; tipo: string; tty: string | null }
@@ -36,10 +37,11 @@ export async function coletarTerminais(d: DepsPainel) {
     ...(await detalharSessoes(d, vivos ?? [], true)),
     ...(await detalharSessoes(d, interrompidos ?? [], false)),
   }));
-  const junta = (t: Terminal) => ({ ...t, ...(info[t.session_id] ?? {}) });
+  const panes = await d.cache.obter('term:panes', 5_000, () => panesTmux(d));
+  const junta = (t: Terminal) => ({ ...t, ...(info[t.session_id] ?? {}), tmux: paneDaSessao(t.pid, panes) });
   if (vivos === null) ausentes.push('terminais');
   if (interrompidos === null) ausentes.push('terminais interrompidos');
-  return { dados: { vivos: (vivos ?? []).map(junta), interrompidos: (interrompidos ?? []).map(junta), miniatura: null as string | null }, ausentes };
+  return { dados: { assumir: assumirLigado(), vivos: (vivos ?? []).map(junta), interrompidos: (interrompidos ?? []).map((t) => ({ ...t, ...(info[t.session_id] ?? {}), tmux: null })), miniatura: null as string | null }, ausentes };
 }
 
 /** Itens do topo de pendencias.md: cada `- **título**` ou `### título` antes de "## Resolvidas". */

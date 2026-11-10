@@ -7,7 +7,7 @@
 // Fora do loopback só sobe com senha definida.
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 
-import { painelEmCache, tratarPainel } from './http-painel.js';
+import { enviarComId, painelEmCache, tratarPainel } from './http-painel.js';
 import { mudarVagas } from './fontes/vagas.js';
 import { JARVIS_HTML } from './tela/jarvis.js';
 import { PAINEL_HTML } from './tela/pagina.js';
@@ -155,7 +155,8 @@ export function criarServidorPainel(o: OpcoesServidor): Server {
       const ehTela = (p === '/' || p === '/painel' || p === '/jarvis') && m === 'GET';
       const ehApi = (p === '/api/painel' || p.startsWith('/api/painel/')) && m === 'GET';
       const ehVagas = p === '/api/vagas';
-      if (!ehTela && !ehApi && !ehVagas) { json(res, 404, { erro: 'rota' }); return; }
+      const ehEnviar = p === '/api/painel/terminal/enviar';
+      if (!ehTela && !ehApi && !ehVagas && !ehEnviar) { json(res, 404, { erro: 'rota' }); return; }
 
       const quem = await autenticado(req, res);
       if (!quem) {
@@ -163,6 +164,14 @@ export function criarServidorPainel(o: OpcoesServidor): Server {
         json(res, 401, { erro: 'entre no painel', login: true }); return;
       }
       if (ehTela) { html(res, 200, p === '/jarvis' ? JARVIS_HTML : PAINEL_HTML); return; }
+      if (ehEnviar) {
+        if (m !== 'POST') { json(res, 405, { erro: 'use POST' }); return; }
+        if (req.headers['x-painel'] !== '1' || !mesmaOrigem(req)) { json(res, 403, { erro: 'pedido sem a marca do painel (CSRF)' }); return; }
+        let bruto = '';
+        try { bruto = await corpo(req, 8192); } catch { json(res, 413, { erro: 'grande' }); return; }
+        const r = await enviarComId(o.deps, bruto, `${quem.via}:${ipCliente(req)}`);
+        json(res, r.status, r.corpo); return;
+      }
       if (ehVagas) {
         if (m !== 'POST') { json(res, 405, { erro: 'use POST' }); return; }
         if (req.headers['x-painel'] !== '1' || !mesmaOrigem(req)) { json(res, 403, { erro: 'pedido sem a marca do painel (CSRF)' }); return; }

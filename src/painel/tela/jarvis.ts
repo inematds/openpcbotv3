@@ -130,6 +130,10 @@ header,footer,.contas{transition:opacity .8s}
 .msg.ferramenta p,.msg.resultado p{font:12px var(--mono);color:var(--mut)}
 .msg.resultado p{opacity:.7}
 .folha .fch:disabled{opacity:.6;cursor:default}
+.acoes{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}
+.folha .fch.quente{border-color:var(--alerta);color:var(--alerta)}
+.tela{max-height:46vh;overflow:auto;background:#000;color:#d7e7f0;border:1px solid var(--linha);border-radius:10px;padding:10px;font:12px/1.35 var(--mono);white-space:pre;margin-top:8px}
+.assumir textarea{width:100%;background:#020814;color:var(--gelo);border:1px solid var(--alerta);border-radius:10px;padding:10px;font:14px var(--sans);resize:vertical}
 @media (max-width:980px){main{grid-template-columns:minmax(0,1fr)}.nucleo{order:-1;min-height:0}#cv{max-width:340px}.painel{max-height:none}.rolar{max-height:60vh}.relogio{font-size:18px}.app{padding:12px 16px 14px}
   footer{position:sticky;bottom:0;z-index:5;margin:0 -16px -14px;padding:10px 16px 12px;background:var(--bg);box-shadow:0 -18px 18px var(--bg)}
   .resposta{min-height:0;max-height:6.2em;overflow-y:auto;font-size:14px}.barra button{flex:1 1 40%;padding:9px 8px;font-size:13px}}
@@ -284,11 +288,25 @@ function abrirDet(chave){if(!D)return;var p=chave.split(':'),tit='',h='',fala=''
       +(r.em?bloco('Uso',lnt('contexto',(r.ctx_pct!=null?r.ctx_pct+'%':'–')+(r.ctx_tokens?' · '+n(r.ctx_tokens/1000,0)+' mil de '+n((r.ctx_janela||0)/1000,0)+' mil tokens':''),r.ctx_pct>=85?'erro':r.ctx_pct>=70?'aviso':'')+lnt('custo equivalente','US$ '+Number(r.custo_usd||0).toFixed(2))+lnt('tempo total',r.dur_ms?Math.round(r.dur_ms/60000)+' min':'–')+lnt('tempo do modelo',r.api_ms?Math.round(r.api_ms/60000)+' min':'–')+lnt('linhas mudadas','+'+n(r.linhas_mais,0)+' / −'+n(r.linhas_menos,0))+lnt('lido',ha(r.em))):'')
       +(pr?bloco('Processo',lnt('CPU',n(pr.cpu)+'%')+lnt('memória',n(pr.mem_mb,0)+' MB')+lnt('rodando há',ha(Date.now()/1000-pr.rodando_s).replace('há ',''))):'')
       +bloco('Conversa',lnt('última atividade',x.ultima_atividade?quando(x.ultima_atividade):'–')+lnt('último pedido',x.ultimo_pedido||'–')+lnt('última resposta',x.ultima_resposta||'–')+(x.tamanho_mb!=null?lnt('tamanho',n(x.tamanho_mb)+' MB'):''))
-      +'<p><button type="button" class="fch" id="bConv" data-sid="'+esc(t.session_id)+'">Ver conversa (só leitura)</button></p><div id="conv" class="conv oculto"></div>'
-      +'<p class="dica">Interagir pelo painel (digitar nesta sessão) ainda não está ligado: depende de uma decisão de segurança. Por enquanto é só leitura.</p>'}
+      +'<h4>O que fazer com esta sessão</h4><p class="acoes"><button type="button" class="fch" id="bConv" data-sid="'+esc(t.session_id)+'">👁 Visualizar conversa</button>'
+      +(viva&&t.tmux?'<button type="button" class="fch" id="bTela" data-sid="'+esc(t.session_id)+'">🖥 Ver tela ao vivo</button>'+(td.assumir?'<button type="button" class="fch quente" id="bAssumir" data-sid="'+esc(t.session_id)+'">⌨ Assumir</button>':''):'')+'</p>'
+      +(viva&&!t.tmux?'<p class="dica">Ver a tela ao vivo e assumir só funcionam em sessões abertas com <b>cct &lt;projeto&gt;</b> (o cc dentro do tmux). Esta foi aberta com cc, então aqui é só visualizar a conversa.</p>':'')
+      +(viva&&t.tmux&&!td.assumir?'<p class="dica">Assumir está desligado no painel (PAINEL_ASSUMIR=1 no .env do v3 liga).</p>':'')
+      +'<pre id="tela" class="tela oculto"></pre><div id="assumir" class="assumir oculto"><p class="dica">Você está digitando NESTA sessão'+(o.tipo==='fisica'?' (a mesma que está aberta no seu terminal)':'')+'. Enter envia; Shift+Enter quebra linha.</p><textarea id="aTexto" rows="3" placeholder="Escreva o pedido para esta sessão…"></textarea><p class="acoes"><button type="button" class="fch quente" data-env="texto">Enviar</button><button type="button" class="fch" data-env="Escape">Esc (parar)</button><button type="button" class="fch" data-env="C-c">Ctrl+C</button><button type="button" class="fch" data-env="Up">↑</button><button type="button" class="fch" data-env="Down">↓</button><button type="button" class="fch" data-env="Enter">Enter</button></p><p class="sub" id="aMsg"></p></div>'
+      +'<div id="conv" class="conv oculto"></div>'}
   if(!tit)return;fTexto=fala;$('fTit').textContent=tit;$('fCorpo').innerHTML=h;$('folha').classList.add('aberta');$('fFechar').focus()}
-var convT=null;
-function fecharDet(){$('folha').classList.remove('aberta');if(convT){clearInterval(convT);convT=null}}
+var convT=null,telaT=null,confirmouAssumir=false;
+function fecharDet(){$('folha').classList.remove('aberta');if(convT){clearInterval(convT);convT=null}if(telaT){clearInterval(telaT);telaT=null}}
+async function lerTela(sid){var c=$('tela');if(!c)return;try{var r=await fetch('/api/painel/terminal/tela?id='+encodeURIComponent(sid),{cache:'no-store',credentials:'same-origin'});var j=await r.json();c.textContent=r.ok?j.tela:(j.erro||('HTTP '+r.status));c.scrollTop=c.scrollHeight}catch(e){c.textContent='não consegui ler a tela: '+e.message}}
+function ligarTela(sid){var c=$('tela');c.classList.remove('oculto');lerTela(sid);if(telaT)clearInterval(telaT);telaT=setInterval(function(){lerTela(sid)},2000)}
+async function enviar(sid,corpo){var m=$('aMsg');m.textContent='enviando…';try{var r=await fetch('/api/painel/terminal/enviar',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Painel':'1'},body:JSON.stringify(Object.assign({id:sid},corpo))});var j=await r.json();m.textContent=r.ok?'enviado às '+new Date().toLocaleTimeString('pt-BR'):('não foi: '+(j.erro||('HTTP '+r.status)));if(r.ok)setTimeout(function(){lerTela(sid)},600)}catch(e){m.textContent='não foi: '+e.message}}
+document.addEventListener('click',function(ev){var b=ev.target.closest('#bTela,#bAssumir,[data-env]');if(!b)return;
+  if(b.id==='bTela'){ligarTela(b.dataset.sid);b.disabled=true;b.textContent='🖥 Tela ao vivo (a cada 2 s)';return}
+  if(b.id==='bAssumir'){if(!confirmouAssumir&&!confirm('Assumir esta sessão? O que você digitar aqui vai direto para o Claude, que roda sem pedir permissão.'))return;confirmouAssumir=true;ligarTela(b.dataset.sid);$('assumir').classList.remove('oculto');$('assumir').dataset.sid=b.dataset.sid;var bt=$('bTela');if(bt){bt.disabled=true}b.disabled=true;b.textContent='⌨ Assumida';$('aTexto').focus();return}
+  var sid=$('assumir').dataset.sid;if(!sid)return;
+  if(b.dataset.env==='texto'){var t=$('aTexto').value;if(!t.trim())return;enviar(sid,{texto:t});$('aTexto').value='';$('aTexto').focus();return}
+  enviar(sid,{tecla:b.dataset.env})});
+document.addEventListener('keydown',function(ev){if(ev.target&&ev.target.id==='aTexto'&&ev.key==='Enter'&&!ev.shiftKey){ev.preventDefault();var sid=$('assumir').dataset.sid,t=ev.target.value;if(sid&&t.trim()){enviar(sid,{texto:t});ev.target.value=''}}},true);
 var QUEM={voce:'você',claude:'claude',ferramenta:'ferramenta',resultado:'resultado'};
 async function lerConv(sid){var c=$('conv');if(!c)return;try{var r=await fetch('/api/painel/terminal?id='+encodeURIComponent(sid)+'&n=120',{cache:'no-store',credentials:'same-origin'});var j=await r.json();
   if(!r.ok){c.innerHTML='<p class="sub">'+esc(j.erro||('HTTP '+r.status))+'</p>';return}
@@ -342,7 +360,7 @@ var CMDS={
   foco:function(){var on=document.body.classList.toggle('foco');$('bFoco').classList.toggle('on',on);$('bFoco').setAttribute('aria-pressed',String(on));falar(on?'Modo foco ligado. Escondi os painéis.':'Modo foco desligado.',on?'modo foco':'')}
 };
 document.querySelectorAll('.barra button').forEach(function(b){b.addEventListener('click',function(){if(D)CMDS[b.dataset.cmd]()})});
-addEventListener('keydown',function(ev){if(ev.target.closest&&ev.target.closest('input,textarea'))return;var k={'1':'bomdia','2':'status','3':'espera','4':'foco','5':'modo'}[ev.key];if(k&&D)CMDS[k]()});
+addEventListener('keydown',function(ev){if(ev.target.closest&&ev.target.closest('input,textarea'))return;if($('folha').classList.contains('aberta')&&ev.key!=='Escape')return;var k={'1':'bomdia','2':'status','3':'espera','4':'foco','5':'modo'}[ev.key];if(k&&D)CMDS[k]()});
 function pintarVoz(){$('voz').textContent='Voz: '+(vozLigada?'ligada':'desligada');$('voz').classList.toggle('desl',!vozLigada);$('voz').setAttribute('aria-pressed',String(vozLigada))}
 var VELS=[1,1.3,1.6,2],VEL=Number(LS.get('jarvis.vel','1.3'));if(VELS.indexOf(VEL)<0)VEL=1.3;
 function pintarVel(){$('vel').textContent='Velocidade: '+String(VEL).replace('.',',')+'×'}

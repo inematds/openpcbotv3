@@ -12,6 +12,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { montarPainel, type Painel } from './agregador.js';
 import { falhaCompletaAccbot, falhaCompletaV3 } from './fontes/bots.js';
 import { acharTranscript, lerConversa, SID } from './fontes/sessoes.js';
+import { enviarAoPane, paneDoId, telaDoPane } from './fontes/assumir.js';
 import { lerFim } from './util.js';
 import { mudarVagas } from './fontes/vagas.js';
 import { JARVIS_HTML } from './tela/jarvis.js';
@@ -30,6 +31,16 @@ function corpo(req: IncomingMessage, max = 4096): Promise<string> {
     let s = ''; req.on('data', (c) => { s += c; if (s.length > max) { reject(new Error('corpo grande demais')); req.destroy(); } });
     req.on('end', () => resolve(s)); req.on('error', reject);
   });
+}
+
+/** Envio do Assumir: acha o pane pelo id do corpo e digita. Usado pela 3142 e pela 3143. */
+export async function enviarComId(d: DepsPainel, bruto: string, quem: string) {
+  let id = '';
+  try { id = String((JSON.parse(bruto || '{}') as { id?: unknown }).id ?? ''); } catch { return { status: 400, corpo: { erro: 'JSON inválido' } }; }
+  if (!SID.test(id)) return { status: 400, corpo: { erro: 'id inválido' } };
+  const pane = paneDoId((await painelEmCache(d)).grupos.terminais.dados?.vivos ?? [], id);
+  if (!pane) return { status: 404, corpo: { erro: 'esta sessão não está no tmux (abra com cct)' } };
+  return enviarAoPane(d, pane, bruto, quem, id);
 }
 
 /** Painel inteiro com cache de 5 s (várias telas abertas dividem a mesma coleta). */
@@ -57,6 +68,23 @@ export async function tratarPainel(req: IncomingMessage, res: ServerResponse, ur
     const r = await mudarVagas(d, req.headers.authorization, bruto);
     json(res, r.status, r.corpo);
     return true;
+  }
+  if (p === '/api/painel/terminal/tela' || p === '/api/painel/terminal/enviar') {
+    // Tela ao vivo e Assumir: só sessões abertas com `cct` (tmux "inema"). Ver: GET. Digitar: POST
+    // (na 3142 exige o Bearer; a 3143 trata o POST antes, com sessão + CSRF).
+    const id = (p.endsWith('/tela') ? url.searchParams.get('id') : null) ?? '';
+    if (p.endsWith('/enviar')) {
+      if (req.method !== 'POST') { json(res, 405, { erro: 'use POST' }); return true; }
+      if (!d.token || req.headers.authorization !== `Bearer ${d.token}`) { json(res, 401, { erro: 'token Bearer obrigatório' }); return true; }
+      let bruto = '';
+      try { bruto = await corpo(req, 8192); } catch { json(res, 413, { erro: 'corpo grande demais' }); return true; }
+      const r = await enviarComId(d, bruto, 'token:3142');
+      json(res, r.status, r.corpo); return true;
+    }
+    const pane = paneDoId((await painelEmCache(d)).grupos.terminais.dados?.vivos ?? [], id);
+    if (!pane) { json(res, 404, { erro: 'esta sessão não está no tmux (abra com cct)' }); return true; }
+    const r = await telaDoPane(d, pane);
+    json(res, r.status, r.corpo); return true;
   }
   if (p === '/api/painel/terminal') {
     // Conversa de uma sessão registrada, SÓ LEITURA (últimas mensagens, segredos mascarados).

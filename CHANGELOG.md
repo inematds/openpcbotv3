@@ -1,5 +1,17 @@
 # CHANGELOG — openpcbotv3
 
+## 3.16.7 — 2026-11-10
+
+Assumir sessão pelo painel, EM TESTE (Nei: "clicar nele para ver detalhe ou assumir ou visualizar"; "quero testar, depois podemos aumentar a segurança").
+
+- `cct <projeto>` (no `~/.bashrc` e em `wifi/statusline/cc-tmux.sh`): o `cc` dentro de um tmux próprio (`-L inema`, sem barra, mouse ligado). Só essas sessões podem ser vistas ao vivo e assumidas; as abertas com `cc` ficam só com "Visualizar conversa".
+- `GET /api/painel/terminal/tela?id=` (tmux capture-pane, segredos mascarados) e `POST /api/painel/terminal/enviar {id, texto | tecla}` (tmux send-keys literal + Enter; teclas permitidas: Enter, Escape, C-c, Up, Down, Tab, BTab).
+- Liga só com `PAINEL_ASSUMIR=1` no `.env`. Na 3143: sessão de login + CSRF (`X-Painel` + Origin); na 3142: Bearer. Cada envio em `~/.local/share/inema/painel-assumir.log` (quem, sessão, tecla, nº de caracteres e só o início do texto).
+- Jarvis: detalhe da sessão com 👁 Visualizar conversa · 🖥 Ver tela ao vivo (2 s) · ⌨ Assumir (confirma uma vez; Enter envia, Shift+Enter quebra linha; botões Esc, Ctrl+C, ↑, ↓, Enter). Clássico: cartão mostra quem abriu/modelo/contexto/tmux; detalhe sempre em tabela com link para ver ou assumir.
+- Teste de ponta a ponta: sessão real no tmux, login na 3143, envio pelo painel → o Claude respondeu; envio sem X-Painel → 403.
+- Segurança a reforçar depois (pedido do Nei): Cloudflare Access no ccc.inema.pro, Assumir só na LAN/Tailscale, ou senha extra.
+- 3 testes novos (`src/painel/assumir.test.ts`).
+
 ## 3.15.7 — 2026-11-10
 
 Terminais com tudo da sessão (Nei: "nos terminais temos que ter mais informações e se clicar abrir todas… leitura apenas ou interação"; "definir se a sessão é física ou por agente e quem está disparando/controlando").
