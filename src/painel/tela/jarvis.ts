@@ -162,7 +162,7 @@ function sistemas(){var al=D.alertas||[];return Object.keys(NOMES).map(function(
   if(st==='ok'&&nome==='vagas'&&g&&g.dados&&(g.dados.classes||[]).some(function(c){return c.ocupadas}))st='rodando';
   return{nome:nome,estado:st,frase:fr}})}
 function esperando(){var it=(D.grupos.esperando&&D.grupos.esperando.ok&&D.grupos.esperando.dados.itens)||[],vistos={},out=[];
-  (D.alertas||[]).concat(it).forEach(function(x){var k=x.texto;if(vistos[k])return;vistos[k]=1;out.push({id:idDe(k),texto:k,nivel:x.nivel||'info',tipo:x.tipo||'alerta'})});
+  it.concat(D.alertas||[]).forEach(function(x){var k=x.texto;if(vistos[k])return;vistos[k]=1;out.push({id:idDe(k),texto:k,nivel:x.nivel||'info',tipo:x.tipo||'alerta'})});
   var ordem={erro:0,aviso:1,info:2};out.sort(function(a,b){return(ordem[a.nivel]-ordem[b.nivel])});return out}
 function contagem(){var al=D.alertas||[],er=al.filter(function(a){return a.nivel==='erro'}).length,pub=(D.grupos.publicacao&&D.grupos.publicacao.dados&&D.grupos.publicacao.dados.hoje)||0;
   var v=(D.grupos.vagas&&D.grupos.vagas.dados&&D.grupos.vagas.dados.classes)||[],oc=0;v.forEach(function(c){oc+=c.ocupadas||0});
