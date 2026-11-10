@@ -1,6 +1,6 @@
 // Servidor do painel em porta PRÓPRIA (PAINEL_PORT, padrão 3143), separado da
 // 3142 — a 3142 tem o POST /mensagem (agente com permissão total) e NUNCA sai
-// do loopback. Aqui só existem: /login, /logout, / e /painel, /api/painel*,
+// do loopback. Aqui só existem: /login, /logout, /, /painel e /jarvis, /api/painel*,
 // POST /api/vagas. Qualquer outra rota → 404.
 // Autenticação: sessão por senha (cookie HttpOnly, 365 dias deslizante: o aparelho
 // fica lembrado) ou JWT do Cloudflare Access.
@@ -9,6 +9,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 
 import { painelEmCache, tratarPainel } from './http-painel.js';
 import { mudarVagas } from './fontes/vagas.js';
+import { JARVIS_HTML } from './tela/jarvis.js';
 import { PAINEL_HTML } from './tela/pagina.js';
 import type { DepsPainel } from './tipos.js';
 import type { VerificadorAccess } from './auth/cf-access.js';
@@ -151,7 +152,7 @@ export function criarServidorPainel(o: OpcoesServidor): Server {
         ir(res, '/login', { 'Set-Cookie': cookieSessao(req, '', 0) }); return;
       }
 
-      const ehTela = (p === '/' || p === '/painel') && m === 'GET';
+      const ehTela = (p === '/' || p === '/painel' || p === '/jarvis') && m === 'GET';
       const ehApi = (p === '/api/painel' || p.startsWith('/api/painel/')) && m === 'GET';
       const ehVagas = p === '/api/vagas';
       if (!ehTela && !ehApi && !ehVagas) { json(res, 404, { erro: 'rota' }); return; }
@@ -161,7 +162,7 @@ export function criarServidorPainel(o: OpcoesServidor): Server {
         if (ehTela) { ir(res, '/login'); return; }
         json(res, 401, { erro: 'entre no painel', login: true }); return;
       }
-      if (ehTela) { html(res, 200, PAINEL_HTML); return; }
+      if (ehTela) { html(res, 200, p === '/jarvis' ? JARVIS_HTML : PAINEL_HTML); return; }
       if (ehVagas) {
         if (m !== 'POST') { json(res, 405, { erro: 'use POST' }); return; }
         if (req.headers['x-painel'] !== '1' || !mesmaOrigem(req)) { json(res, 403, { erro: 'pedido sem a marca do painel (CSRF)' }); return; }

@@ -1,6 +1,7 @@
 // Rotas do painel. Chamado pelo `http.ts` DEPOIS do portão de token que já
 // existe (não mexe nele) e pelo servidor de teste isolado (`src/cli/painel-teste.ts`).
 //   GET  /painel                     tela (HTML/CSS/JS inline)
+//   GET  /jarvis                     mesma leitura no visual JARVIS (núcleo, voz, bom dia)
 //   GET  /api/painel                 todos os grupos + alertas
 //   GET  /api/painel/<grupo>         um grupo
 //   GET  /api/painel/falha?bot=&id=  resultado completo de uma falha (aberto no clique)
@@ -10,6 +11,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { montarPainel, type Painel } from './agregador.js';
 import { falhaCompletaAccbot, falhaCompletaV3 } from './fontes/bots.js';
 import { mudarVagas } from './fontes/vagas.js';
+import { JARVIS_HTML } from './tela/jarvis.js';
 import { PAINEL_HTML } from './tela/pagina.js';
 import type { DepsPainel } from './tipos.js';
 
@@ -38,6 +40,11 @@ export async function tratarPainel(req: IncomingMessage, res: ServerResponse, ur
   if (p === '/painel' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
     res.end(PAINEL_HTML);
+    return true;
+  }
+  if (p === '/jarvis' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+    res.end(JARVIS_HTML);
     return true;
   }
   if (p === '/api/vagas') {

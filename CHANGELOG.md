@@ -1,5 +1,14 @@
 # CHANGELOG — openpcbotv3
 
+## 3.14.7 — 2026-11-10
+
+Versão JARVIS do painel (Nei: "quero o painel do jarvis como mais uma versão… crie a versão jarvis no painel").
+
+- Rota nova `GET /jarvis` (na 3142 e na 3143 com o mesmo login): visual HUD do kit `jarvis-painel` (núcleo com anéis, partida "bom dia", voz pt-BR, barra Bom dia/Status/O que espera/Modo foco, teclas 1–4) lendo o mesmo `/api/painel`.
+- Esquerda: os 8 sistemas com uma frase de cada grupo, próximos timers (sem os de 5 min) e últimos publicados. Direita: alertas + "esperando você"; Visto/Depois só marcam no navegador. Núcleo fica vermelho quando há erro; alerta novo vira fala.
+- Botão "Versão Jarvis" no painel clássico e "Painel clássico" no Jarvis. A tela não escreve nada (sem `/api/vagas`).
+- `src/painel/tela/jarvis.ts` + 3 testes (`src/painel/jarvis.test.ts`).
+
 ## 3.13.7 — 2026-11-09
 
 Painel pela rede local e pronto para o túnel (Nei: "quero o painel acessando pelo 192.168 e pelo ccc.inema.pro com uma senha ou autenticado pelo Google"; "salve ela no PC para não ficar toda hora autenticando").
