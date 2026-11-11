@@ -60,6 +60,12 @@ footer{display:grid;gap:10px}
 .barra .pr{font:700 12px var(--mono);color:var(--ciano);padding:0 6px;letter-spacing:.2em}
 .barra button{flex:1 1 140px;font:600 13px var(--sans);color:var(--gelo);background:rgba(95,227,255,.07);border:1px solid var(--linha);border-radius:10px;padding:11px 12px;cursor:pointer;min-height:44px}
 .barra button:hover,.barra button.on{border-color:var(--ciano);background:rgba(95,227,255,.16);box-shadow:0 0 14px rgba(95,227,255,.25) inset}
+.resposta{max-height:14em;overflow-y:auto}
+.perg{display:flex;gap:8px;align-items:center;border:1px solid var(--linha);border-radius:12px;padding:6px 8px;background:rgba(6,18,40,.7)}
+.perg .pr{font:700 12px var(--mono);color:var(--ciano);padding:0 6px}
+.perg input{flex:1;min-width:0;font:14px var(--sans);color:var(--gelo);background:transparent;border:0;outline:0;padding:10px 4px}
+.perg button{font:600 13px var(--sans);color:var(--gelo);background:rgba(95,227,255,.12);border:1px solid var(--ciano);border-radius:10px;padding:9px 14px;cursor:pointer;min-height:40px}
+.perg button:disabled{opacity:.5;cursor:wait}
 .barra kbd{font:11px var(--mono);color:var(--mut);margin-left:6px}
 body.foco .painel{opacity:.15}body.foco .painel:hover{opacity:.9}
 #partida{position:fixed;inset:0;z-index:10;background:rgba(4,10,23,.35);display:flex;align-items:flex-end;justify-content:center;padding-bottom:14vh;transition:opacity .6s;pointer-events:none}
@@ -349,14 +355,29 @@ function desenhar(){if(!D)return;var c=contagem(),sis=sistemas(),ordem={erro:0,a
   var sair=$('sair'),ss=D.sessao;if(sair)sair.hidden=!ss||ss.via!=='senha'}
 $('listaEsp').addEventListener('click',function(ev){var b=ev.target.closest('button[data-id]');if(!b)return;if(b.dataset.m)marcas[b.dataset.id]=b.dataset.m;else delete marcas[b.dataset.id];LS.set('jarvis.marcas',JSON.stringify(marcas));desenhar()});
 // ---------- fala ----------
-var vozPt=null;function acharVoz(){var vs=(window.speechSynthesis&&speechSynthesis.getVoices())||[];vozPt=vs.filter(function(v){return/pt[-_]BR/i.test(v.lang)})[0]||vs.filter(function(v){return/^pt/i.test(v.lang)})[0]||null}
+// Voz: prefere mulher em pt-BR (Nei, 10/11: "pode ser uma mulher, q saiba falar português correto e termos em inglês").
+// As vozes vêm do navegador; no Edge as "Multilingual"/"Online (Natural)" leem inglês sozinhas, nas outras uso a lista PRON.
+var vozPt=null,vozes=[],vozNome=LS.get('jarvis.vozNome','');
+var FEM=/francisca|thalita|luciana|maria|vit[oó]ria|fernanda|raquel|leila|yara|camila|helena|brenda|elza|giovanna|let[ií]cia|manuela|google portugu/i;
+function acharVoz(){var vs=(window.speechSynthesis&&speechSynthesis.getVoices())||[];
+  vozes=vs.filter(function(v){return/pt[-_]BR/i.test(v.lang)}).concat(vs.filter(function(v){return/^pt/i.test(v.lang)&&!/pt[-_]BR/i.test(v.lang)}));
+  vozPt=vozes.filter(function(v){return v.name===vozNome})[0]||vozes.filter(function(v){return FEM.test(v.name)&&/multilingual/i.test(v.name)})[0]
+    ||vozes.filter(function(v){return FEM.test(v.name)&&/natural|online/i.test(v.name)})[0]||vozes.filter(function(v){return FEM.test(v.name)})[0]||vozes[0]||null;pintarVozNome()}
+function pintarVozNome(){var b=$('vozSel');if(!b)return;b.textContent='Voz: '+(vozPt?vozPt.name.replace(/^(Microsoft|Google)\s+/,'').replace(/\s*\(.*$/,'').replace(/\s+-\s+.*$/,'').slice(0,22):'padrão');b.title=vozPt?vozPt.name+' — clique para trocar ('+vozes.length+' em português neste navegador)':'nenhuma voz em português neste navegador'}
+var PRON=[[/\bClaude\b/gi,'Clóde'],[/\bJarvis\b/g,'Djárvis'],[/\bdeploy\b/gi,'diplói'],[/\bcommits?\b/gi,'comít'],[/\bpush\b/gi,'púch'],[/\btokens?\b/gi,'tôken'],[/\bprompts?\b/gi,'prômpti'],
+  [/\bdashboard\b/gi,'déchbord'],[/\btimers?\b/gi,'táimer'],[/\bupload\b/gi,'âploud'],[/\bdownload\b/gi,'dáunloud'],[/\blives(\d+)\b/gi,'láivs $1'],[/\blives?\b/gi,'láivs'],
+  [/\bshorts?\b/gi,'chórts'],[/\breels?\b/gi,'ríls'],[/\brender\b/gi,'rênder'],[/\bonline\b/gi,'onláine'],[/\be-?mails?\b/gi,'iméil'],[/\bYouTube\b/gi,'iutúbi'],[/\bTikTok\b/gi,'tic tóc'],
+  [/\bMetricool\b/gi,'métricul'],[/\bHeyGen\b/gi,'rêi djén'],[/\bCodex\b/gi,'códecs'],[/\bSonnet\b/gi,'sónet'],[/\bGPU\b/g,'gê pê u'],[/\bCPU\b/g,'cê pê u'],[/\bVPS\b/g,'vê pê ésse'],
+  [/\bOAuth\b/gi,'ô áuf'],[/\bbots?\b/gi,'bóts'],[/\bscripts?\b/gi,'iscrípt'],[/\btmux\b/gi,'tê múcs'],[/\bcache\b/gi,'kéch'],[/\bAPIs?\b/g,'a pê is'],[/\bOK\b/g,'oquêi'],
+  [/\bdry-run\b/gi,'drái rân'],[/\blogin\b/gi,'lóguin'],[/\bWhisper\b/gi,'uíspêr'],[/\bclub\b/gi,'clâb'],[/\bfeed\b/gi,'fíd'],[/\bctx\b/gi,'contexto']];
+function pronuncia(t){if(vozPt&&/multilingual/i.test(vozPt.name))return t;PRON.forEach(function(p){t=t.replace(p[0],p[1])});return t}
 if(window.speechSynthesis){acharVoz();speechSynthesis.onvoiceschanged=acharVoz}
 var digitando=0;function digitar(texto){var alvo=$('resposta'),id=++digitando,i=0;if(REDUZ){alvo.textContent=texto;return}
   (function passo(){if(id!==digitando)return;i=Math.min(texto.length,i+Math.max(2,Math.round(2*VEL)));alvo.innerHTML=esc(texto.slice(0,i))+'<span class="cursor"></span>';if(i<texto.length)setTimeout(passo,14)})()}
-function falar(texto,rotulo){digitar(texto);ondaAte=performance.now()+Math.min(9000,9*texto.length/VEL+600);$('status').textContent=rotulo||'falando';
+function falar(texto,rotulo,falado){digitar(texto);ondaAte=performance.now()+Math.min(9000,9*texto.length/VEL+600);$('status').textContent=rotulo||'falando';
   var fim=function(){falando=false;desenhar()};
   if(!vozLigada||!window.speechSynthesis){falando=true;setTimeout(fim,Math.min(6000,60*texto.length));return}
-  try{speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(texto);u.lang='pt-BR';if(vozPt)u.voice=vozPt;u.rate=VEL;
+  try{speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(pronuncia(falado||texto));u.lang=vozPt?vozPt.lang:'pt-BR';if(vozPt)u.voice=vozPt;u.rate=VEL;
     var vigia=setTimeout(fim,Math.max(3000,90*texto.length/VEL));u.onend=u.onerror=function(){clearTimeout(vigia);fim()};falando=true;speechSynthesis.speak(u)}catch(e){fim()}}
 function saudacao(){var h=new Date().getHours();return h<5?'Boa madrugada':h<12?'Bom dia':h<18?'Boa tarde':'Boa noite'}
 function textoBomDia(){var c=contagem(),esp=esperando().filter(function(x){return!marcas[x.id]}),prod=D.grupos.producao&&D.grupos.producao.dados,prox=null;
@@ -381,6 +402,21 @@ $('vel').addEventListener('click',function(){VEL=VELS[(VELS.indexOf(VEL)+1)%VELS
 $('voz').addEventListener('click',function(){vozLigada=!vozLigada;pintarVoz();LS.set('jarvis.voz',vozLigada?'1':'0');if(!vozLigada&&window.speechSynthesis)speechSynthesis.cancel()});
 if(!window.speechSynthesis){vozLigada=false;$('voz').disabled=true}
 pintarVoz();
+$('vozSel').addEventListener('click',function(){if(!vozes.length)return;var i=vozes.indexOf(vozPt);vozPt=vozes[(i+1)%vozes.length];vozNome=vozPt.name;LS.set('jarvis.vozNome',vozNome);pintarVozNome();falar('Olá, '+NOME+'. Esta é a voz '+vozPt.name.replace(/^(Microsoft|Google)\s+/,'').replace(/\s*\(.*$/,'')+'. O deploy do Claude subiu no YouTube.','voz')});
+// ---------- conversa com o bot (o que estiver na tela vai junto) ----------
+var CJ={ult:null,esperando:false};
+function ctxTela(){if(!D)return'';var c=contagem(),f=$('folha').classList.contains('aberta')?$('fTit').textContent:'';
+  var al=(D.alertas||[]).slice(0,8).map(function(a){return a.nivel+': '+a.texto}).join('; ');
+  return(f?'detalhe aberto: '+f+'. ':'')+c.ok+' de '+c.total+' sistemas em ordem, '+c.erros+' erros, '+c.avisos+' avisos. Alertas: '+(al||'nenhum')}
+function semMarcas(t){return String(t).replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/https?:\/\/\S+/g,'link').replace(/[*#_>|\x60]+/g,' ').replace(/\s+/g,' ').trim()}
+async function chatLerJ(){try{var r=await fetch('/api/painel/chat?desde='+(CJ.ult||0),{cache:'no-store',credentials:'same-origin'}),j=await r.json();
+  var ms=j.msgs||[];if(CJ.ult===null){CJ.ult=ms.length?ms[ms.length-1].n:0;return}
+  ms.forEach(function(m){CJ.ult=m.n;if(m.quem==='bot'){CJ.esperando=false;$('pergBt').disabled=false;var t=semMarcas(m.texto);falar(t,'resposta do bot',t.length>900?t.slice(0,900)+'… o resto está escrito na tela.':t)}})}catch(e){}}
+$('perg').addEventListener('submit',async function(ev){ev.preventDefault();var x=$('pergTxt'),t=x.value.trim();if(!t)return;
+  $('resposta').textContent='você: '+t+' — perguntando ao bot…';$('status').textContent='pensando';$('pergBt').disabled=true;CJ.esperando=true;
+  try{var r=await fetch('/api/painel/chat',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Painel':'1'},body:JSON.stringify({texto:t,contexto:ctxTela(),voz:true})}),j={};try{j=await r.json()}catch(e){}
+    if(!r.ok){$('pergBt').disabled=false;CJ.esperando=false;falar(j.erro||('Não consegui enviar: HTTP '+r.status),'erro');return}x.value=''}catch(e){$('pergBt').disabled=false;falar('Não consegui enviar: '+e.message,'erro')}});
+chatLerJ();setInterval(chatLerJ,3000);
 // Alertas novos (depois da primeira leitura) viram fala, uma vez cada.
 function vozNovos(al){var novos=al.filter(function(a){return!falados[a.chave]});novos.forEach(function(a){falados[a.chave]=1});if(novos.length&&partiu)falar('Atenção. '+novos.slice(0,3).map(function(a){return a.texto}).join('. ')+'.','alerta novo')}
 // ---------- dados ----------
@@ -445,6 +481,7 @@ export const JARVIS_HTML = `<!doctype html>
     <span class="seg" role="group" aria-label="Como mostrar os sistemas"><button type="button" data-modo="lista" aria-pressed="true">Lista</button><button type="button" data-modo="icones" aria-pressed="false">Ícones</button><button type="button" data-modo="graficos" aria-pressed="false">Gráficos</button></span>
     <button class="selo" id="voz" type="button" aria-pressed="true">Voz: ligada</button>
     <button class="selo" id="vel" type="button" title="Velocidade da fala (clique para trocar)">Velocidade: 1,3×</button>
+    <button class="selo" id="vozSel" type="button">Voz: …</button>
     <a class="selo" href="/painel" title="Voltar ao painel com os cartões">Painel clássico</a>
     <span id="sair" hidden><form class="in" method="post" action="/logout"><button class="selo" type="submit">Sair</button></form></span>
   </header>
@@ -476,6 +513,7 @@ export const JARVIS_HTML = `<!doctype html>
   </main>
   <footer>
     <div class="resposta" id="resposta" aria-live="polite"></div>
+    <form class="perg" id="perg"><span class="pr">?</span><input id="pergTxt" maxlength="4000" autocomplete="off" placeholder="Pergunte ao Jarvis sobre qualquer coisa do painel (o que está na tela vai junto)" aria-label="Pergunta ao Jarvis"><button type="submit" id="pergBt">Perguntar</button></form>
     <div class="barra" role="toolbar" aria-label="Atalhos">
       <span class="pr">&gt;_</span>
       <button type="button" data-cmd="bomdia">Bom dia<kbd>1</kbd></button>

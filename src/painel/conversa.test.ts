@@ -28,13 +28,19 @@ describe('conversa do painel', () => {
     const c = new Conversa((t) => entrou.push(t), log());
     expect(c.enviar(JSON.stringify({ texto: 'status da máquina' }), 't').status).toBe(200);
     c.guardar('bot', 'chave sk-ant-abcdefghijklmnopqrstuvwxyz123456 ok');
-    expect(entrou).toEqual(['status da máquina']);
+    expect(entrou.length).toBe(1);
+    expect(entrou[0]).toContain('status da máquina');
+    expect(entrou[0]).toContain('127.0.0.1:3142/api/painel');
     const m = c.desde(0);
     expect(m.map((x) => x.quem)).toEqual(['voce', 'bot']);
     expect(m[1].texto).not.toContain('abcdefghijklmnop');
     expect(c.desde(1).length).toBe(1);
     expect(c.enviar(JSON.stringify({ texto: '' }), 't').status).toBe(400);
     expect(c.enviar(JSON.stringify({ texto: 'x'.repeat(4001) }), 't').status).toBe(413);
+    c.enviar(JSON.stringify({ texto: 'e esse erro?', contexto: 'detalhe aberto: Publicação', voz: true }), 't');
+    expect(entrou[1]).toContain('Na tela agora: detalhe aberto: Publicação');
+    expect(entrou[1]).toContain('voz alta');
+    expect(c.desde(0).filter((x) => x.quem === 'voce').map((x) => x.texto)).toEqual(['status da máquina', 'e esse erro?']);
   });
 
   it('novo terminal: desligado sem Assumir; recusa pasta fora de ~/projetos', async () => {

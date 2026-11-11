@@ -13,6 +13,17 @@ export interface MsgConversa { n: number; quando: number; quem: 'voce' | 'bot'; 
 export const conversaLigada = () => process.env.PAINEL_CHAT === '1';
 export const CHAT_ID = 'painel';
 const MAX_TEXTO = 4000;
+const MAX_CTX = 3000;
+
+/** O que entra no bot: a pergunta + de onde veio + o que estava na tela (Nei, 10/11: "trocar ideia com o jarvis sobre qq coisa do painel"). */
+export function paraBot(texto: string, ctx = '', voz = false): string {
+  return [
+    `[Mensagem pelo painel do Nei${voz ? ' (Jarvis: a resposta é lida em voz alta — português, curta, sem tabela nem markdown)' : ''}. ` +
+      'Se a pergunta for sobre o painel, o estado completo (JSON com grupos e alertas) está em http://127.0.0.1:3142/api/painel.]',
+    ctx ? `[Na tela agora: ${ctx}]` : '',
+    texto,
+  ].filter(Boolean).join('\n\n');
+}
 
 export class Conversa {
   private msgs: MsgConversa[] = [];
@@ -29,8 +40,13 @@ export class Conversa {
 
   enviar(bruto: string, quem: string): { status: number; corpo: unknown } {
     if (!conversaLigada()) return { status: 403, corpo: { erro: 'conversa desligada (PAINEL_CHAT=1 liga)' } };
-    let texto = '';
-    try { texto = String((JSON.parse(bruto || '{}') as { texto?: unknown }).texto ?? '').trim(); } catch { return { status: 400, corpo: { erro: 'JSON inválido' } }; }
+    let texto = '', ctx = '', voz = false;
+    try {
+      const b = JSON.parse(bruto || '{}') as { texto?: unknown; contexto?: unknown; voz?: unknown };
+      texto = String(b.texto ?? '').trim();
+      ctx = String(b.contexto ?? '').trim().slice(0, MAX_CTX);
+      voz = b.voz === true;
+    } catch { return { status: 400, corpo: { erro: 'JSON inválido' } }; }
     if (!texto) return { status: 400, corpo: { erro: 'texto vazio' } };
     if (texto.length > MAX_TEXTO) return { status: 413, corpo: { erro: `texto acima de ${MAX_TEXTO} caracteres` } };
     const m = this.guardar('voce', texto);
@@ -38,7 +54,7 @@ export class Conversa {
       mkdirSync(dirname(this.log), { recursive: true });
       appendFileSync(this.log, `${new Date().toISOString()} ${quem} ${mascarar(texto).slice(0, 80).replace(/\n/g, ' ')}\n`, { mode: 0o600 });
     } catch { /* log é extra */ }
-    this.entrar(texto);
+    this.entrar(paraBot(texto, ctx, voz));
     return { status: 200, corpo: { ok: true, n: m.n } };
   }
 

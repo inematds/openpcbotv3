@@ -1,5 +1,12 @@
 # CHANGELOG — openpcbotv3
 
+## 3.23.11 — 2026-11-10
+
+Jarvis primeiro, voz feminina e conversa com o bot (Nei: "sim cai no jarvis primeiro"; "pode ser uma mulher, q saiba falar português correto e termos em inglês"; "o chat q pedi para trocar ideia com o jarvis sobre qq coisa do painel").
+- O login (e quem já está logado em /login) cai no `/jarvis`; o clássico continua em `/painel`.
+- Botão "Voz:" troca entre as vozes em português do navegador; escolhe sozinho uma voz de mulher (prefere as "Multilingual"/"Natural" do Edge). Fora das Multilingual, termos em inglês (Claude, deploy, YouTube, lives, GPU…) são lidos com pronúncia aportuguesada só na fala.
+- Campo "Pergunte ao Jarvis": a pergunta vai ao bot (PAINEL_CHAT=1, mesmo CSRF) junto com o que está na tela (contagem, alertas, detalhe aberto) e o endereço do JSON completo do painel; a resposta aparece e é lida em voz alta.
+
 ## 3.22.11 — 2026-11-10
 
 Contagem de falhas de memória da GPU corrigida e nome novo (Nei: "sim, corrige e muda o nome").

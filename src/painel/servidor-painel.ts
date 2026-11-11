@@ -124,7 +124,7 @@ export function criarServidorPainel(o: OpcoesServidor): Server {
       if (p === '/login') {
         const h = lerHash(arq);
         if (m === 'GET') {
-          if (await autenticado(req)) { ir(res, '/painel'); return; }
+          if (await autenticado(req)) { ir(res, '/jarvis'); return; }
           html(res, h ? 200 : 503, paginaLogin({ semSenha: !h, google: !!o.access })); return;
         }
         if (m !== 'POST') { json(res, 405, { erro: 'método' }); return; }
@@ -140,7 +140,7 @@ export function criarServidorPainel(o: OpcoesServidor): Server {
           html(res, 401, paginaLogin({ mensagem: 'Senha errada.', erro: true, google: !!o.access })); return;
         }
         lim.acertou(ip);
-        ir(res, '/painel', { 'Set-Cookie': cookieSessao(req, o.sessoes.criar(h.salt)) }); return;
+        ir(res, '/jarvis', { 'Set-Cookie': cookieSessao(req, o.sessoes.criar(h.salt)) }); return;
       }
       if (p === '/logout') {
         // Sair deste aparelho; com ?todos=1, sair de todos (exige sessão válida: um estranho não derruba as suas).
