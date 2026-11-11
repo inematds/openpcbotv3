@@ -1,5 +1,9 @@
 # CHANGELOG — openpcbotv3
 
+## 3.26.14 — 2026-11-11
+
+Correção: pedido de "manda o vídeo" chegava como texto `[SEND_FILE:/caminho]` (Nei: "manda como texto sendfile… pedi várias vezes"). O marcador era do v2 e o canal Telegram do v3 só mandava texto. Agora `src/canais/arquivos.ts` tira `[SEND_FILE:caminho|legenda]`/`[SEND_PHOTO:…]` do texto e o canal manda o arquivo: vídeo como vídeo (streaming), imagem como foto, áudio como áudio, resto como documento; falha no formato próprio cai para documento. Barra segredo (.env, chaves, .ssh, banco, cookies/tokens), caminho relativo, inexistente e > 50 MB, avisando no chat. Teste `canais/arquivos.test.ts`.
+
 ## 3.26.13 — 2026-11-11
 
 Correção: a resposta do bot nunca chegava ao chat do painel (Nei: "me respondeu lead — job 106706"). O entregador de job de agente parava em `chat_id` nulo, e o chat "painel" (texto) não cabe na coluna numérica; agora usa o chat da entrada do job. Teste novo `orquestrador/entregador.test.ts`. No Jarvis, o aviso "job #N" vira "pensando…" (não é falado), o prefixo "#N lead ·" sai da fala e a voz do navegador sai em volume máximo.

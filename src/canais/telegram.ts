@@ -1,12 +1,13 @@
 // Adaptador Telegram (grammy). Só traduz para/do bus. Guarda: nunca sobe com o
 // token do v2 (409 → bot surdo). Só atende o chat permitido.
-import { Bot, GrammyError, HttpError } from 'grammy';
+import { Bot, GrammyError, HttpError, InputFile } from 'grammy';
 
 import type { Bus } from '../bus/bus.js';
 import { novoTraceId } from '../bus/bus.js';
 import { validarTokenTelegram, RAIZ } from '../config/env.js';
 import { baixarAnexo, extrairAnexo, linhaAnexo, type MsgComMidia } from './anexo.js';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
+import { extrairEnvios, motivoRecusa } from './arquivos.js';
 
 export interface OpcoesTelegram {
   token: string | undefined;
@@ -120,7 +121,8 @@ export async function ligarTelegram(o: OpcoesTelegram): Promise<{ parar: () => P
   const off = o.bus.on('mensagem.enviar', async (m) => {
     if (m.canal !== 'telegram') return;
     const html = m.formato === 'markdown';
-    for (const parte of fatiar(m.texto)) {
+    const { texto: semMarcadores, envios } = extrairEnvios(m.texto);
+    for (const parte of semMarcadores ? fatiar(semMarcadores) : []) {
       try {
         await bot.api.sendMessage(Number(m.chatId), html ? paraHtml(parte) : parte, {
           ...(html ? { parse_mode: 'HTML' as const } : {}),
@@ -130,6 +132,34 @@ export async function ligarTelegram(o: OpcoesTelegram): Promise<{ parar: () => P
         // HTML inválido → manda como texto puro em vez de perder a mensagem.
         try { await bot.api.sendMessage(Number(m.chatId), parte); } catch (e2) { o.log(`[telegram] envio falhou: ${(e2 as Error).message}`); }
         void e;
+      }
+    }
+    // [SEND_FILE:...] → arquivo de verdade (antes saía como texto cru).
+    const chat = Number(m.chatId);
+    for (const env of envios) {
+      const recusa = motivoRecusa(env);
+      if (recusa) {
+        o.log(`[telegram] arquivo não enviado ${env.caminho}: ${recusa}`);
+        try { await bot.api.sendMessage(chat, `⚠️ Não mandei ${basename(env.caminho)}: ${recusa}.`); } catch { /* sem rede */ }
+        continue;
+      }
+      const arq = new InputFile(env.caminho);
+      const extra = env.legenda ? { caption: env.legenda.slice(0, 1000) } : {};
+      try {
+        if (env.tipo === 'video') await bot.api.sendVideo(chat, arq, { ...extra, supports_streaming: true });
+        else if (env.tipo === 'foto') await bot.api.sendPhoto(chat, arq, extra);
+        else if (env.tipo === 'audio') await bot.api.sendAudio(chat, arq, extra);
+        else await bot.api.sendDocument(chat, arq, extra);
+        o.log(`[telegram] arquivo enviado (${env.tipo}): ${env.caminho}`);
+      } catch (e) {
+        // Vídeo/foto que o Telegram recusa no formato próprio ainda vai como documento.
+        try {
+          await bot.api.sendDocument(chat, new InputFile(env.caminho), extra);
+          o.log(`[telegram] arquivo enviado como documento após falha (${(e as Error).message}): ${env.caminho}`);
+        } catch (e2) {
+          o.log(`[telegram] arquivo falhou ${env.caminho}: ${(e2 as Error).message}`);
+          try { await bot.api.sendMessage(chat, `⚠️ Falhou o envio de ${basename(env.caminho)}: ${(e2 as Error).message}`); } catch { /* sem rede */ }
+        }
       }
     }
   });
