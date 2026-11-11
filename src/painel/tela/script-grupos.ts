@@ -9,12 +9,12 @@ G.maquina={tile:function(d){var m=d.memoria,k=d.disco,c=d.carga,gp=d.gpu_oom,h='
   if(k)h+='<div class="linha"><span class="k">Disco</span>'+barra(k.usado_pct,90)+'<span class="v">'+k.usado_pct+'% · '+k.livre_gb+' GB livres</span></div>';
   if(c)h+=linha('Carga',n(c.m1,2)+' em '+c.nucleos+' núcleos');
   h+=linha('Ligada',d.boot_em?ha(d.boot_em):'–');
-  h+=linha('GPU sem memória',gp.erro?esc(gp.erro):gp.ultimas_24h?(gp.ultimas_24h+' em 24 h, última '+hm(gp.ultima_em)):'nenhum em 24 h',gp.ultima_hora?'s-erro':gp.ultimas_24h?'s-aviso':'');
+  h+=linha('Falhas de memória da GPU (24 h)',gp.erro?esc(gp.erro):gp.ultimas_24h?(gp.ultimas_24h+' em 24 h, última '+hm(gp.ultima_em)):'nenhum em 24 h',gp.ultima_hora?'s-erro':gp.ultimas_24h?'s-aviso':'');
   return{frase:fr,corpo:h}},
  detalhe:function(d){var m=d.memoria||{},k=d.disco||{},c=d.carga||{},gp=d.gpu_oom;
   return sec('Agora',tabela(['Medida','Valor'],[['Memória disponível',n(m.disponivel_gb)+' GB de '+n(m.total_gb,0)+' GB'],['Cache de disco',(m.cache_gb!=null?n(m.cache_gb)+' GB (conta como disponível, mas a GPU usa a mesma RAM e pode falhar com cache alto)':'–')],['Swap em uso',n(m.swap_usado_gb)+' GB'],['Disco da raiz',(k.usado_pct??'–')+'% usado, '+(k.livre_gb??'–')+' GB livres de '+(k.total_gb??'–')],['Carga 1/5/15 min',n(c.m1,2)+' / '+n(c.m5,2)+' / '+n(c.m15,2)+' ('+(c.nucleos||'–')+' núcleos)'],['Ligada desde',quando(d.boot_em)+' ('+ha(d.boot_em)+')']]))
   +sec('Reinícios recentes',d.reinicios.erro?'<p class="sem">'+esc(d.reinicios.erro)+'</p>':tabela(['Início do boot'],d.reinicios.em.slice().reverse().map(function(t){return[quando(t)+' <span class="mut">('+ha(t)+')</span>']})))
-  +sec('GPU sem memória (kernel, 24 h)',gp.erro?'<p class="sem">'+esc(gp.erro)+'</p>':tabela(['Últimas 24 h','Última hora','Último'],[[gp.ultimas_24h,gp.ultima_hora,quando(gp.ultima_em)]]))}};
+  +sec('Falhas de memória da GPU (kernel, 24 h)',gp.erro?'<p class="sem">'+esc(gp.erro)+'</p>':tabela(['Últimas 24 h','Última hora','Último'],[[gp.ultimas_24h,gp.ultima_hora,quando(gp.ultima_em)]]))}};
 
 function falhasDe(d){var v=(d.v3&&d.v3.falhas_24h||[]).map(function(f){f.bot='v3';return f}),a=(d.inemaccbot&&d.inemaccbot.falhas_24h||[]).map(function(f){f.bot='inemaccbot';return f});return v.concat(a).sort(function(x,y){return(y.quando||0)-(x.quando||0)})}
 G.bots={tile:function(d){var fl=falhasDe(d),v=d.v3,a=d.inemaccbot,rod=(v?v.jobs.rodando:0)+(a?a.jobs.rodando:0),fi=(v?v.jobs.na_fila:0)+(a?a.jobs.na_fila:0);

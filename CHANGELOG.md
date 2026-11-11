@@ -1,5 +1,12 @@
 # CHANGELOG — openpcbotv3
 
+## 3.22.11 — 2026-11-10
+
+Contagem de falhas de memória da GPU corrigida e nome novo (Nei: "sim, corrige e muda o nome").
+
+- `fontes/maquina.ts`: uma falha escreve 3–5 linhas `NV_ERR_NO_MEMORY` no kernel; linhas a até 5 s da anterior agora contam como uma falha só (em 10/11 o painel mostrava 376 em 24 h, eram ~86 falhas). Teste novo em `painel.test.ts`.
+- "GPU sem memória" virou "Falhas de memória da GPU (24 h)" no painel, no modo Jarvis e no alerta. A GB10 divide a RAM com o sistema, então a linha conta pedidos de memória recusados, não falta de memória no momento.
+
 ## 3.22.10 — 2026-11-10
 
 Bloco **Radar Viral** no painel (Nei: "no painel e no sistema serão conhecidos como radar viral e vai ter um bloco no painel de controle").

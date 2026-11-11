@@ -160,7 +160,7 @@ function estadoGrupo(nome,g,al){if(!g||!g.ok)return'semdados';var e=al.filter(fu
 // Uma frase curta por sistema, a partir dos dados de cada grupo.
 var FRASE={
   radar:function(d){var l=(d.fila||[]).filter(function(i){return i.estado==='liberado'});return plural(d.hoje||0,'publicado','publicados')+' hoje no '+(d.canal||'lives24')+' · '+(d.fila||[]).length+' na fila'+(l.length?' · próximo: '+l[0].nome+' às '+hm(d.proxima):'')},
-  maquina:function(d){var m=d.memoria||{},k=d.disco||{},o=d.gpu_oom||{};return n(m.disponivel_gb,0)+' GB livres · disco '+n(k.usado_pct,0)+'% · GPU sem memória 24 h: '+n(o.ultimas_24h,0)},
+  maquina:function(d){var m=d.memoria||{},k=d.disco||{},o=d.gpu_oom||{};return n(m.disponivel_gb,0)+' GB livres · disco '+n(k.usado_pct,0)+'% · falhas de memória da GPU 24 h: '+n(o.ultimas_24h,0)},
   bots:function(d){var v=(d.v3&&d.v3.jobs)||{},f=((d.v3&&d.v3.falhas_24h)||[]).length,s=d.servicos||{},caidos=Object.keys(s).filter(function(k){return s[k]!=='active'});
     return'v3: '+n(v.rodando,0)+' rodando, '+n(v.na_fila,0)+' na fila, '+plural(f,'falha','falhas')+' em 24 h'+(caidos.length?' · parado: '+caidos.join(', '):'')},
   producao:function(d){var h=d.hoje||[],p=(d.presas||[]).length,f=(d.falhas||[]).length,prox=(d.timers||[]).filter(function(t){return t.proxima}).sort(function(a,b){return a.proxima-b.proxima}).filter(function(t){return!/watchdog|vigia|ocioso|continua|-producao$/.test(t.unidade)})[0];
@@ -225,7 +225,7 @@ marcarModo();
 // ---------- detalhe (clique em qualquer item) ----------
 var EXPLICA={
   radar:'O Radar Viral: finanças, saúde, direito, contábil e futebol publicam no lives24 por uma fila única, 1 vídeo por hora. Contábil só sai a partir das 12 h e futebol a partir das 14 h; o que fica mais de 24 h na fila é esquecido. Segurar um vídeo: criar SEGURAR na pasta da edição.',
-  maquina:'A saúde do computador (spark-922b): quanta memória sobra, quanto do disco está cheio, a carga dos processadores e quantas vezes a placa de vídeo ficou sem memória. Se a GPU fica sem memória, render e voz local falham.',
+  maquina:'A saúde do computador (spark-922b): quanta memória sobra, quanto do disco está cheio, a carga dos processadores e quantas vezes a placa de vídeo falhou ao pedir memória (a GPU usa a mesma RAM do sistema). Se a GPU fica sem memória, render e voz local falham.',
   bots:'Os robôs de atendimento: o v3 (este bot, que recebe seus pedidos no Telegram) e o inemaccbot (que executa vídeos e fluxos). Mostra o que está rodando, o que está na fila e o que falhou nas últimas 24 h.',
   producao:'As rodadas automáticas de vídeo (finviral, saudeviral, clima…): quantas rodaram hoje, se alguma travou ("presa") ou falhou, as esperas longas (HeyGen) e a agenda dos próximos timers.',
   publicacao:'O que foi publicado no YouTube: quantos vídeos hoje, quantos por canal na semana e os últimos, com link.',
@@ -247,7 +247,7 @@ var DET={
     return bloco('Memória',lnt('livre',n(m.disponivel_gb)+' de '+n(m.total_gb)+' GB',m.disponivel_gb<10?'erro':'')+lnt('swap em uso',n(m.swap_usado_gb)+' GB'))
       +bloco('Processador',lnt('carga 1 / 5 / 15 min',n(c.m1)+' / '+n(c.m5)+' / '+n(c.m15))+lnt('núcleos',n(c.nucleos,0)))
       +bloco('Disco',lnt('usado',n(k.usado_pct,0)+'%',k.usado_pct>90?'erro':k.usado_pct>80?'aviso':'')+lnt('livre',n(k.livre_gb,0)+' de '+n(k.total_gb,0)+' GB'))
-      +bloco('GPU sem memória',lnt('últimas 24 h',n(o.ultimas_24h,0),o.ultima_hora?'erro':o.ultimas_24h?'aviso':'')+lnt('última hora',n(o.ultima_hora,0))+lnt('última vez',quando(o.ultima_em)))
+      +bloco('Falhas de memória da GPU (24 h)',lnt('últimas 24 h',n(o.ultimas_24h,0),o.ultima_hora?'erro':o.ultimas_24h?'aviso':'')+lnt('última hora',n(o.ultima_hora,0))+lnt('última vez',quando(o.ultima_em)))
       +bloco('Reinícios',lnt('ligada desde',quando(d.boot_em))+r.slice(-5).reverse().map(function(t){return lnt('reinício',quando(t))}).join(''))},
   bots:function(d){var v=d.v3||{},j=v.jobs||{},a=d.inemaccbot||{},s=d.servicos||{};
     return bloco('Serviços',Object.keys(s).map(function(k){return lnt(k,s[k]==='active'?'no ar':s[k],s[k]==='active'?'':'erro')}).join(''))

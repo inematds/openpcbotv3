@@ -10,7 +10,7 @@ import { montarPainel } from './agregador.js';
 import { avaliarAlertas, type GruposColetados } from './alertas.js';
 import { abrirSomenteLeitura, fecharAccbot, lerAccbot } from './fontes/bots.js';
 import { extrairRateLimits, lerAvisos } from './fontes/creditos.js';
-import { lerBoots } from './fontes/maquina.js';
+import { coletarMaquina, lerBoots } from './fontes/maquina.js';
 import { montarRodadas } from './fontes/producao.js';
 import { lerHistorico, resumirFila } from './fontes/publicacao.js';
 import { lerPendencias } from './fontes/terminais.js';
@@ -236,5 +236,15 @@ describe('pequenos parsers e a tela', () => {
     expect(() => new Function(PAINEL_JS)).not.toThrow();
     expect(PAINEL_JS).not.toMatch(/token=/);
     for (const g of ['esperando', 'maquina', 'bots', 'producao', 'publicacao', 'creditos', 'sites', 'vagas', 'terminais']) expect(PAINEL_HTML).toContain(`id="t-${g}"`);
+  });
+});
+
+describe('falhas de memória da GPU', () => {
+  it('linhas seguidas da mesma falha contam uma vez só', async () => {
+    const l = (t: number) => `${t}.100000 spark-922b kernel: NVRM: Check failed: Out of memory [NV_ERR_NO_MEMORY]`;
+    const log = [l(AGORA - 7200), l(AGORA - 7200), l(AGORA - 7199), l(AGORA - 7197), l(AGORA - 60), l(AGORA - 60), l(AGORA - 58)].join('\n');
+    const exec: Executor = async (cmd) => cmd === 'journalctl' ? { ok: true, stdout: log, stderr: '', codigo: 0 } : { ok: false, stdout: '', stderr: '', codigo: null, erro: 'ausente' };
+    const m = await coletarMaquina(deps({ exec }));
+    expect(m.gpu_oom).toEqual({ ultimas_24h: 2, ultima_hora: 1, ultima_em: AGORA - 58 });
   });
 });

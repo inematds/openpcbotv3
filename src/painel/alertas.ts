@@ -46,7 +46,7 @@ export const REGRAS: Regra[] = [
     const m = g.maquina.dados?.memoria;
     // A GPU usa a RAM do sistema: com muito cache de disco o driver nega bloco grande mesmo com RAM "disponível".
     const cache = m?.cache_gb != null && m.cache_gb >= 16 ? ` — ${m.cache_gb} GB da RAM presos em cache de disco (a vaga gpu limpa antes de cada trabalho, se a regra de sudo estiver instalada)` : '';
-    return x && x.ultima_hora > 0 ? [{ chave: 'gpu:oom', nivel: 'erro', texto: `GPU sem memória: ${x.ultima_hora} erro(s) na última hora (último ${hora(x.ultima_em)})${cache}` }] : [];
+    return x && x.ultima_hora > 0 ? [{ chave: 'gpu:oom', nivel: 'erro', texto: `Falhas de memória da GPU: ${x.ultima_hora} falha(s) na última hora (último ${hora(x.ultima_em)})${cache}` }] : [];
   } },
   { id: 'reinicio', grupo: 'maquina', avaliar: (g, agora) => {
     const b = g.maquina.dados?.boot_em;

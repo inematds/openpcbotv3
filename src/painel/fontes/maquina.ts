@@ -54,11 +54,15 @@ async function gpuOom(d: DepsPainel): Promise<DadosMaquina['gpu_oom']> {
     // journalctl sai 1 quando não há linha casando: isso é "zero", não erro.
     if (!r.ok && r.codigo !== 1) return { ultimas_24h: 0, ultima_hora: 0, ultima_em: null, erro: /permission|not seeing|insufficient/i.test(r.stderr) ? 'sem acesso' : 'sem dados' };
     const agora = d.agora();
-    let n = 0, h = 0, ult: number | null = null;
+    // Uma falha escreve 3–5 linhas seguidas no kernel; linhas a até 5 s da
+    // anterior contam como a mesma falha.
+    let n = 0, h = 0, ult: number | null = null, anterior = -Infinity;
     for (const l of r.stdout.split('\n')) {
       const m = /^(\d{9,11})(\.\d+)?\s/.exec(l);
       if (!m || !/NV_ERR_NO_MEMORY|Out of memory/i.test(l)) continue;
-      const t = Number(m[1]); n++; if (agora - t < 3600) h++; ult = Math.max(ult ?? 0, t);
+      const t = Number(m[1]);
+      if (t - anterior > 5) { n++; if (agora - t < 3600) h++; }
+      anterior = t; ult = Math.max(ult ?? 0, t);
     }
     if (!r.stdout.trim() && /permission|not seeing/i.test(r.stderr)) return { ultimas_24h: 0, ultima_hora: 0, ultima_em: null, erro: 'sem acesso' };
     return { ultimas_24h: n, ultima_hora: h, ultima_em: ult };
