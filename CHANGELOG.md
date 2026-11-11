@@ -1,5 +1,9 @@
 # CHANGELOG — openpcbotv3
 
+## 3.26.12 — 2026-11-11
+
+Jarvis, modo Gráficos: entram VPS (barras de disco e de memória das 6), Bots (v3, inemaccbot, v2 com estado), Outras APIs (chamadas de hoje por provedor + quantas liberadas) e Radar Viral (Nei: "vps e outros card tem aparecer nos gráficos do jarvis"). Cada bloco abre o detalhe ao clicar.
+
 ## 3.25.12 — 2026-11-11
 
 Jarvis: o ícone "Claude e Codex" mostra os dois números (Claude NN% · Codex NN%) em vez de só o maior limite (Nei: "não apareceu no painel do jarvis").
