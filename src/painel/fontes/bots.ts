@@ -93,6 +93,24 @@ export function lerAccbot(caminho: string, agora: number) {
   };
 }
 
+/** Bot v2 (openpcbotv2): conversa, custo e vídeos do banco dele, SOMENTE LEITURA (Nei, 11/11: "card do inemaccbot e do v2 e v3"). */
+export function lerV2(caminho: string, agora: number) {
+  const db = abrirSomenteLeitura(caminho);
+  try {
+    const um = <T>(sql: string, ...a: unknown[]) => db.prepare(sql).get(...a) as T;
+    const msgs = um<{ ult: number | null; d1: number; d7: number }>('SELECT max(created_at) ult, sum(created_at >= ?) d1, sum(created_at >= ?) d7 FROM conversation_log', agora - 86400, agora - 7 * 86400);
+    const custo = um<{ usd: number | null }>('SELECT sum(cost_usd) usd FROM token_usage WHERE created_at >= ?', agora - 7 * 86400);
+    const porEstado = Object.fromEntries((db.prepare('SELECT status, count(*) n FROM video_jobs GROUP BY status').all() as { status: string; n: number }[]).map((r) => [r.status, r.n]));
+    const ult = um<{ id: number; skill: string; status: string; created_at: number; error: string | null } | undefined>('SELECT id, skill, status, created_at, error FROM video_jobs ORDER BY id DESC LIMIT 1');
+    const tarefas = um<{ n: number }>("SELECT count(*) n FROM scheduled_tasks WHERE status = 'active'").n;
+    return {
+      ultima_msg: msgs.ult, msgs_24h: msgs.d1 ?? 0, msgs_7d: msgs.d7 ?? 0, custo_7d_usd: Math.round((custo.usd ?? 0) * 1000) / 1000,
+      videos: porEstado, ultimo_video: ult ? { id: ult.id, skill: ult.skill, status: ult.status, quando: ult.created_at, erro: ult.error ? corta(ult.error, 160) : null } : null,
+      tarefas_agendadas: tarefas,
+    };
+  } finally { db.close(); }
+}
+
 export async function estadoServicos(d: DepsPainel): Promise<Record<string, string>> {
   return d.cache.obter('bots:servicos', 30_000, async () => {
     const r = await d.exec('systemctl', ['--user', 'is-active', ...SERVICOS], 4000);
@@ -104,9 +122,10 @@ export async function estadoServicos(d: DepsPainel): Promise<Record<string, stri
 
 export async function coletarBots(d: DepsPainel) {
   const ausentes: string[] = [];
-  let v3: ReturnType<typeof lerV3> | null = null, inemaccbot: ReturnType<typeof lerAccbot> | null = null;
+  let v3: ReturnType<typeof lerV3> | null = null, inemaccbot: ReturnType<typeof lerAccbot> | null = null, v2: ReturnType<typeof lerV2> | null = null;
   if (d.db) { try { v3 = lerV3(d.db, d.agora()); } catch { ausentes.push('banco do v3'); } } else ausentes.push('banco do v3');
   try { inemaccbot = lerAccbot(d.caminhos.inemaccbotDb, d.agora()); } catch { ausentes.push('inemaccbot.db'); fecharAccbot(); }
+  try { v2 = await d.cache.obter('bots:v2', 60_000, () => lerV2(d.caminhos.v2Db, d.agora())); } catch { ausentes.push('banco do v2'); }
   const servicos = await estadoServicos(d);
-  return { dados: { v3, inemaccbot, servicos }, ausentes };
+  return { dados: { v3, inemaccbot, v2, servicos }, ausentes };
 }

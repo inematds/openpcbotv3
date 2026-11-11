@@ -44,7 +44,7 @@ export function montarEsperando(g: GruposColetados, pendencias: { titulo: string
 
 export interface Painel {
   versao: string; gerado_em: number; ms: number;
-  grupos: GruposColetados & { vagas: Grupo<Awaited<ReturnType<typeof coletarVagas>>['dados']>; radar: Grupo<ReturnType<typeof coletarRadar>['dados']>; esperando: Grupo<{ itens: ItemEsperando[] }> };
+  grupos: GruposColetados & { vagas: Grupo<Awaited<ReturnType<typeof coletarVagas>>['dados']>; radar: Grupo<ReturnType<typeof coletarRadar>['dados']>; esperando: Grupo<{ itens: ItemEsperando[] }>; v3: Grupo<unknown>; inemaccbot: Grupo<unknown>; v2: Grupo<unknown> };
   alertas: AlertaPainel[];
 }
 
@@ -72,7 +72,12 @@ export async function montarPainel(d: DepsPainel): Promise<Painel> {
   if (d.enviarTelegram) {
     try { avisarNovos(alertas, d.caminhos.estadoTelegram, d.enviarTelegram, d.agora()); } catch { /* nunca derruba o painel */ }
   }
-  return { versao: d.versao, gerado_em: d.agora(), ms: Date.now() - t0, grupos: { ...g, vagas, radar, esperando }, alertas };
+  // Um quadro por bot (Nei, 11/11): mesmos dados do grupo "bots", fatiados.
+  const fatia = <T>(f: (b: NonNullable<typeof bots.dados>) => T) => ({ ...bots, dados: bots.dados ? f(bots.dados) : undefined });
+  const v3 = fatia((b) => ({ servico: b.servicos.openpcbotv3 ?? 'desconhecido', bot: b.v3 }));
+  const inemaccbot = fatia((b) => ({ servico: b.servicos.inemaccbot ?? 'desconhecido', bot: b.inemaccbot }));
+  const v2 = fatia((b) => ({ servico: b.servicos.openpcbot ?? 'desconhecido', bot: b.v2 }));
+  return { versao: d.versao, gerado_em: d.agora(), ms: Date.now() - t0, grupos: { ...g, vagas, radar, esperando, v3, inemaccbot, v2 }, alertas };
 }
 
 export { falhaCompletaV3 };

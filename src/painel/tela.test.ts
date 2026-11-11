@@ -34,6 +34,9 @@ const DADOS: Record<string, unknown> = {
     { id: 'vps2', nome: 'b', ip: '2.2.2.2', local: '', plano: '', papel: [], medida: { ok: false, erro: 'Permission denied', disco_pct: null, disco: null, ram_mb: null, ram_total_mb: null, carga: null, cpus: null, uptime: null, containers: null, medido_em: T } },
     { id: 'vps3', nome: 'c', ip: '3.3.3.3', local: '', plano: '', papel: [], medida: null }] },
   apis: { hoje: [{ provedor: 'openrouter<x>', chamadas: 2, usd: 0.1 }], semana: [], apis: [{ nome: 'GitHub', para: 'repos', situacao: 'liberada', nota: null }], avisos: [{ titulo: 'OAuth', ate: '2026-11-11', nivel: 'aviso', vencido: false, dias: 2 }] },
+  v3: { servico: 'active', bot: { jobs: { por_estado_recente: { done: 3 }, rodando: 1, na_fila: 2, criados_hoje: 9 }, falhas_24h: [{ id: 5, tarefa: 'cli<b>', fila: 'agente', quando: T - 60, erro: 'boom' }], sessoes_1h: 1, custo_hoje: { chamadas: 1, usd: 1 }, cron: [{ nome: 'lembretes', expressao: '*', ativo: 1, proxima_em: T + 60, ultima_em: T }] } },
+  inemaccbot: { servico: 'failed', bot: { jobs: { rodando: 0, na_fila: 0 }, falhas_24h: [], fluxos_abertos: [{ id: 1, tipo: 'r7ex', slug: 's<i>', status: 'rodando' }], aguardando_ok: [{ fluxo_id: 1, fase: 'ficha', slug: 's' }] } },
+  v2: { servico: 'active', bot: { ultima_msg: T - 86400 * 20, msgs_24h: 0, msgs_7d: 0, custo_7d_usd: 0, videos: { done: 3, failed: 1 }, ultimo_video: { id: 97, skill: 'curso<x>', status: 'failed', quando: T - 100, erro: 'e' }, tarefas_agendadas: 0 } },
   esperando: { itens: [{ tipo: 'falha', nivel: 'erro', grupo: 'bots', texto: 'v3 #5 falhou' }, { tipo: 'pendencia', nivel: 'info', grupo: 'esperando', texto: 'P' }] },
 };
 

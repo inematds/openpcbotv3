@@ -32,14 +32,16 @@ G.bots={tile:function(d){var fl=falhasDe(d),v=d.v3,a=d.inemaccbot,rod=(v?v.jobs.
   +sec('Falhas das últimas 24 h',hf,1)}};
 
 function rodadaEstado(r){if(r.presa)return['erro','parada há '+dur(r.aberta_min*60)];if(r.fim==null)return['aviso','rodando há '+dur((r.aberta_min||0)*60)];if(r.resultado==='falhou')return['erro','falhou'];return['ok',r.resultado.replace('_',' ')+(r.dur_s!=null?', '+dur(r.dur_s):'')]}
+// Uma linha por unidade no cartão (Nei, 11/11: "radar viral 1x"): fica a mais recente, com ×N.
+function umaVez(l){var vistos={},out=[];l.forEach(function(r){var u=r.unidade;if(vistos[u]){vistos[u]._n=(vistos[u]._n||1)+1;return}var c={};for(var k in r)c[k]=r[k];vistos[u]=c;out.push(c)});return out}
 function modoRodadas(lista,max,horiz){var l=lista.slice(0,max);if(!l.length)return'<p class="sem">nenhuma rodada registrada hoje</p>';
   if(E.modo==='icones')return'<div class="icones">'+l.map(function(r){var e=rodadaEstado(r);return ico(inicial(r.unidade),r.unidade,cor(r.unidade),e[0]==='erro',r.unidade+': '+e[1])}).join('')+'</div>';
   if(E.modo==='imagens')return'<div class="cartoes'+(horiz?' horiz':'')+'">'+l.map(function(r){var e=rodadaEstado(r);return cartao(null,inicial(r.unidade),cor(r.unidade),r.unidade,(e[0]==='erro'?'✕ ':e[0]==='ok'?'✓ ':'… ')+e[1]+' · '+hm(r.inicio||r.fim),e[0]==='erro')}).join('')+'</div>';
-  return l.map(function(r){var e=rodadaEstado(r);return linhaTx(simb(e[0])+' '+esc(r.unidade)+' <span class="fraco">'+hm(r.inicio||r.fim)+'</span>',esc(e[1]),'s-'+e[0])}).join('')}
+  return l.map(function(r){var e=rodadaEstado(r);return linhaTx(simb(e[0])+' '+esc(r.unidade)+(r._n>1?' <span class="fraco">×'+r._n+'</span>':'')+' <span class="fraco">'+hm(r.inicio||r.fim)+'</span>',esc(e[1]),'s-'+e[0])}).join('')}
 G.producao={tile:function(d,g){var h=d.hoje,feitas=h.filter(function(r){return r.fim!=null}).length,sem=g.ausentes&&g.ausentes.indexOf('rodadas.jsonl')>=0;
   var fr=d.presas.length?'<p class="frase s-erro">'+plural(d.presas.length,'rodada parada','rodadas paradas')+'</p>':sem?'<p class="frase vazia">placar de rodadas ainda não existe</p>':h.length?'<p class="frase">'+feitas+' de '+h.length+' rodadas fechadas</p>':'<p class="frase vazia">nenhuma rodada hoje</p>';
   var mx=E.modo==='lista'?4:E.modo==='icones'?8:2;
-  var c=modoRodadas(d.presas.concat(h.filter(function(r){return!r.presa})),mx,true);
+  var c=modoRodadas(d.presas.concat(umaVez(h.filter(function(r){return!r.presa}))),mx,true);
   var ab=d.esperas.filter(function(e){return e.estado==='esperando'||e.estado==='rodando'}).length;
   c+=linha('Esperas do continua',ab?ab+' abertas':'nenhuma aberta');
   if(d.timers[0]&&E.modo!=='imagens')c+=linha('Próximo timer',esc(d.timers[0].unidade)+' às '+hm(d.timers[0].proxima));
@@ -82,8 +84,27 @@ G.publicacao={tile:function(d){var fr='<p class="frase">'+plural(d.hoje,'vídeo 
   +sec('Por canal',tabela(['Canal','Hoje','7 dias'],cs.map(function(k){return[esc(k),d.hoje_por_canal[k]||0,d.semana_por_canal[k]]})))
   +(d.filas_itens?'':sec('Filas de publicação',tabela(['Fila','Total','Por estado'],d.filas.map(function(f){return[esc(f.nome),f.total,Object.keys(f.por_estado).map(function(k){return esc(k)+' '+f.por_estado[k]}).join(', ')]}))+d.filas.map(function(f){return f.erros_recentes.length?'<h3 style="margin-top:.8rem">Erros recentes na fila '+esc(f.nome)+'</h3>'+tabela(['Item','Erro'],f.erros_recentes.map(function(e){return[esc(e.nome),esc(e.erro)]})):''}).join('')))}};
 
+// Um quadro por bot (Nei, 11/11/2026: "card do inemaccbot e do v2 e v3"). O detalhe reaproveita o do grupo bots.
+function svcLinha(st){var ok=st==='active';return linha('Serviço',ok?'✓ ativo':st==='desconhecido'?'– desconhecido':'✕ '+esc(st),ok?'s-ok':st==='desconhecido'?'fraco':'s-erro')}
+function botFalhas(b,nome){return((b&&b.falhas_24h)||[]).map(function(f){f.bot=nome;return f})}
+G.v3={tile:function(d){var b=d.bot,fl=botFalhas(b,'v3');
+  var fr=d.servico!=='active'?'<p class="frase s-erro">serviço '+esc(d.servico)+'</p>':!b?'<p class="frase vazia">sem leitura do banco</p>':fl.length?'<p class="frase s-erro">'+plural(fl.length,'falha','falhas')+' em 24 h</p>':'<p class="frase">'+b.jobs.rodando+' rodando, '+b.jobs.na_fila+' na fila</p>';
+  var h=svcLinha(d.servico);if(b){h+=linha('Jobs hoje',b.jobs.criados_hoje+' · '+usd(b.custo_hoje.usd));h+=linha('Sessões na última hora',b.sessoes_1h);if(b.cron&&b.cron[0])h+=linha('Próxima rotina',esc(b.cron[0].nome)+' às '+hm(b.cron[0].proxima_em))}
+  if(fl[0])h+=linhaTx(simb('erro')+' #'+fl[0].id+' '+esc(fl[0].tarefa),hm(fl[0].quando));return{frase:fr,corpo:h}},
+ detalhe:function(d){return G.bots.detalhe({v3:d.bot,inemaccbot:null,servicos:{openpcbotv3:d.servico}})}};
+G.inemaccbot={tile:function(d){var b=d.bot,fl=botFalhas(b,'inemaccbot');
+  var fr=d.servico!=='active'?'<p class="frase s-erro">serviço '+esc(d.servico)+'</p>':!b?'<p class="frase vazia">sem leitura do banco</p>':fl.length?'<p class="frase s-erro">'+plural(fl.length,'falha','falhas')+' em 24 h</p>':b.aguardando_ok.length?'<p class="frase s-aviso">'+plural(b.aguardando_ok.length,'fluxo esperando seu OK','fluxos esperando seu OK')+'</p>':'<p class="frase">'+plural(b.fluxos_abertos.length,'fluxo aberto','fluxos abertos')+'</p>';
+  var h=svcLinha(d.servico);if(b){h+=linha('Rodando / na fila',b.jobs.rodando+' / '+b.jobs.na_fila);b.fluxos_abertos.slice(0,3).forEach(function(f){h+=linhaTx(esc(f.tipo)+' · '+esc(f.slug),esc(f.status),'mut')})}
+  if(fl[0])h+=linhaTx(simb('erro')+' #'+fl[0].id+' '+esc(fl[0].tarefa),hm(fl[0].quando));return{frase:fr,corpo:h}},
+ detalhe:function(d){return G.bots.detalhe({v3:null,inemaccbot:d.bot,servicos:{inemaccbot:d.servico}})}};
+G.v2={tile:function(d){var b=d.bot;
+  var fr=d.servico!=='active'?'<p class="frase s-erro">serviço '+esc(d.servico)+'</p>':!b?'<p class="frase vazia">sem leitura do banco</p>':'<p class="frase">'+(b.msgs_24h?plural(b.msgs_24h,'mensagem','mensagens')+' em 24 h':'parado: última conversa '+(b.ultima_msg?'há '+dur(Date.now()/1000-b.ultima_msg):'–'))+'</p>';
+  var h=svcLinha(d.servico);if(b){h+=linha('Mensagens em 7 dias',b.msgs_7d);h+=linha('Custo em 7 dias',usd(b.custo_7d_usd));if(b.ultimo_video)h+=linha('Último vídeo','#'+b.ultimo_video.id+' '+esc(b.ultimo_video.skill)+' · '+esc(b.ultimo_video.status),b.ultimo_video.status==='failed'?'s-erro':'')}
+  return{frase:fr,corpo:h}},
+ detalhe:function(d){var b=d.bot||{};return sec('Bot v2 (openpcbotv2)',tabela(['Medida','Valor'],[['Serviço',d.servico==='active'?'<span class="s-ok">✓ ativo</span>':'<span class="s-erro">✕ '+esc(d.servico)+'</span>'],['Última conversa',b.ultima_msg?quando(b.ultima_msg):'–'],['Mensagens 24 h / 7 dias',(b.msgs_24h||0)+' / '+(b.msgs_7d||0)],['Custo em 7 dias',usd(b.custo_7d_usd)],['Tarefas agendadas ativas',b.tarefas_agendadas!=null?b.tarefas_agendadas:'–'],['Vídeos por estado',Object.keys(b.videos||{}).map(function(k){return esc(k)+' '+b.videos[k]}).join(' · ')||'–'],['Último vídeo',b.ultimo_video?'#'+b.ultimo_video.id+' '+esc(b.ultimo_video.skill)+' · '+esc(b.ultimo_video.status)+' · '+quando(b.ultimo_video.quando)+(b.ultimo_video.erro?'<div class="mut">'+esc(b.ultimo_video.erro)+'</div>':''):'–']]))+'<p class="nota">Lido do banco do v2 (store/openpcbot.db) só para consulta.</p>'}};
+
 G.creditos={tile:function(d){var l=d.claude.limites,sem7=l.filter(function(x){return/todos/.test(x.nome)})[0]||l[0];
-  var fr=sem7?'<p class="frase">Claude em '+sem7.pct+'% da semana</p>':'<p class="frase vazia">sem leitura dos limites</p>';
+  var fr=(sem7||d.codex)?'<p class="frase">Claude '+(sem7?sem7.pct+'%':'–')+' · Codex '+(d.codex?d.codex.pct+'%':'–')+'</p>':'<p class="frase vazia">sem leitura dos limites</p>';
   var h=l.map(function(x){return'<div class="linha"><span class="k">'+esc(x.nome)+'</span>'+barra(x.pct,80)+'<span class="v">'+x.pct+'%</span></div>'}).join('');
   if(d.codex)h+='<div class="linha"><span class="k">Codex</span>'+barra(d.codex.pct,80)+'<span class="v">'+d.codex.pct+'%</span></div>';
   if(d.claude.idade_s!=null)h+=linha('Medida do Claude','há '+dur(d.claude.idade_s),d.claude.idade_s>6*3600?'s-aviso':'');
@@ -98,9 +119,9 @@ G.creditos={tile:function(d){var l=d.claude.limites,sem7=l.filter(function(x){re
 function vpsNome(x){return x.id.toUpperCase()+' '+x.nome}
 G.vps={tile:function(d){var v=d.vps||[],ok=v.filter(function(x){return x.medida&&x.medida.ok}).length,med=v.some(function(x){return x.medida});
   var fr=!v.length?'<p class="frase vazia">sem inventário</p>':!med?'<p class="frase vazia">medindo…</p>':'<p class="frase">'+ok+' de '+v.length+' respondendo</p>';
-  var h=v.map(function(x){var m=x.medida;if(!m)return linha(esc(vpsNome(x)),'medindo…');
-    if(!m.ok)return linhaTx(simb('erro')+' '+esc(vpsNome(x)),'sem resposta','s-erro');
-    return'<div class="linha"><span class="k" title="'+esc((x.papel||[]).join(' · '))+'">'+esc(vpsNome(x))+'</span>'+barra(m.disco_pct||0,90)+'<span class="v">'+(m.disco_pct!=null?m.disco_pct+'%':'?')+'</span></div>'}).join('');
+  var h=v.map(function(x){var m=x.medida;if(!m)return linha(esc(x.id.toUpperCase()),'medindo…');
+    if(!m.ok)return linhaTx(simb('erro')+' '+esc(x.id.toUpperCase()),'fora','s-erro');
+    var p=m.disco_pct;return'<div class="linha"><span class="k" title="'+esc(vpsNome(x)+' — '+(x.papel||[]).join(' · '))+'">'+esc(x.id.toUpperCase())+'</span><span class="v '+(p>=95?'s-erro':p>=90?'s-aviso':'')+'">disco '+(p!=null?p+'%':'?')+'</span></div>'}).join('');
   return{frase:fr,corpo:h||'<div class="sem">nenhuma VPS no inventário</div>'}},
  detalhe:function(d){var gb=function(mb){return mb==null?'–':(mb/1024).toFixed(1)};
   return sec('As VPS',tabela(['VPS','Onde','Disco','Memória (GB)','Carga','Containers','No ar há','O que roda'],(d.vps||[]).map(function(x){var m=x.medida||{},ok=x.medida&&m.ok;

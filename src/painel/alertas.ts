@@ -56,13 +56,15 @@ export const REGRAS: Regra[] = [
     const b = g.maquina.dados?.boot_em;
     return b && agora - b < LIMITES.reinicioH * 3600 ? [{ chave: `reinicio:${b}`, nivel: 'aviso', texto: `A máquina reiniciou às ${hora(b)}` }] : [];
   } },
-  { id: 'servico', grupo: 'bots', avaliar: (g) => Object.entries(g.bots.dados?.servicos ?? {})
-    .filter(([, st]) => st !== 'active' && st !== 'desconhecido')
-    .map(([s, st]) => ({ chave: `servico:${s}`, nivel: 'erro' as const, texto: `Serviço ${s} está ${st}` })) },
-  { id: 'job-falhou', grupo: 'bots', avaliar: (g) => {
-    const f = (bot: string, l: Falha[] | undefined) => (l ?? []).map((j) => ({ chave: `job-falhou:${bot}:${j.id}`, nivel: 'erro' as const, texto: `${bot}: job #${j.id} (${j.tarefa}) falhou às ${hora(j.quando)}` }));
-    return [...f('v3', g.bots.dados?.v3?.falhas_24h), ...f('inemaccbot', g.bots.dados?.inemaccbot?.falhas_24h)];
-  } },
+  // Um quadro por bot (11/11): cada regra cai no quadro do seu bot; as chaves não mudaram.
+  ...([['openpcbotv3', 'v3'], ['inemaccbot', 'inemaccbot'], ['openpcbot', 'v2']] as const).map(([svc, grupo]): Regra => ({ id: `servico-${grupo}`, grupo, avaliar: (g) => {
+    const st = g.bots.dados?.servicos?.[svc];
+    return st && st !== 'active' && st !== 'desconhecido' ? [{ chave: `servico:${svc}`, nivel: 'erro' as const, texto: `Serviço ${svc} está ${st}` }] : [];
+  } })),
+  ...([['v3', 'v3'], ['inemaccbot', 'inemaccbot']] as const).map(([bot, grupo]): Regra => ({ id: `job-falhou-${grupo}`, grupo, avaliar: (g) => {
+    const l: Falha[] = (bot === 'v3' ? g.bots.dados?.v3?.falhas_24h : g.bots.dados?.inemaccbot?.falhas_24h) ?? [];
+    return l.map((j) => ({ chave: `job-falhou:${bot}:${j.id}`, nivel: 'erro' as const, texto: `${bot}: job #${j.id} (${j.tarefa}) falhou às ${hora(j.quando)}` }));
+  } })),
   { id: 'rodada-falhou', grupo: 'producao', avaliar: (g) => (g.producao.dados?.falhas ?? [])
     .map((r) => ({ chave: `rodada-falhou:${r.unidade}:${r.edicao ?? r.fim}`, nivel: 'erro' as const, texto: `Rodada ${r.unidade} falhou às ${hora(r.fim)}${r.motivo ? ': ' + r.motivo : ''}` })) },
   { id: 'rodada-presa', grupo: 'producao', avaliar: (g) => (g.producao.dados?.presas ?? [])

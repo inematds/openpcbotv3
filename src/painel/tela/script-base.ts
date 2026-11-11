@@ -32,7 +32,7 @@ function okId(v){return/^[\w-]{11}$/.test(String(v||''))}
 `;
 
 export const JS_LACO = String.raw`
-var NOMES={esperando:'Esperando você',maquina:'Máquina',bots:'Bots',producao:'Produção',publicacao:'Publicação',creditos:'Claude e Codex',sites:'Sites',vagas:'Vagas',radar:'Radar Viral',terminais:'Terminais',vps:'VPS',apis:'Outras APIs'};
+var NOMES={esperando:'Esperando você',maquina:'Máquina',bots:'Bots',v3:'Bot v3',inemaccbot:'inemaccbot',v2:'Bot v2',producao:'Produção',publicacao:'Publicação',creditos:'Claude e Codex',sites:'Sites',vagas:'Vagas',radar:'Radar Viral',terminais:'Terminais',vps:'VPS',apis:'Outras APIs'};
 var ROT={ok:'✓ ok',erro:'✕ erro',aviso:'! atenção',semdados:'– sem dados'};
 function estadoGrupo(nome,g,al){if(!g||!g.ok)return'semdados';var e=al.filter(function(a){return a.grupo===nome});if(e.some(function(a){return a.nivel==='erro'}))return'erro';if(e.length)return'aviso';if(nome==='esperando'&&g.dados){var it=g.dados.itens;if(it.some(function(i){return i.nivel==='erro'}))return'erro';if(it.some(function(i){return i.nivel==='aviso'}))return'aviso'}return'ok'}
 function tok(){return LS.get('painel.token','')}
@@ -46,7 +46,7 @@ function desenhar(){var d=E.dados;if(!d)return;
   if(al.length)hf='<span class="conta">'+(ne?plural(ne,'erro','erros'):'')+(ne&&na?', ':'')+(na?plural(na,'aviso','avisos'):'')+'</span><div class="lista">'+al.map(function(a){return'<span>'+simb(a.nivel)+' '+esc(a.texto)+'</span>'}).join('')+'</div>';
   else hf='<span class="conta s-ok">✓</span><span class="calmo">Nada pedindo atenção agora. Última leitura às '+hm(d.gerado_em)+'.</span>';
   f.className='faixa'+(al.length?' tem':'');if(E.tiles._faixa!==hf){f.innerHTML=hf;E.tiles._faixa=hf}
-  Object.keys(NOMES).forEach(function(nome){var el=document.getElementById('t-'+nome),t=tile(nome);if(el.className!==t.cls)el.className=t.cls;if(E.tiles[nome]!==t.html){el.innerHTML=t.html;E.tiles[nome]=t.html}});
+  Object.keys(NOMES).forEach(function(nome){var el=document.getElementById('t-'+nome);if(!el)return;var t=tile(nome);if(el.className!==t.cls)el.className=t.cls;if(E.tiles[nome]!==t.html){el.innerHTML=t.html;E.tiles[nome]=t.html}});
   marcarRolagem();
   if(E.aberto)desenharFolha(false)}
 function desenharFolha(forcar){var nome=E.aberto,d=E.dados,c=document.getElementById('folha-conteudo');if(!nome||!d)return;
@@ -103,7 +103,7 @@ function marcarRolagem(){var el=document.getElementById('t-terminais');if(!el)re
 if(typeof document!=='undefined')document.addEventListener('scroll',function(ev){if(ev.target&&ev.target.classList&&ev.target.classList.contains('corpo'))marcarRolagem()},true);
 // Organizar: cada quadro pode trocar de lugar com outro (os lugares têm tamanhos fixos: o da esquerda é alto,
 // o de baixo é largo). Fica guardado neste aparelho. Arrastar com o mouse ou tocar num e depois no outro.
-var AREAS={esperando:'esp',maquina:'maq',bots:'bot',producao:'pro',publicacao:'pub',creditos:'cre',sites:'sit',vagas:'vag',radar:'rad',terminais:'ter',vps:'vps',apis:'api'};
+var AREAS={esperando:'esp',maquina:'maq',v3:'v3',inemaccbot:'icc',v2:'v2',producao:'pro',publicacao:'pub',creditos:'cre',sites:'sit',vagas:'vag',radar:'rad',terminais:'ter',vps:'vps',apis:'api'};
 function lerLayout(){var m;try{m=JSON.parse(LS.get('painel.layout','{}'))||{}}catch(e){m={}}
   var usadas=Object.keys(AREAS).map(function(g){return m[g]||AREAS[g]}),ok=Object.keys(AREAS).every(function(g){return usadas.indexOf(AREAS[g])>=0});return ok?m:{}}
 function aplicarLayout(){var m=lerLayout();Object.keys(AREAS).forEach(function(g){var el=document.getElementById('t-'+g);if(el)el.style.gridArea=m[g]||''})}

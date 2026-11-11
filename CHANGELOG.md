@@ -1,5 +1,15 @@
 # CHANGELOG — openpcbotv3
 
+## 3.25.11 — 2026-11-11
+
+Um quadro por bot, os dois números no Claude e Codex, Radar uma vez só (Nei: "claude e codex tem ter os dois números. radar viral 1x. card do inemaccbot e do v2 e v3").
+- Quadros **Bot v3**, **inemaccbot** e **Bot v2** no lugar de "Bots". O v2 agora é lido do banco dele (`openpcbotv2/store/openpcbot.db`, só leitura): última conversa, mensagens 24 h / 7 dias, custo 7 dias, vídeos por estado. As regras de alerta de serviço e de job falho caem no quadro do bot certo (mesmas chaves). O grupo `bots` continua no JSON.
+- Grade com 5 colunas: Esperando você ocupa a coluna da esquerda, Terminais a linha de baixo.
+- "Claude e Codex": o título mostra os dois (Claude NN% · Codex NN%).
+- Produção: cada rotina aparece uma vez no cartão (a mais recente, com ×N); o radar-viral roda de hora em hora e enchia a lista.
+- Jarvis: os três bots, e detalhe de VPS e Outras APIs ao clicar.
+- O laço da tela ignora quadro que não existe na página (não derruba a leitura).
+
 ## 3.24.11 — 2026-11-10
 
 Quadros VPS, Claude e Codex, Outras APIs (Nei: "quero card das 6 vps, o card o codex e o claude, e outro card com outras apis").

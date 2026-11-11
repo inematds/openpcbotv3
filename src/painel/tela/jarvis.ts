@@ -160,13 +160,16 @@ function hm(t){return t?new Date(t*1000).toLocaleTimeString('pt-BR',{hour:'2-dig
 function ha(t){if(!t)return'ainda não rodou';var s=Date.now()/1000-t;if(s<0)return'agora';if(s<90)return'há 1 min';if(s<3600)return'há '+Math.round(s/60)+' min';if(s<86400)return'há '+Math.round(s/3600)+' h';return'há '+Math.round(s/86400)+' d'}
 function plural(q,um,varios){return q+' '+(q===1?um:varios)}
 function idDe(s){s=String(s);var h=0;for(var i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return'i'+h.toString(36)}
-var NOMES={maquina:'Máquina',bots:'Bots',producao:'Produção',publicacao:'Publicação',creditos:'Claude e Codex',sites:'Sites',vagas:'Vagas',radar:'Radar Viral',terminais:'Terminais',vps:'VPS',apis:'Outras APIs'};
+var NOMES={maquina:'Máquina',v3:'Bot v3',inemaccbot:'inemaccbot',v2:'Bot v2',producao:'Produção',publicacao:'Publicação',creditos:'Claude e Codex',sites:'Sites',vagas:'Vagas',radar:'Radar Viral',terminais:'Terminais',vps:'VPS',apis:'Outras APIs'};
 var ROT={ok:'ok',erro:'erro',aviso:'atenção',semdados:'sem dados',rodando:'rodando'};
 function estadoGrupo(nome,g,al){if(!g||!g.ok)return'semdados';var e=al.filter(function(a){return a.grupo===nome});if(e.some(function(a){return a.nivel==='erro'}))return'erro';if(e.length)return'aviso';return'ok'}
 // Uma frase curta por sistema, a partir dos dados de cada grupo.
 var FRASE={
   vps:function(d){var vs=d.vps||[],ok=vs.filter(function(x){return x.medida&&x.medida.ok}),fora=vs.filter(function(x){return x.medida&&!x.medida.ok}),mx=0;ok.forEach(function(x){mx=Math.max(mx,x.medida.disco_pct||0)});if(!vs.some(function(x){return x.medida}))return'medindo as '+vs.length+' VPS…';return ok.length+' de '+vs.length+' VPS respondendo'+(fora.length?' · sem resposta: '+fora.map(function(x){return x.id.toUpperCase()}).join(', '):'')+' · disco mais cheio '+n(mx,0)+'%'},
   apis:function(d){var hh=d.hoje||[],c=hh.reduce(function(s,x){return s+x.chamadas},0),u=hh.reduce(function(s,x){return s+x.usd},0);return plural(c,'chamada','chamadas')+' de API hoje, US$ '+u.toFixed(2)+(d.avisos&&d.avisos.length?' · '+plural(d.avisos.length,'aviso de login','avisos de login'):'')},
+  v3:function(d){var b=d.bot;if(!b)return'serviço '+d.servico+' · sem leitura do banco';return(d.servico==='active'?'ativo':'serviço '+d.servico)+' · '+b.jobs.rodando+' rodando, '+b.jobs.na_fila+' na fila · '+b.jobs.criados_hoje+' jobs hoje · '+plural((b.falhas_24h||[]).length,'falha','falhas')+' em 24 h'},
+  inemaccbot:function(d){var b=d.bot;if(!b)return'serviço '+d.servico+' · sem leitura do banco';return(d.servico==='active'?'ativo':'serviço '+d.servico)+' · '+plural(b.fluxos_abertos.length,'fluxo aberto','fluxos abertos')+(b.aguardando_ok.length?' · '+b.aguardando_ok.length+' esperando seu OK':'')+' · '+plural((b.falhas_24h||[]).length,'falha','falhas')+' em 24 h'},
+  v2:function(d){var b=d.bot;if(!b)return'serviço '+d.servico+' · sem leitura do banco';return(d.servico==='active'?'ativo':'serviço '+d.servico)+' · '+(b.msgs_24h?plural(b.msgs_24h,'mensagem','mensagens')+' em 24 h':'sem conversa'+(b.ultima_msg?' há '+Math.round((Date.now()/1000-b.ultima_msg)/86400)+' dias':''))},
   radar:function(d){var l=(d.fila||[]).filter(function(i){return i.estado==='liberado'});return plural(d.hoje||0,'publicado','publicados')+' hoje no '+(d.canal||'lives24')+' · '+(d.fila||[]).length+' na fila'+(l.length?' · próximo: '+l[0].nome+' às '+hm(d.proxima):'')},
   maquina:function(d){var m=d.memoria||{},k=d.disco||{},o=d.gpu_oom||{};return n(m.disponivel_gb,0)+' GB livres · disco '+n(k.usado_pct,0)+'% · falhas de memória da GPU 24 h: '+n(o.ultimas_24h,0)},
   bots:function(d){var v=(d.v3&&d.v3.jobs)||{},f=((d.v3&&d.v3.falhas_24h)||[]).length,s=d.servicos||{},caidos=Object.keys(s).filter(function(k){return s[k]!=='active'});
@@ -174,7 +177,7 @@ var FRASE={
   producao:function(d){var h=d.hoje||[],p=(d.presas||[]).length,f=(d.falhas||[]).length,prox=(d.timers||[]).filter(function(t){return t.proxima}).sort(function(a,b){return a.proxima-b.proxima}).filter(function(t){return!/watchdog|vigia|ocioso|continua|-producao$/.test(t.unidade)})[0];
     return plural(h.length,'rodada','rodadas')+' hoje · '+p+' presas · '+f+' falhas'+(prox?' · próxima: '+prox.unidade+' às '+hm(prox.proxima):'')},
   publicacao:function(d){var s=d.semana_por_canal||{},t=0;Object.keys(s).forEach(function(k){t+=s[k]});return plural(d.hoje||0,'vídeo','vídeos')+' hoje · '+t+' na semana'},
-  creditos:function(d){var c=(d.claude&&d.claude.limites)||[],x=d.codex||{};return c.map(function(l){return String(l.nome).replace(/^Semana \(todos\)$/,'Claude semana').replace(/^Semana · /,'')+' '+n(l.pct,0)+'%'}).join(' · ')+(x.pct!=null?' · Codex '+n(x.pct,0)+'%':'')},
+  creditos:function(d){var c=(d.claude&&d.claude.limites)||[],x=d.codex||{};return c.filter(function(l){return/todos/.test(l.nome)}).map(function(l){return String(l.nome).replace(/^Semana \(todos\)$/,'Claude semana').replace(/^Semana · /,'')+' '+n(l.pct,0)+'%'}).join(' · ')+(x.pct!=null?' · Codex '+n(x.pct,0)+'%':'')},
   sites:function(d){if(d.desligado)return'checagem desligada';var s=d.sites||[];if(!s.length)return d.checando?'checando agora…':'sem leitura ainda';var ok=s.filter(function(x){return x.ok}).length,ruins=s.filter(function(x){return!x.ok}).map(function(x){return String(x.url).replace(/^https?:\/\//,'')});return ok+' de '+s.length+' no ar'+(ruins.length?' · fora: '+ruins.join(', '):'')},
   vagas:function(d){return(d.classes||[]).filter(function(c){return c.ocupadas||c.esperando||c.classe==='gpu'||c.classe==='render'}).map(function(c){return c.classe+' '+c.ocupadas+'/'+c.vagas+(c.dono?' ('+c.dono+')':'')+(c.esperando?' +'+c.esperando+' esperando':'')}).join(' · ')},
   terminais:function(d){var v=d.vivos||[],f=v.filter(function(t){return t.origem&&t.origem.tipo==='fisica'}).length;return plural(v.length,'sessão viva','sessões vivas')+': '+f+' sua'+(f===1?'':'s')+' · '+(v.length-f)+' de agente'+(v.length-f===1?'':'s')+' · '+plural((d.interrompidos||[]).length,'interrompida','interrompidas')}
@@ -191,10 +194,13 @@ function contagem(){var al=D.alertas||[],er=al.filter(function(a){return a.nivel
   var sis=sistemas();return{erros:er,avisos:al.length-er,publicados:pub,ocupadas:oc,ok:sis.filter(function(s){return s.estado==='ok'||s.estado==='rodando'}).length,total:sis.length,abertos:esperando().filter(function(x){return!marcas[x.id]}).length}}
 // ---------- modos visuais (lista / ícones / gráficos) ----------
 var MODO=LS.get('jarvis.modo','lista');if(['lista','icones','graficos'].indexOf(MODO)<0)MODO='lista';
-var GLIFO={maquina:'⚙',bots:'◉',producao:'▶',publicacao:'▲',creditos:'◔',sites:'◎',vagas:'▦',radar:'◈',terminais:'▭',vps:'▣',apis:'⌁'};
+var GLIFO={maquina:'⚙',bots:'◉',v3:'◉',inemaccbot:'◎',v2:'○',producao:'▶',publicacao:'▲',creditos:'◔',sites:'◎',vagas:'▦',radar:'◈',terminais:'▭',vps:'▣',apis:'⌁'};
 function dg(nome){var g=D.grupos[nome];return g&&g.ok&&g.dados?g.dados:null}
 function numero(nome){var d=dg(nome);if(!d)return['–','sem dados'];
   if(nome==='maquina')return[n(d.memoria&&d.memoria.disponivel_gb,0)+' GB','memória livre'];
+  if(nome==='v3'){var b3=d.bot||{jobs:{}};return[n(b3.jobs.rodando,0)+' · '+n(b3.jobs.na_fila,0),'rodando · fila']}
+  if(nome==='inemaccbot'){var ba=d.bot||{fluxos_abertos:[]};return[String(ba.fluxos_abertos.length),'fluxos abertos']}
+  if(nome==='v2'){var b2=d.bot||{};return[String(b2.msgs_24h||0),'mensagens 24 h']}
   if(nome==='bots'){var j=(d.v3&&d.v3.jobs)||{};return[n(j.rodando,0)+' · '+n(j.na_fila,0),'rodando · fila']}
   if(nome==='producao')return[String((d.hoje||[]).length),'rodadas hoje'];
   if(nome==='publicacao')return[String(d.hoje||0),'vídeos hoje'];
@@ -259,6 +265,13 @@ var DET={
       +bloco('Disco',lnt('usado',n(k.usado_pct,0)+'%',k.usado_pct>90?'erro':k.usado_pct>80?'aviso':'')+lnt('livre',n(k.livre_gb,0)+' de '+n(k.total_gb,0)+' GB'))
       +bloco('Falhas de memória da GPU (24 h)',lnt('últimas 24 h',n(o.ultimas_24h,0),o.ultima_hora?'erro':o.ultimas_24h?'aviso':'')+lnt('última hora',n(o.ultima_hora,0))+lnt('última vez',quando(o.ultima_em)))
       +bloco('Reinícios',lnt('ligada desde',quando(d.boot_em))+r.slice(-5).reverse().map(function(t){return lnt('reinício',quando(t))}).join(''))},
+  v3:function(d){return DET.bots({v3:d.bot,servicos:{openpcbotv3:d.servico}})},
+  inemaccbot:function(d){return DET.bots({inemaccbot:d.bot,servicos:{inemaccbot:d.servico}})},
+  v2:function(d){var b=d.bot||{},u=b.ultimo_video;return bloco('Bot v2',lnt('serviço',d.servico==='active'?'no ar':d.servico,d.servico==='active'?'':'erro')+lnt('última conversa',b.ultima_msg?quando(b.ultima_msg):'–')+lnt('mensagens 24 h / 7 dias',n(b.msgs_24h,0)+' / '+n(b.msgs_7d,0))+lnt('custo 7 dias','US$ '+Number(b.custo_7d_usd||0).toFixed(2))+(u?lnt('último vídeo','#'+u.id+' '+u.skill+' · '+u.status,u.status==='failed'?'erro':''):''))},
+  vps:function(d){return bloco('VPS',(d.vps||[]).map(function(x){var m=x.medida;return lnt(x.id.toUpperCase()+' · '+x.nome,!m?'medindo…':m.ok?'disco '+m.disco_pct+'% · '+(m.ram_mb/1024).toFixed(1)+' de '+(m.ram_total_mb/1024).toFixed(1)+' GB · no ar há '+(m.uptime||'–'):'sem resposta: '+(m.erro||''),!m?'':!m.ok?'erro':m.disco_pct>=90?'aviso':'')}).join(''))},
+  apis:function(d){return bloco('Uso hoje (bot v3)',(d.hoje||[]).map(function(x){return lnt(x.provedor,x.chamadas+' chamadas · US$ '+Number(x.usd).toFixed(2))}).join('')||lnt('uso','nada hoje'))
+    +bloco('O que está liberado',(d.apis||[]).map(function(a){return lnt(a.nome,a.situacao+(a.nota?' · '+a.nota:''),a.situacao==='pedir antes'?'aviso':a.situacao==='desligada'?'erro':'')}).join(''))
+    +bloco('Avisos de login',(d.avisos||[]).map(function(a){return lnt(a.titulo,a.ate||'–',a.vencido?'erro':'aviso')}).join('')||lnt('avisos','nenhum'))},
   bots:function(d){var v=d.v3||{},j=v.jobs||{},a=d.inemaccbot||{},s=d.servicos||{};
     return bloco('Serviços',Object.keys(s).map(function(k){return lnt(k,s[k]==='active'?'no ar':s[k],s[k]==='active'?'':'erro')}).join(''))
       +bloco('v3',lnt('rodando agora',n(j.rodando,0))+lnt('na fila',n(j.na_fila,0))+lnt('pedidos hoje',n(j.criados_hoje,0))+lnt('sessões na última hora',n(v.sessoes_1h,0))+(v.custo_hoje?lnt('custo hoje','US$ '+Number(v.custo_hoje.usd||0).toFixed(2)+' em '+n(v.custo_hoje.chamadas,0)+' chamadas'):''))
