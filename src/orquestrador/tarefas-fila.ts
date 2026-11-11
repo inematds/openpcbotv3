@@ -136,9 +136,11 @@ export function criarTarefas(app: App, orq: () => Orquestrador): Record<string, 
 /** `aoTerminar` do worker: entrega resultado/erro de job de agente no chat de origem. */
 export function criarEntregador(app: App) {
   return async (job: Job): Promise<void> => {
-    if (job.chat_id === null) return;
     if (!job.tarefa.startsWith('agente:')) return; // consultas e funções internas não avisam
     const entrada = JSON.parse(job.input) as EntradaAgente;
+    // chat_id da tabela só guarda número (Telegram). Chat de texto (painel "painel", http) vem na entrada:
+    // antes o resultado era descartado e o painel só via "job #N" (11/11/2026, job 106706).
+    if (job.chat_id === null && !entrada.chatId) return;
     const canal = (entrada.canal ?? 'telegram') as MensagemRecebida['canal'];
     let texto: string;
     if (job.status === 'done') {

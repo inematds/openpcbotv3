@@ -1,5 +1,9 @@
 # CHANGELOG — openpcbotv3
 
+## 3.26.13 — 2026-11-11
+
+Correção: a resposta do bot nunca chegava ao chat do painel (Nei: "me respondeu lead — job 106706"). O entregador de job de agente parava em `chat_id` nulo, e o chat "painel" (texto) não cabe na coluna numérica; agora usa o chat da entrada do job. Teste novo `orquestrador/entregador.test.ts`. No Jarvis, o aviso "job #N" vira "pensando…" (não é falado), o prefixo "#N lead ·" sai da fala e a voz do navegador sai em volume máximo.
+
 ## 3.26.12 — 2026-11-11
 
 Jarvis, modo Gráficos: entram VPS (barras de disco e de memória das 6), Bots (v3, inemaccbot, v2 com estado), Outras APIs (chamadas de hoje por provedor + quantas liberadas) e Radar Viral (Nei: "vps e outros card tem aparecer nos gráficos do jarvis"). Cada bloco abre o detalhe ao clicar.

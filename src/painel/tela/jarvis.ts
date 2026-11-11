@@ -405,7 +405,7 @@ var digitando=0;function digitar(texto){var alvo=$('resposta'),id=++digitando,i=
 function falar(texto,rotulo,falado){digitar(texto);ondaAte=performance.now()+Math.min(9000,9*texto.length/VEL+600);$('status').textContent=rotulo||'falando';
   var fim=function(){falando=false;desenhar()};
   if(!vozLigada||!window.speechSynthesis){falando=true;setTimeout(fim,Math.min(6000,60*texto.length));return}
-  try{speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(pronuncia(falado||texto));u.lang=vozPt?vozPt.lang:'pt-BR';if(vozPt)u.voice=vozPt;u.rate=VEL;
+  try{speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(pronuncia(falado||texto));u.lang=vozPt?vozPt.lang:'pt-BR';u.volume=1;if(vozPt)u.voice=vozPt;u.rate=VEL;
     var vigia=setTimeout(fim,Math.max(3000,90*texto.length/VEL));u.onend=u.onerror=function(){clearTimeout(vigia);fim()};falando=true;speechSynthesis.speak(u)}catch(e){fim()}}
 function saudacao(){var h=new Date().getHours();return h<5?'Boa madrugada':h<12?'Bom dia':h<18?'Boa tarde':'Boa noite'}
 function textoBomDia(){var c=contagem(),esp=esperando().filter(function(x){return!marcas[x.id]}),prod=D.grupos.producao&&D.grupos.producao.dados,prox=null;
@@ -439,7 +439,7 @@ function ctxTela(){if(!D)return'';var c=contagem(),f=$('folha').classList.contai
 function semMarcas(t){return String(t).replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/https?:\/\/\S+/g,'link').replace(/[*#_>|\x60]+/g,' ').replace(/\s+/g,' ').trim()}
 async function chatLerJ(){try{var r=await fetch('/api/painel/chat?desde='+(CJ.ult||0),{cache:'no-store',credentials:'same-origin'}),j=await r.json();
   var ms=j.msgs||[];if(CJ.ult===null){CJ.ult=ms.length?ms[ms.length-1].n:0;return}
-  ms.forEach(function(m){CJ.ult=m.n;if(m.quem==='bot'){CJ.esperando=false;$('pergBt').disabled=false;var t=semMarcas(m.texto);falar(t,'resposta do bot',t.length>900?t.slice(0,900)+'… o resto está escrito na tela.':t)}})}catch(e){}}
+  ms.forEach(function(m){CJ.ult=m.n;if(m.quem==='bot'){if(/^\S*\s*\S+ — job #\d+/.test(m.texto)){$('status').textContent='pensando…';$('resposta').textContent='O bot está pensando (pedido #'+((m.texto.match(/#(\d+)/)||[])[1]||'?')+')…';return}CJ.esperando=false;$('pergBt').disabled=false;var t=semMarcas(String(m.texto).replace(/^\S*\s*#\d+ \S+ · /,''));falar(t,'resposta do bot',t.length>900?t.slice(0,900)+'… o resto está escrito na tela.':t)}})}catch(e){}}
 $('perg').addEventListener('submit',async function(ev){ev.preventDefault();var x=$('pergTxt'),t=x.value.trim();if(!t)return;
   $('resposta').textContent='você: '+t+' — perguntando ao bot…';$('status').textContent='pensando';$('pergBt').disabled=true;CJ.esperando=true;
   try{var r=await fetch('/api/painel/chat',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Painel':'1'},body:JSON.stringify({texto:t,contexto:ctxTela(),voz:true})}),j={};try{j=await r.json()}catch(e){}
