@@ -100,7 +100,7 @@ export function depsPadrao(p: Partial<DepsPainel> & { versao: string; concorrenc
   };
 }
 
-export type NomeGrupo = 'maquina' | 'bots' | 'producao' | 'publicacao' | 'creditos' | 'sites' | 'vagas' | 'terminais' | 'esperando';
+export type NomeGrupo = 'maquina' | 'bots' | 'producao' | 'publicacao' | 'creditos' | 'sites' | 'vagas' | 'radar' | 'terminais' | 'esperando';
 
 export interface Grupo<T = Record<string, unknown>> {
   ok: boolean;

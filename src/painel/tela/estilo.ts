@@ -95,9 +95,9 @@ body.organizando .grade .tile *{pointer-events:none}
 
 /* Grade da visão geral: 4 colunas × 3 linhas na TV. */
 .grade{display:grid;gap:var(--gap);min-height:0;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));
-  grid-template-areas:"esp maq bot pro" "esp pub cre sit" "vag ter ter ter"}
+  grid-template-areas:"esp maq bot pro" "esp pub cre sit" "vag rad ter ter"}
 .t-esperando{grid-area:esp}.t-maquina{grid-area:maq}.t-bots{grid-area:bot}.t-producao{grid-area:pro}
-.t-publicacao{grid-area:pub}.t-creditos{grid-area:cre}.t-sites{grid-area:sit}.t-vagas{grid-area:vag}.t-terminais{grid-area:ter}
+.t-publicacao{grid-area:pub}.t-creditos{grid-area:cre}.t-sites{grid-area:sit}.t-vagas{grid-area:vag}.t-radar{grid-area:rad}.t-terminais{grid-area:ter}
 
 .tile{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--r-tile);padding:.95rem 1.1rem;display:flex;flex-direction:column;gap:.45rem;min-height:0;overflow:hidden;cursor:pointer;text-align:left;width:100%}
 .tile:hover{border-color:var(--line2)}
@@ -184,7 +184,7 @@ input[type=password]{background:var(--card);border:1px solid var(--line2);border
   .linha .v{white-space:normal;text-align:right}
   .linha .tx{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
   .relogio{font-size:1.4rem}
-  .grade{grid-template-columns:1fr;grid-template-rows:none;grid-template-areas:"esp" "maq" "bot" "pro" "pub" "cre" "sit" "vag" "ter"}
+  .grade{grid-template-columns:1fr;grid-template-rows:none;grid-template-areas:"esp" "maq" "bot" "pro" "pub" "cre" "sit" "vag" "rad" "ter"}
   .tile{max-height:none}
   .faixa{flex-direction:column;gap:.3rem}
   .faixa .lista{max-height:none;flex-direction:column;gap:.25rem}

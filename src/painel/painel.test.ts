@@ -39,7 +39,7 @@ afterAll(() => fecharAccbot());
 describe('agregador', () => {
   it('com TODAS as fontes ausentes não quebra e não inventa alerta de fonte ausente', async () => {
     const p = await montarPainel(deps());
-    expect(Object.keys(p.grupos).sort()).toEqual(['bots', 'creditos', 'esperando', 'maquina', 'producao', 'publicacao', 'sites', 'terminais', 'vagas']);
+    expect(Object.keys(p.grupos).sort()).toEqual(['bots', 'creditos', 'esperando', 'maquina', 'producao', 'publicacao', 'radar', 'sites', 'terminais', 'vagas']);
     for (const g of Object.values(p.grupos)) { expect(g.ok).toBe(true); expect(typeof g.gerado_em).toBe('number'); }
     expect(p.grupos.bots.ausentes).toContain('inemaccbot.db');
     expect(p.grupos.producao.ausentes).toContain('rodadas.jsonl');

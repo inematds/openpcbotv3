@@ -5,7 +5,7 @@ import { PAINEL_CSS } from './estilo.js';
 import { JS_AJUDA, JS_LACO } from './script-base.js';
 import { JS_GRUPOS } from './script-grupos.js';
 
-const GRUPOS = ['esperando', 'maquina', 'bots', 'producao', 'publicacao', 'creditos', 'sites', 'vagas', 'terminais'];
+const GRUPOS = ['esperando', 'maquina', 'bots', 'producao', 'publicacao', 'creditos', 'sites', 'vagas', 'radar', 'terminais'];
 
 /** JS completo do cliente (exportado para o teste de sintaxe). */
 export const PAINEL_JS = `(function(){'use strict';\n${JS_AJUDA}\n${JS_GRUPOS}\n${JS_CHAT}\n${JS_LACO}\n})();`;

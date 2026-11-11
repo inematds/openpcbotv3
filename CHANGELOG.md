@@ -1,5 +1,12 @@
 # CHANGELOG — openpcbotv3
 
+## 3.22.10 — 2026-11-10
+
+Bloco **Radar Viral** no painel (Nei: "no painel e no sistema serão conhecidos como radar viral e vai ter um bloco no painel de controle").
+
+- Quadro novo `radar` (lugar `rad`, ao lado de Vagas): fin, saúde, direito, contábil e futebol publicando no lives24 por fila única, 1 por hora. Mostra o que saiu hoje por nicho, a fila (liberado / espera o horário / SEGURADO), a próxima rodada e os últimos envios com link. Fonte só leitura `fontes/radar.ts` (`~/projetos/radar-viral/radar.json` + `historico.jsonl` + marcadores `PUBLICAR_PENDENTE`). Também no modo Jarvis.
+- Fila "Virais com publicação marcada" virou "Radar Viral (lives24)" (timer radar-viral de hora em hora; futviral-publicar e contaviral-publicar desligados).
+
 ## 3.21.10 — 2026-11-10
 
 Conversar pelo painel e alerta de GPU explicado (Nei: "seria legal eu poder ter um chat no painel falando com o bot ou um terminal"; "olha sobre o erro no painel").

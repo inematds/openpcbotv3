@@ -117,7 +117,7 @@ export function coletarFilas(d: DepsPainel): Fila[] {
   let t: string | null = null;
   try { t = readFileSync(c.filaAventuras, 'utf8'); } catch { /* ausente */ }
   filas.push(montar('aventuras', 'Aventuras (memórias)', c.filaAventuras, 'aventuras-fila (sem timer)', t === null ? [] : itensTxt(t), t === null ? 'arquivo não encontrado' : null));
-  filas.push(montar('marcadores', 'Virais com publicação marcada', join(c.raizProjetos, '*viral/edicoes/*/PUBLICAR_PENDENTE.*'), 'futviral-publicar 12 h, contaviral-publicar 13 h', itensMarcadores(c.raizProjetos, agora)));
+  filas.push(montar('marcadores', 'Radar Viral (lives24)', join(c.raizProjetos, '*viral/edicoes/*/PUBLICAR_PENDENTE.*'), 'timer radar-viral: de hora em hora, 1 vídeo por vez (contábil ≥ 12 h, futebol ≥ 14 h)', itensMarcadores(c.raizProjetos, agora)));
   const ct = itensContinua(c.continua);
   filas.push(montar('continua', 'Esperas do continua', c.continua, 'timer continua: a cada 5 min', ct.itens, ct.problema));
   return filas;

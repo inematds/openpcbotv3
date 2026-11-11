@@ -8,6 +8,7 @@ import { coletarCreditos } from './fontes/creditos.js';
 import { coletarMaquina } from './fontes/maquina.js';
 import { coletarProducao } from './fontes/producao.js';
 import { coletarPublicacao } from './fontes/publicacao.js';
+import { coletarRadar } from './fontes/radar.js';
 import { coletarSites } from './fontes/sites.js';
 import { coletarPendencias, coletarTerminais } from './fontes/terminais.js';
 import { coletarVagas } from './fontes/vagas.js';
@@ -41,13 +42,13 @@ export function montarEsperando(g: GruposColetados, pendencias: { titulo: string
 
 export interface Painel {
   versao: string; gerado_em: number; ms: number;
-  grupos: GruposColetados & { vagas: Grupo<Awaited<ReturnType<typeof coletarVagas>>['dados']>; esperando: Grupo<{ itens: ItemEsperando[] }> };
+  grupos: GruposColetados & { vagas: Grupo<Awaited<ReturnType<typeof coletarVagas>>['dados']>; radar: Grupo<ReturnType<typeof coletarRadar>['dados']>; esperando: Grupo<{ itens: ItemEsperando[] }> };
   alertas: AlertaPainel[];
 }
 
 export async function montarPainel(d: DepsPainel): Promise<Painel> {
   const t0 = Date.now();
-  const [maquina, bots, producao, publicacao, creditos, sites, vagas, terminais] = await Promise.all([
+  const [maquina, bots, producao, publicacao, creditos, sites, vagas, terminais, radar] = await Promise.all([
     grupo(d, async () => ({ dados: await coletarMaquina(d), ausentes: [] })),
     grupo(d, () => coletarBots(d)),
     grupo(d, () => coletarProducao(d)),
@@ -56,6 +57,7 @@ export async function montarPainel(d: DepsPainel): Promise<Painel> {
     grupo(d, () => coletarSites(d)),
     grupo(d, () => coletarVagas(d)),
     grupo(d, () => coletarTerminais(d)),
+    grupo(d, () => coletarRadar(d)),
   ]);
   const g: GruposColetados = { maquina, bots, producao, publicacao, creditos, sites, terminais };
   const esperando = await grupo(d, () => {
@@ -66,7 +68,7 @@ export async function montarPainel(d: DepsPainel): Promise<Painel> {
   if (d.enviarTelegram) {
     try { avisarNovos(alertas, d.caminhos.estadoTelegram, d.enviarTelegram, d.agora()); } catch { /* nunca derruba o painel */ }
   }
-  return { versao: d.versao, gerado_em: d.agora(), ms: Date.now() - t0, grupos: { ...g, vagas, esperando }, alertas };
+  return { versao: d.versao, gerado_em: d.agora(), ms: Date.now() - t0, grupos: { ...g, vagas, radar, esperando }, alertas };
 }
 
 export { falhaCompletaV3 };

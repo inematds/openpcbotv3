@@ -154,11 +154,12 @@ function hm(t){return t?new Date(t*1000).toLocaleTimeString('pt-BR',{hour:'2-dig
 function ha(t){if(!t)return'ainda não rodou';var s=Date.now()/1000-t;if(s<0)return'agora';if(s<90)return'há 1 min';if(s<3600)return'há '+Math.round(s/60)+' min';if(s<86400)return'há '+Math.round(s/3600)+' h';return'há '+Math.round(s/86400)+' d'}
 function plural(q,um,varios){return q+' '+(q===1?um:varios)}
 function idDe(s){s=String(s);var h=0;for(var i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return'i'+h.toString(36)}
-var NOMES={maquina:'Máquina',bots:'Bots',producao:'Produção',publicacao:'Publicação',creditos:'Créditos',sites:'Sites',vagas:'Vagas',terminais:'Terminais'};
+var NOMES={maquina:'Máquina',bots:'Bots',producao:'Produção',publicacao:'Publicação',creditos:'Créditos',sites:'Sites',vagas:'Vagas',radar:'Radar Viral',terminais:'Terminais'};
 var ROT={ok:'ok',erro:'erro',aviso:'atenção',semdados:'sem dados',rodando:'rodando'};
 function estadoGrupo(nome,g,al){if(!g||!g.ok)return'semdados';var e=al.filter(function(a){return a.grupo===nome});if(e.some(function(a){return a.nivel==='erro'}))return'erro';if(e.length)return'aviso';return'ok'}
 // Uma frase curta por sistema, a partir dos dados de cada grupo.
 var FRASE={
+  radar:function(d){var l=(d.fila||[]).filter(function(i){return i.estado==='liberado'});return plural(d.hoje||0,'publicado','publicados')+' hoje no '+(d.canal||'lives24')+' · '+(d.fila||[]).length+' na fila'+(l.length?' · próximo: '+l[0].nome+' às '+hm(d.proxima):'')},
   maquina:function(d){var m=d.memoria||{},k=d.disco||{},o=d.gpu_oom||{};return n(m.disponivel_gb,0)+' GB livres · disco '+n(k.usado_pct,0)+'% · GPU sem memória 24 h: '+n(o.ultimas_24h,0)},
   bots:function(d){var v=(d.v3&&d.v3.jobs)||{},f=((d.v3&&d.v3.falhas_24h)||[]).length,s=d.servicos||{},caidos=Object.keys(s).filter(function(k){return s[k]!=='active'});
     return'v3: '+n(v.rodando,0)+' rodando, '+n(v.na_fila,0)+' na fila, '+plural(f,'falha','falhas')+' em 24 h'+(caidos.length?' · parado: '+caidos.join(', '):'')},
@@ -182,7 +183,7 @@ function contagem(){var al=D.alertas||[],er=al.filter(function(a){return a.nivel
   var sis=sistemas();return{erros:er,avisos:al.length-er,publicados:pub,ocupadas:oc,ok:sis.filter(function(s){return s.estado==='ok'||s.estado==='rodando'}).length,total:sis.length,abertos:esperando().filter(function(x){return!marcas[x.id]}).length}}
 // ---------- modos visuais (lista / ícones / gráficos) ----------
 var MODO=LS.get('jarvis.modo','lista');if(['lista','icones','graficos'].indexOf(MODO)<0)MODO='lista';
-var GLIFO={maquina:'⚙',bots:'◉',producao:'▶',publicacao:'▲',creditos:'◔',sites:'◎',vagas:'▦',terminais:'▭'};
+var GLIFO={maquina:'⚙',bots:'◉',producao:'▶',publicacao:'▲',creditos:'◔',sites:'◎',vagas:'▦',radar:'◈',terminais:'▭'};
 function dg(nome){var g=D.grupos[nome];return g&&g.ok&&g.dados?g.dados:null}
 function numero(nome){var d=dg(nome);if(!d)return['–','sem dados'];
   if(nome==='maquina')return[n(d.memoria&&d.memoria.disponivel_gb,0)+' GB','memória livre'];
@@ -192,6 +193,7 @@ function numero(nome){var d=dg(nome);if(!d)return['–','sem dados'];
   if(nome==='creditos'){var mx=0;((d.claude&&d.claude.limites)||[]).forEach(function(l){mx=Math.max(mx,l.pct||0)});if(d.codex&&d.codex.pct!=null)mx=Math.max(mx,d.codex.pct);return[n(mx,0)+'%','maior limite']}
   if(nome==='sites'){var s=d.sites||[];return[s.length?s.filter(function(x){return x.ok}).length+'/'+s.length:'…','no ar']}
   if(nome==='vagas'){var o=0,t=0;(d.classes||[]).forEach(function(c){if(c.classe==='gpu'||c.classe==='render'){o+=c.ocupadas||0;t+=c.vagas||0}});return[o+'/'+t,'gpu + render']}
+  if(nome==='radar')return[String(d.hoje||0),'radar hoje'];
   if(nome==='terminais'){var vv=d.vivos||[],ff=vv.filter(function(t){return t.origem&&t.origem.tipo==='fisica'}).length;return[ff+' · '+(vv.length-ff),'você · agentes']}return['–','']}
 function sesJ(){var td=dg('terminais')||{};return td.vivos||[]}
 function projS(t){return(t.retrato&&t.retrato.ativo)||t.projeto||'?'}
@@ -222,6 +224,7 @@ document.querySelectorAll('[data-modo]').forEach(function(b){b.addEventListener(
 marcarModo();
 // ---------- detalhe (clique em qualquer item) ----------
 var EXPLICA={
+  radar:'O Radar Viral: finanças, saúde, direito, contábil e futebol publicam no lives24 por uma fila única, 1 vídeo por hora. Contábil só sai a partir das 12 h e futebol a partir das 14 h; o que fica mais de 24 h na fila é esquecido. Segurar um vídeo: criar SEGURAR na pasta da edição.',
   maquina:'A saúde do computador (spark-922b): quanta memória sobra, quanto do disco está cheio, a carga dos processadores e quantas vezes a placa de vídeo ficou sem memória. Se a GPU fica sem memória, render e voz local falham.',
   bots:'Os robôs de atendimento: o v3 (este bot, que recebe seus pedidos no Telegram) e o inemaccbot (que executa vídeos e fluxos). Mostra o que está rodando, o que está na fila e o que falhou nas últimas 24 h.',
   producao:'As rodadas automáticas de vídeo (finviral, saudeviral, clima…): quantas rodaram hoje, se alguma travou ("presa") ou falhou, as esperas longas (HeyGen) e a agenda dos próximos timers.',
@@ -237,6 +240,9 @@ function bloco(t,linhas){return linhas?'<h4>'+esc(t)+'</h4>'+linhas:''}
 function quando(t){return t?new Date(t*1000).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+' ('+ha(t)+')':'–'}
 function emQuanto(t){if(!t)return'–';var s=t-Date.now()/1000;return hm(t)+(s>0?' (daqui a '+(s<3600?Math.round(s/60)+' min':Math.round(s/3600)+' h')+')':'')}
 var DET={
+  radar:function(d){return bloco('Nichos ('+(d.canal||'lives24')+', 1 por hora)',(d.nichos||[]).map(function(x){return lnt(x.nome+' · gera '+x.gera+' · sai ≥ '+x.a_partir,{publicado:'publicado',na_fila:'na fila',erro:'erro',nada:'ainda não'}[x.hoje]+(x.quando&&x.hoje==='publicado'?' '+hm(x.quando):''),x.hoje==='erro'?'erro':x.hoje==='na_fila'?'aviso':'')}).join(''))
+      +bloco('Fila',(d.fila||[]).map(function(i){return lnt(i.nome+' · '+i.edicao,i.estado==='liberado'?'liberado':i.estado==='espera'?'espera '+i.a_partir:'SEGURADO',i.estado==='segurado'?'aviso':'')}).join('')||lnt('fila','vazia'))
+      +bloco('Últimos',(d.historico||[]).slice(0,10).map(function(h){return lnt(h.nome+' · '+ha(h.quando),h.resultado+(h.motivo?' — '+h.motivo:''),h.resultado==='erro'?'erro':'')}).join(''))},
   maquina:function(d){var m=d.memoria||{},c=d.carga||{},k=d.disco||{},o=d.gpu_oom||{},r=(d.reinicios&&d.reinicios.em)||[];
     return bloco('Memória',lnt('livre',n(m.disponivel_gb)+' de '+n(m.total_gb)+' GB',m.disponivel_gb<10?'erro':'')+lnt('swap em uso',n(m.swap_usado_gb)+' GB'))
       +bloco('Processador',lnt('carga 1 / 5 / 15 min',n(c.m1)+' / '+n(c.m5)+' / '+n(c.m15))+lnt('núcleos',n(c.nucleos,0)))
