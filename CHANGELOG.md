@@ -1,5 +1,9 @@
 # CHANGELOG — openpcbotv3
 
+## 3.25.12 — 2026-11-11
+
+Jarvis: o ícone "Claude e Codex" mostra os dois números (Claude NN% · Codex NN%) em vez de só o maior limite (Nei: "não apareceu no painel do jarvis").
+
 ## 3.25.11 — 2026-11-11
 
 Um quadro por bot, os dois números no Claude e Codex, Radar uma vez só (Nei: "claude e codex tem ter os dois números. radar viral 1x. card do inemaccbot e do v2 e v3").

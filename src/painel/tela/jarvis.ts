@@ -204,7 +204,7 @@ function numero(nome){var d=dg(nome);if(!d)return['–','sem dados'];
   if(nome==='bots'){var j=(d.v3&&d.v3.jobs)||{};return[n(j.rodando,0)+' · '+n(j.na_fila,0),'rodando · fila']}
   if(nome==='producao')return[String((d.hoje||[]).length),'rodadas hoje'];
   if(nome==='publicacao')return[String(d.hoje||0),'vídeos hoje'];
-  if(nome==='creditos'){var mx=0;((d.claude&&d.claude.limites)||[]).forEach(function(l){mx=Math.max(mx,l.pct||0)});if(d.codex&&d.codex.pct!=null)mx=Math.max(mx,d.codex.pct);return[n(mx,0)+'%','maior limite']}
+  if(nome==='creditos'){var cl=((d.claude&&d.claude.limites)||[]).filter(function(l){return/todos/.test(l.nome)})[0];return[(cl?n(cl.pct,0):'–')+'% · '+(d.codex&&d.codex.pct!=null?n(d.codex.pct,0):'–')+'%','Claude · Codex']}
   if(nome==='sites'){var s=d.sites||[];return[s.length?s.filter(function(x){return x.ok}).length+'/'+s.length:'…','no ar']}
   if(nome==='vagas'){var o=0,t=0;(d.classes||[]).forEach(function(c){if(c.classe==='gpu'||c.classe==='render'){o+=c.ocupadas||0;t+=c.vagas||0}});return[o+'/'+t,'gpu + render']}
   if(nome==='radar')return[String(d.hoje||0),'radar hoje'];
@@ -245,7 +245,7 @@ var EXPLICA={
   bots:'Os robôs de atendimento: o v3 (este bot, que recebe seus pedidos no Telegram) e o inemaccbot (que executa vídeos e fluxos). Mostra o que está rodando, o que está na fila e o que falhou nas últimas 24 h.',
   producao:'As rodadas automáticas de vídeo (finviral, saudeviral, clima…): quantas rodaram hoje, se alguma travou ("presa") ou falhou, as esperas longas (HeyGen) e a agenda dos próximos timers.',
   publicacao:'O que foi publicado no YouTube: quantos vídeos hoje, quantos por canal na semana e os últimos, com link.',
-  creditos:'Quanto já foi usado dos limites da assinatura (Claude, Fable e Codex) e quando zera, mais os avisos manuais com prazo (ex.: renovar o login do YouTube).',
+  creditos:'Quanto já foi usado do limite da semana da assinatura: Claude (e o do Fable) e Codex, e quando zera. Os avisos de login estão em Outras APIs.',
   sites:'Os sites do ecossistema (inema.club, inema.pro…): se responderam e em quanto tempo. É checado a cada 5 min enquanto o painel está aberto.',
   vagas:'As vagas da máquina: quantos trabalhos pesados podem rodar ao mesmo tempo em cada classe (GPU, render, estúdio, Claude, Codex), quem está ocupando e quem espera. Mudar: "vagas <classe> <n>" no terminal.',
   terminais:'As sessões do Claude abertas agora (terminais) e as que foram interrompidas no meio — essas podem ter deixado trabalho pela metade.'
