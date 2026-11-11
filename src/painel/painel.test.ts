@@ -39,7 +39,7 @@ afterAll(() => fecharAccbot());
 describe('agregador', () => {
   it('com TODAS as fontes ausentes não quebra e não inventa alerta de fonte ausente', async () => {
     const p = await montarPainel(deps());
-    expect(Object.keys(p.grupos).sort()).toEqual(['bots', 'creditos', 'esperando', 'maquina', 'producao', 'publicacao', 'radar', 'sites', 'terminais', 'vagas']);
+    expect(Object.keys(p.grupos).sort()).toEqual(['apis', 'bots', 'creditos', 'esperando', 'maquina', 'producao', 'publicacao', 'radar', 'sites', 'terminais', 'vagas', 'vps']);
     for (const g of Object.values(p.grupos)) { expect(g.ok).toBe(true); expect(typeof g.gerado_em).toBe('number'); }
     expect(p.grupos.bots.ausentes).toContain('inemaccbot.db');
     expect(p.grupos.producao.ausentes).toContain('rodadas.jsonl');
@@ -111,6 +111,8 @@ function gruposBase(): GruposColetados {
     creditos: g({ claude: { limites: [{ nome: 'Semana (todos)', pct: 50, reset_em: null }] }, codex: null, custo_hoje: [], avisos: [] }),
     sites: g({ sites: [{ url: 'https://inema.club', ok: true }] }),
     terminais: g({ vivos: [], interrompidos: [] }),
+    vps: g({ vps: [], medindo: false }),
+    apis: g({ hoje: [], semana: [], apis: [], avisos: [] }),
   };
 }
 
@@ -129,7 +131,7 @@ describe('regras de alerta', () => {
     g.publicacao.dados.filas = [{ nome: 'r7ex', erros_recentes: [{ id: 'z', nome: 'Z', erro: 'e' }] }];
     g.sites.dados.sites = [{ url: 'https://inema.vip', ok: false, erro: 'HTTP 502' }];
     g.creditos.dados.claude = { limites: [{ nome: 'Semana (todos)', pct: 85 }] };
-    g.creditos.dados.avisos = lerAvisos([{ titulo: 'OAuth YouTube: conferir', ate: '2026-11-11' }], AGORA);
+    g.apis.dados.avisos = lerAvisos([{ titulo: 'OAuth YouTube: conferir', ate: '2026-11-11' }], AGORA);
     g.terminais.dados.interrompidos = [{ session_id: 's1', projeto: 'wifi' }];
     const chaves = avaliarAlertas(g as unknown as GruposColetados, AGORA).map((a) => a.chave).sort();
     expect(chaves).toEqual([

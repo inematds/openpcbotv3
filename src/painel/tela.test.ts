@@ -30,6 +30,10 @@ const DADOS: Record<string, unknown> = {
   sites: { desligado: false, checando: false, sites: [{ url: 'https://inema.vip', ok: false, status: 502, ms: null, erro: 'HTTP 502' }, { url: 'https://inema.club', ok: true, status: 200, ms: 100 }], checado_em: T },
   vagas: { classes: [{ classe: 'gpu', vagas: 2, teto: 2, ocupadas: 1, dono: 'r7ex', esperando: 1 }], pode_mudar: true, motivo_so_leitura: null, dica: 'vagas <classe> <n>', internas: { openpcbotv3: { chat: 2 }, inemaccbot: null } },
   terminais: { vivos: [{ session_id: 'abc', projeto: 'wifi', cwd: '/x', tipo: 'interativo', inicio: T - 600, tty: 'pts/1' }], interrompidos: [{ session_id: 'def', projeto: 'r7ex', cwd: '/y' }], miniatura: null },
+  vps: { medindo: false, vps: [{ id: 'vps1', nome: 'a<b>', ip: '1.1.1.1', local: 'x', plano: 'p', papel: ['web <i>'], medida: { ok: true, erro: null, disco_pct: 91, disco: '9G/38G', ram_mb: 1400, ram_total_mb: 3800, carga: 0.3, cpus: 2, uptime: '3 weeks', containers: 4, medido_em: T } },
+    { id: 'vps2', nome: 'b', ip: '2.2.2.2', local: '', plano: '', papel: [], medida: { ok: false, erro: 'Permission denied', disco_pct: null, disco: null, ram_mb: null, ram_total_mb: null, carga: null, cpus: null, uptime: null, containers: null, medido_em: T } },
+    { id: 'vps3', nome: 'c', ip: '3.3.3.3', local: '', plano: '', papel: [], medida: null }] },
+  apis: { hoje: [{ provedor: 'openrouter<x>', chamadas: 2, usd: 0.1 }], semana: [], apis: [{ nome: 'GitHub', para: 'repos', situacao: 'liberada', nota: null }], avisos: [{ titulo: 'OAuth', ate: '2026-11-11', nivel: 'aviso', vencido: false, dias: 2 }] },
   esperando: { itens: [{ tipo: 'falha', nivel: 'erro', grupo: 'bots', texto: 'v3 #5 falhou' }, { tipo: 'pendencia', nivel: 'info', grupo: 'esperando', texto: 'P' }] },
 };
 

@@ -30,6 +30,9 @@ export interface Caminhos {
   inemaccbotDb: string;
   inemaccbotFilas: string;
   estadoTelegram: string;
+  vpsInventario: string;
+  sshDir: string;
+  apisLista: string;
 }
 
 export function caminhosPadrao(home = homedir(), raizBot = process.cwd()): Caminhos {
@@ -59,6 +62,9 @@ export function caminhosPadrao(home = homedir(), raizBot = process.cwd()): Camin
     inemaccbotDb: h('projetos/inemaccbot/inemaccbot.db'),
     inemaccbotFilas: h('projetos/inemaccbot/src/fila/filas.ts'),
     estadoTelegram: resolve(raizBot, 'store/painel-avisados.json'),
+    vpsInventario: h('projetos/ccdashboard/telemetria/painel/vps.json'),
+    sshDir: h('.ssh'),
+    apisLista: h('.config/inema/painel-apis.json'),
   };
 }
 
@@ -100,7 +106,7 @@ export function depsPadrao(p: Partial<DepsPainel> & { versao: string; concorrenc
   };
 }
 
-export type NomeGrupo = 'maquina' | 'bots' | 'producao' | 'publicacao' | 'creditos' | 'sites' | 'vagas' | 'radar' | 'terminais' | 'esperando';
+export type NomeGrupo = 'maquina' | 'bots' | 'producao' | 'publicacao' | 'creditos' | 'sites' | 'vagas' | 'radar' | 'terminais' | 'esperando' | 'vps' | 'apis';
 
 export interface Grupo<T = Record<string, unknown>> {
   ok: boolean;

@@ -13,6 +13,8 @@ import type { coletarPublicacao } from './fontes/publicacao.js';
 import type { coletarCreditos } from './fontes/creditos.js';
 import type { coletarSites } from './fontes/sites.js';
 import type { coletarTerminais } from './fontes/terminais.js';
+import type { coletarVps } from './fontes/vps.js';
+import type { coletarApis } from './fontes/apis.js';
 
 type D<F extends (...a: never[]) => unknown> = Awaited<ReturnType<F>> extends { dados: infer X } ? X : never;
 export interface GruposColetados {
@@ -23,6 +25,8 @@ export interface GruposColetados {
   creditos: Grupo<D<typeof coletarCreditos>>;
   sites: Grupo<D<typeof coletarSites>>;
   terminais: Grupo<D<typeof coletarTerminais>>;
+  vps: Grupo<D<typeof coletarVps>>;
+  apis: Grupo<D<typeof coletarApis>>;
 }
 
 export const LIMITES = { discoPct: 90, memoriaGb: 10, reinicioH: 6, limitePct: 80 };
@@ -81,12 +85,20 @@ export const REGRAS: Regra[] = [
     if (c?.codex && c.codex.pct > LIMITES.limitePct) out.push({ chave: 'limite-codex:semana', nivel: 'aviso', texto: `Codex: ${c.codex.pct}% do limite usado` });
     return out;
   } },
-  { id: 'aviso-manual', grupo: 'creditos', avaliar: (g) => (g.creditos.dados?.avisos ?? [])
+  { id: 'aviso-manual', grupo: 'apis', avaliar: (g) => (g.apis.dados?.avisos ?? [])
     .filter((a) => a.vencido || a.nivel === 'erro' || (a.dias !== null && a.dias <= 2))
     .map((a) => {
       const ate = a.ate && /^\d{4}-\d{2}-\d{2}/.test(a.ate) ? a.ate.slice(8, 10) + '/' + a.ate.slice(5, 7) : a.ate;
       return { chave: `manual:${a.titulo}`, nivel: a.nivel === 'erro' || a.vencido ? 'erro' as const : 'aviso' as const, texto: a.vencido ? `${a.titulo}: prazo passou (${ate})` : `${a.titulo}${ate ? ` até ${ate}` : ''}` };
     }) },
+  // VPS sem resposta no SSH ou com disco quase cheio (Nei, 10/11: "quero card das 6 vps").
+  { id: 'vps', grupo: 'vps', avaliar: (g) => (g.vps.dados?.vps ?? []).flatMap((v) => {
+    const m = v.medida;
+    if (!m) return [];
+    if (!m.ok) return [{ chave: `vps-fora:${v.id}`, nivel: 'aviso' as const, texto: `${v.id.toUpperCase()} (${v.nome}) não respondeu: ${m.erro ?? 'sem resposta'}` }];
+    if (m.disco_pct !== null && m.disco_pct >= LIMITES.discoPct) return [{ chave: `vps-disco:${v.id}`, nivel: m.disco_pct >= 95 ? 'erro' as const : 'aviso' as const, texto: `${v.id.toUpperCase()} (${v.nome}) com disco em ${m.disco_pct}%` }];
+    return [];
+  }) },
   { id: 'terminal-interrompido', grupo: 'terminais', avaliar: (g) => (g.terminais.dados?.interrompidos ?? [])
     .map((t) => ({ chave: `terminal-interrompido:${t.session_id}`, nivel: 'aviso' as const, texto: `Terminal interrompido em ${t.projeto}` })) },
 ];

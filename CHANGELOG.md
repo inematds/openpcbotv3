@@ -1,5 +1,14 @@
 # CHANGELOG — openpcbotv3
 
+## 3.24.11 — 2026-11-10
+
+Quadros VPS, Claude e Codex, Outras APIs (Nei: "quero card das 6 vps, o card o codex e o claude, e outro card com outras apis").
+- Quadro **VPS** (`fontes/vps.ts`): as 6 do vps.json da telemetria, com disco, memória, carga, containers e tempo no ar por SSH só de leitura, de 10 em 10 min em segundo plano, tentando as chaves padrão, `_inema` e `_vps` (a telemetria só usa a padrão e não entrava em 3). Alerta quando uma não responde ou passa de 90% de disco. Mostra em duas colunas no cartão.
+- "Créditos e logins" vira **Claude e Codex**: só os limites da assinatura e quando voltam a zero.
+- Quadro **Outras APIs** (`fontes/apis.ts`): uso do bot v3 por provedor (hoje e 7 dias), a lista do que está liberado/só leitura/pedir antes (`~/.config/inema/painel-apis.json`, espelho do CLAUDE.md) e os avisos de login. Não consulta saldo de serviço externo (seria chamar API).
+- Grade com 4 linhas: VPS e Outras APIs entram, Terminais fica com a linha de baixo inteira. Também no Jarvis (lista, ícones, fala).
+- Correção: o limite do Codex sumia quando a sessão mais nova ainda não tinha a medida; agora procura nas anteriores (até 3 dias).
+
 ## 3.23.11 — 2026-11-10
 
 Jarvis primeiro, voz feminina e conversa com o bot (Nei: "sim cai no jarvis primeiro"; "pode ser uma mulher, q saiba falar português correto e termos em inglês"; "o chat q pedi para trocar ideia com o jarvis sobre qq coisa do painel").

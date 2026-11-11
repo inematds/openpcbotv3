@@ -20,7 +20,7 @@ import { JARVIS_HTML } from './tela/jarvis.js';
 import { PAINEL_HTML } from './tela/pagina.js';
 import type { DepsPainel } from './tipos.js';
 
-const GRUPOS = new Set(['maquina', 'bots', 'producao', 'publicacao', 'creditos', 'sites', 'vagas', 'radar', 'terminais', 'esperando']);
+const GRUPOS = new Set(['maquina', 'bots', 'producao', 'publicacao', 'creditos', 'sites', 'vagas', 'radar', 'terminais', 'esperando', 'vps', 'apis']);
 
 function json(res: ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });

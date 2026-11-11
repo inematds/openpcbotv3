@@ -87,13 +87,39 @@ G.creditos={tile:function(d){var l=d.claude.limites,sem7=l.filter(function(x){re
   var h=l.map(function(x){return'<div class="linha"><span class="k">'+esc(x.nome)+'</span>'+barra(x.pct,80)+'<span class="v">'+x.pct+'%</span></div>'}).join('');
   if(d.codex)h+='<div class="linha"><span class="k">Codex</span>'+barra(d.codex.pct,80)+'<span class="v">'+d.codex.pct+'%</span></div>';
   if(d.claude.idade_s!=null)h+=linha('Medida do Claude','há '+dur(d.claude.idade_s),d.claude.idade_s>6*3600?'s-aviso':'');
-  var tot=d.custo_hoje.reduce(function(s,x){return s+x.usd},0);h+=linha('Custo do v3 hoje',usd(tot));
-  d.avisos.forEach(function(a){h+=linhaTx(simb(a.vencido||a.nivel==='erro'?'erro':a.nivel==='info'?'info':'aviso')+' '+esc(a.titulo),a.ate?('até '+esc(a.ate.split('-').reverse().slice(0,2).join('/'))):'')});
+  if(d.codex&&d.codex.reset_em)h+=linha('Codex volta a zero',quando(d.codex.reset_em));
+  var r7=l.filter(function(x){return/todos/.test(x.nome)})[0];if(r7&&r7.reset_em)h+=linha('Claude volta a zero',quando(r7.reset_em));
   return{frase:fr,corpo:h}},
  detalhe:function(d){return sec('Claude',tabela(['Limite','Usado','Volta a zero'],d.claude.limites.map(function(x){return[esc(x.nome),x.pct+'%',quando(x.reset_em)]}))+'<p class="nota">Medida gravada pela statusline '+(d.claude.idade_s!=null?'há '+dur(d.claude.idade_s):'(sem arquivo)')+'.</p>')
   +sec('Codex',d.codex?tabela(['Medida','Valor'],[['Usado',d.codex.pct+'%'+(d.codex.janela_h?' da janela de '+d.codex.janela_h+' h':'')],['Volta a zero',quando(d.codex.reset_em)],['Plano',esc(d.codex.plano||'–')],['Registro lido','há '+dur(d.codex.idade_s)]]):'<p class="sem">sem dados</p>')
-  +sec('Custo do v3 hoje por provedor',tabela(['Provedor','Chamadas','Custo'],d.custo_hoje.map(function(x){return[esc(x.provedor),x.chamadas,usd(x.usd)]})))
-  +sec('Avisos manuais',tabela(['Aviso','Prazo','Faltam'],d.avisos.map(function(a){return[esc(a.titulo),esc(a.ate||'–'),a.vencido?'<span class="s-erro">✕ passou</span>':a.dias!=null?plural(a.dias,'dia','dias'):'–']}))+'<p class="nota">Edite em ~/.config/inema/painel-avisos.json (lista de {titulo, ate, nivel}).</p>')}};
+  +'<p class="nota">Uso pela assinatura (nunca API). O uso por provedor e os avisos de login estão no quadro Outras APIs.</p>'}};
+
+// VPS (10/11/2026): as 6 máquinas, disco/memória/carga por SSH só leitura (fontes/vps.ts).
+function vpsNome(x){return x.id.toUpperCase()+' '+x.nome}
+G.vps={tile:function(d){var v=d.vps||[],ok=v.filter(function(x){return x.medida&&x.medida.ok}).length,med=v.some(function(x){return x.medida});
+  var fr=!v.length?'<p class="frase vazia">sem inventário</p>':!med?'<p class="frase vazia">medindo…</p>':'<p class="frase">'+ok+' de '+v.length+' respondendo</p>';
+  var h=v.map(function(x){var m=x.medida;if(!m)return linha(esc(vpsNome(x)),'medindo…');
+    if(!m.ok)return linhaTx(simb('erro')+' '+esc(vpsNome(x)),'sem resposta','s-erro');
+    return'<div class="linha"><span class="k" title="'+esc((x.papel||[]).join(' · '))+'">'+esc(vpsNome(x))+'</span>'+barra(m.disco_pct||0,90)+'<span class="v">'+(m.disco_pct!=null?m.disco_pct+'%':'?')+'</span></div>'}).join('');
+  return{frase:fr,corpo:h||'<div class="sem">nenhuma VPS no inventário</div>'}},
+ detalhe:function(d){var gb=function(mb){return mb==null?'–':(mb/1024).toFixed(1)};
+  return sec('As VPS',tabela(['VPS','Onde','Disco','Memória (GB)','Carga','Containers','No ar há','O que roda'],(d.vps||[]).map(function(x){var m=x.medida||{},ok=x.medida&&m.ok;
+    return[esc(vpsNome(x)),esc(x.local||'–'),ok?esc(m.disco||'')+' ('+m.disco_pct+'%)':(x.medida?'<span class="s-erro">'+esc(m.erro||'sem resposta')+'</span>':'medindo…'),
+      ok?gb(m.ram_mb)+' / '+gb(m.ram_total_mb):'–',ok&&m.carga!=null?m.carga+(m.cpus?' em '+m.cpus+' CPU':''):'–',ok&&m.containers!=null?m.containers:'–',ok?esc(m.uptime||'–'):'–',esc((x.papel||[]).join(' · '))]})),true)
+    +'<p class="nota">Leitura por SSH só de consulta (df, free, carga, docker ps) a cada 10 min, tentando as chaves padrão, _inema e _vps. Inventário: vps.json da telemetria; detalhes e acessos em wifi/VPS.md.</p>'}};
+
+// Outras APIs (10/11/2026): uso medido pelo v3 + o que está liberado (painel-apis.json) + avisos de login.
+var SIT={'liberada':'ok','só leitura':'info','pedir antes':'aviso','desligada':'erro'};
+G.apis={tile:function(d){var hj=d.hoje||[],ch=hj.reduce(function(s,x){return s+x.chamadas},0),tot=hj.reduce(function(s,x){return s+x.usd},0);
+  var fr='<p class="frase">'+plural(ch,'chamada','chamadas')+' hoje · '+usd(tot)+'</p>';
+  var h=hj.slice(0,4).map(function(x){return linha(esc(x.provedor),x.chamadas+' · '+usd(x.usd))}).join('');
+  var lib=(d.apis||[]).filter(function(a){return a.situacao==='liberada'}).length;if((d.apis||[]).length)h+=linha('Liberadas',lib+' de '+d.apis.length);
+  (d.avisos||[]).forEach(function(a){h+=linhaTx(simb(a.vencido||a.nivel==='erro'?'erro':a.nivel==='info'?'info':'aviso')+' '+esc(a.titulo),a.ate?('até '+esc(a.ate.split('-').reverse().slice(0,2).join('/'))):'')});
+  return{frase:fr,corpo:h||'<div class="sem">nada medido hoje</div>'}},
+ detalhe:function(d){var lin=function(l){return l.map(function(x){return[esc(x.provedor),x.chamadas,usd(x.usd)]})};
+  return sec('Uso hoje (bot v3)',tabela(['Provedor','Chamadas','Custo'],lin(d.hoje||[])))+sec('Uso em 7 dias (bot v3)',tabela(['Provedor','Chamadas','Custo'],lin(d.semana||[])))
+  +sec('O que está liberado',tabela(['API','Para quê','Situação','Nota'],(d.apis||[]).map(function(a){return[esc(a.nome),esc(a.para),simb(SIT[a.situacao]||'info')+' '+esc(a.situacao),esc(a.nota||'')]}))+'<p class="nota">Espelha a regra do CLAUDE.md: API fora de "liberada" só com o seu OK. Edite em ~/.config/inema/painel-apis.json.</p>',true)
+  +sec('Avisos de login e prazos',tabela(['Aviso','Prazo','Faltam'],(d.avisos||[]).map(function(a){return[esc(a.titulo),esc(a.ate||'–'),a.vencido?'<span class="s-erro">✕ passou</span>':a.dias!=null?plural(a.dias,'dia','dias'):'–']}))+'<p class="nota">Edite em ~/.config/inema/painel-avisos.json (lista de {titulo, ate, nivel}).</p>')+'<p class="nota">Só o que o bot v3 registra. Saldo de serviço externo (HeyGen, Magnific, Kling) não é consultado: isso exigiria chamar a API.</p>'}};
 
 G.sites={tile:function(d){if(d.desligado)return{frase:'<p class="frase vazia">checagem desligada</p>',corpo:'<div class="sem">PAINEL_SITES=0</div>'};
   if(d.checando)return{frase:'<p class="frase vazia">checando os sites…</p>',corpo:''};

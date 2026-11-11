@@ -51,23 +51,27 @@ export function extrairRateLimits(texto: string): Record<string, unknown> | null
   return null;
 }
 
+/** Últimos .jsonl de sessão do Codex (ano/mês/dia), do mais novo para o mais velho, olhando até 3 dias. */
+function sessoesCodex(raiz: string, max = 12): string[] {
+  const dias: string[] = [];
+  const subs = (p: string) => { try { return readdirSync(p, { withFileTypes: true }).filter((e) => e.isDirectory() && /^\d+$/.test(e.name)).map((e) => join(p, e.name)).sort().reverse(); } catch { return []; } };
+  for (const a of subs(raiz)) for (const m of subs(a)) for (const d of subs(m)) { dias.push(d); if (dias.length >= 3) break; }
+  const out: { f: string; m: number }[] = [];
+  for (const d of dias.slice(0, 3)) {
+    try { for (const f of readdirSync(d)) if (f.endsWith('.jsonl')) out.push({ f: join(d, f), m: statSync(join(d, f)).mtimeMs }); } catch { /* sem pasta */ }
+  }
+  return out.sort((a, b) => b.m - a.m).slice(0, max).map((x) => x.f);
+}
+
 export function lerCodex(raiz: string, agora: number): { pct: number; reset_em: number | null; janela_h: number | null; plano: string | null; idade_s: number | null } | null {
-  let dir: string | null = raiz;
-  for (let n = 0; n < 3 && dir; n++) dir = ultimoDir(dir);
-  if (!dir) return null;
-  let arq: string | null = null, mt = 0;
-  try {
-    for (const f of readdirSync(dir)) {
-      if (!f.endsWith('.jsonl')) continue;
-      const m = statSync(join(dir, f)).mtimeMs;
-      if (m > mt) { mt = m; arq = join(dir, f); }
-    }
-  } catch { return null; }
-  if (!arq) return null;
-  const rl = extrairRateLimits(lerFim(arq, 96 * 1024) ?? '');
-  const pri = rl?.primary as { used_percent?: number; resets_at?: number; window_minutes?: number } | undefined;
-  if (!pri || typeof pri.used_percent !== 'number') return null;
-  return { pct: Math.round(pri.used_percent), reset_em: paraEpoch(pri.resets_at), janela_h: pri.window_minutes ? Math.round(pri.window_minutes / 60) : null, plano: typeof rl?.plan_type === 'string' ? rl.plan_type : null, idade_s: idadeArquivo(arq, agora) };
+  // Sessão recém-aberta ainda não tem "rate_limits": segue para a anterior (10/11: o quadro perdia o Codex à toa).
+  for (const arq of sessoesCodex(raiz)) {
+    const rl = extrairRateLimits(lerFim(arq, 96 * 1024) ?? '');
+    const pri = rl?.primary as { used_percent?: number; resets_at?: number; window_minutes?: number } | undefined;
+    if (!pri || typeof pri.used_percent !== 'number') continue;
+    return { pct: Math.round(pri.used_percent), reset_em: paraEpoch(pri.resets_at), janela_h: pri.window_minutes ? Math.round(pri.window_minutes / 60) : null, plano: typeof rl?.plan_type === 'string' ? rl.plan_type : null, idade_s: idadeArquivo(arq, agora) };
+  }
+  return null;
 }
 
 export interface AvisoManual { titulo: string; ate: string | null; nivel: 'erro' | 'aviso' | 'info'; vencido: boolean; dias: number | null }

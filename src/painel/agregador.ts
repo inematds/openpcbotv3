@@ -9,6 +9,8 @@ import { coletarMaquina } from './fontes/maquina.js';
 import { coletarProducao } from './fontes/producao.js';
 import { coletarPublicacao } from './fontes/publicacao.js';
 import { coletarRadar } from './fontes/radar.js';
+import { coletarVps } from './fontes/vps.js';
+import { coletarApis } from './fontes/apis.js';
 import { coletarSites } from './fontes/sites.js';
 import { coletarPendencias, coletarTerminais } from './fontes/terminais.js';
 import { coletarVagas } from './fontes/vagas.js';
@@ -48,7 +50,7 @@ export interface Painel {
 
 export async function montarPainel(d: DepsPainel): Promise<Painel> {
   const t0 = Date.now();
-  const [maquina, bots, producao, publicacao, creditos, sites, vagas, terminais, radar] = await Promise.all([
+  const [maquina, bots, producao, publicacao, creditos, sites, vagas, terminais, radar, vps, apis] = await Promise.all([
     grupo(d, async () => ({ dados: await coletarMaquina(d), ausentes: [] })),
     grupo(d, () => coletarBots(d)),
     grupo(d, () => coletarProducao(d)),
@@ -58,8 +60,10 @@ export async function montarPainel(d: DepsPainel): Promise<Painel> {
     grupo(d, () => coletarVagas(d)),
     grupo(d, () => coletarTerminais(d)),
     grupo(d, () => coletarRadar(d)),
+    grupo(d, () => coletarVps(d)),
+    grupo(d, () => coletarApis(d)),
   ]);
-  const g: GruposColetados = { maquina, bots, producao, publicacao, creditos, sites, terminais };
+  const g: GruposColetados = { maquina, bots, producao, publicacao, creditos, sites, terminais, vps, apis };
   const esperando = await grupo(d, () => {
     const pend = coletarPendencias(d);
     return { dados: { itens: montarEsperando(g, pend, bots.dados?.inemaccbot?.aguardando_ok ?? []) }, ausentes: pend === null ? ['pendencias.md'] : [] };
