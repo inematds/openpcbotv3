@@ -15,12 +15,14 @@ import { falhaCompletaAccbot, falhaCompletaV3 } from './fontes/bots.js';
 import { acharTranscript, lerConversa, SID } from './fontes/sessoes.js';
 import { enviarAoPane, paneDoId, telaDoPane } from './fontes/assumir.js';
 import { lerFim } from './util.js';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { mudarVagas } from './fontes/vagas.js';
 import { JARVIS_HTML } from './tela/jarvis.js';
 import { PAINEL_HTML } from './tela/pagina.js';
 import type { DepsPainel } from './tipos.js';
 
-const GRUPOS = new Set(['maquina', 'bots', 'producao', 'publicacao', 'creditos', 'sites', 'vagas', 'radar', 'escada', 'terminais', 'esperando', 'vps', 'apis', 'v3', 'inemaccbot', 'v2']);
+const GRUPOS = new Set(['maquina', 'bots', 'producao', 'publicacao', 'creditos', 'sites', 'vagas', 'radar', 'escada', 'tendencias', 'terminais', 'esperando', 'vps', 'apis', 'v3', 'inemaccbot', 'v2']);
 
 function json(res: ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
@@ -44,6 +46,19 @@ export async function enviarComId(d: DepsPainel, bruto: string, quem: string) {
   return enviarAoPane(d, pane, bruto, quem, id);
 }
 
+// Painel do youtube-bombando (Tendências de rede): arquivos estáticos de ~/projetos/youtube-bombando/painel,
+// só index.html, dados.json e historico/AAAA-MM-DD.html (nome validado: nada de '..' nem caminho livre).
+const ARQ_BOMBANDO = /^(?:index\.html|dados\.json|historico\/\d{4}-\d{2}-\d{2}\.html)$/;
+export function servirBombando(res: ServerResponse, p: string, dir: string): void {
+  if (p === '/bombando') { res.writeHead(302, { Location: '/bombando/' }); res.end(); return; }
+  const nome = p.slice('/bombando/'.length) || 'index.html';
+  if (!ARQ_BOMBANDO.test(nome)) { json(res, 404, { erro: 'arquivo' }); return; }
+  let corpo: Buffer;
+  try { corpo = readFileSync(join(dir, nome)); } catch { json(res, 404, { erro: 'painel do youtube-bombando ainda não gerado' }); return; }
+  res.writeHead(200, { 'Content-Type': nome.endsWith('.json') ? 'application/json; charset=utf-8' : 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+  res.end(corpo);
+}
+
 /** Painel inteiro com cache de 5 s (várias telas abertas dividem a mesma coleta). */
 export function painelEmCache(d: DepsPainel): Promise<Painel> {
   return d.cache.obter('painel', 5000, () => montarPainel(d));
@@ -55,6 +70,10 @@ export async function tratarPainel(req: IncomingMessage, res: ServerResponse, ur
   if (p === '/painel' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
     res.end(PAINEL_HTML);
+    return true;
+  }
+  if ((p === '/bombando' || p.startsWith('/bombando/')) && req.method === 'GET') {
+    servirBombando(res, p, d.caminhos.bombando);
     return true;
   }
   if (p === '/jarvis' && req.method === 'GET') {

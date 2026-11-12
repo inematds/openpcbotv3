@@ -9,6 +9,7 @@ import { coletarMaquina } from './fontes/maquina.js';
 import { coletarProducao } from './fontes/producao.js';
 import { coletarPublicacao } from './fontes/publicacao.js';
 import { coletarEscada } from './fontes/escada.js';
+import { coletarTendencias } from './fontes/tendencias.js';
 import { coletarRadar } from './fontes/radar.js';
 import { coletarVps } from './fontes/vps.js';
 import { coletarApis } from './fontes/apis.js';
@@ -45,13 +46,13 @@ export function montarEsperando(g: GruposColetados, pendencias: { titulo: string
 
 export interface Painel {
   versao: string; gerado_em: number; ms: number;
-  grupos: GruposColetados & { vagas: Grupo<Awaited<ReturnType<typeof coletarVagas>>['dados']>; radar: Grupo<ReturnType<typeof coletarRadar>['dados']>; escada: Grupo<ReturnType<typeof coletarEscada>['dados']>; esperando: Grupo<{ itens: ItemEsperando[] }>; v3: Grupo<unknown>; inemaccbot: Grupo<unknown>; v2: Grupo<unknown> };
+  grupos: GruposColetados & { vagas: Grupo<Awaited<ReturnType<typeof coletarVagas>>['dados']>; radar: Grupo<ReturnType<typeof coletarRadar>['dados']>; escada: Grupo<ReturnType<typeof coletarEscada>['dados']>; tendencias: Grupo<ReturnType<typeof coletarTendencias>['dados']>; esperando: Grupo<{ itens: ItemEsperando[] }>; v3: Grupo<unknown>; inemaccbot: Grupo<unknown>; v2: Grupo<unknown> };
   alertas: AlertaPainel[];
 }
 
 export async function montarPainel(d: DepsPainel): Promise<Painel> {
   const t0 = Date.now();
-  const [maquina, bots, producao, publicacao, creditos, sites, vagas, terminais, radar, vps, apis, escada] = await Promise.all([
+  const [maquina, bots, producao, publicacao, creditos, sites, vagas, terminais, radar, vps, apis, escada, tendencias] = await Promise.all([
     grupo(d, async () => ({ dados: await coletarMaquina(d), ausentes: [] })),
     grupo(d, () => coletarBots(d)),
     grupo(d, () => coletarProducao(d)),
@@ -64,6 +65,7 @@ export async function montarPainel(d: DepsPainel): Promise<Painel> {
     grupo(d, () => coletarVps(d)),
     grupo(d, () => coletarApis(d)),
     grupo(d, () => coletarEscada(d)),
+    grupo(d, () => coletarTendencias(d)),
   ]);
   const g: GruposColetados = { maquina, bots, producao, publicacao, creditos, sites, terminais, vps, apis };
   const esperando = await grupo(d, () => {
@@ -79,7 +81,7 @@ export async function montarPainel(d: DepsPainel): Promise<Painel> {
   const v3 = fatia((b) => ({ servico: b.servicos.openpcbotv3 ?? 'desconhecido', bot: b.v3 }));
   const inemaccbot = fatia((b) => ({ servico: b.servicos.inemaccbot ?? 'desconhecido', bot: b.inemaccbot }));
   const v2 = fatia((b) => ({ servico: b.servicos.openpcbot ?? 'desconhecido', bot: b.v2 }));
-  return { versao: d.versao, gerado_em: d.agora(), ms: Date.now() - t0, grupos: { ...g, vagas, radar, escada, esperando, v3, inemaccbot, v2 }, alertas };
+  return { versao: d.versao, gerado_em: d.agora(), ms: Date.now() - t0, grupos: { ...g, vagas, radar, escada, tendencias, esperando, v3, inemaccbot, v2 }, alertas };
 }
 
 export { falhaCompletaV3 };

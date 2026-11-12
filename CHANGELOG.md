@@ -1,5 +1,9 @@
 # CHANGELOG — openpcbotv3
 
+## 3.29.14 — 2026-11-12
+
+Quadro **Tendências de rede** (`fontes/tendencias.ts`): resumo do youtube-bombando (monitor diário 07:15 dos vídeos/assuntos que mais crescem no YouTube), lido de `~/projetos/youtube-bombando/painel/dados.json` (`BOMBANDO_DIR` troca). Cartão com nº de vídeos, assuntos em alta, os 3 primeiros "mais quentes" e o link; detalhe com conclusão do "Por que bombou?", assuntos e o mais quente de cada nicho. O painel completo do youtube-bombando passa a abrir dentro do ccc em **`/bombando/`** (mesmo login; só `index.html`, `dados.json` e `historico/AAAA-MM-DD.html`, nome validado por regex). Também no Jarvis (↗). Grade: linha de baixo vira Terminais (3) + Tendências + Minha escada. Teste `painel/tendencias.test.ts`.
+
 ## 3.28.14 — 2026-11-12
 
 Regra do agente (`orquestrador/agente-cli.ts`): o avatar do Nei sai SEMPRE pelo estúdio HeyGen, sem pedir confirmação; vídeo explicativo/de projeto = explicavideos v2 com avatar; a skill `video-explicativo` (sem avatar) só se o Nei pedir pelo nome. A regra antiga ("nunca gere mídia paga (HeyGen, render) sem confirmação") fez o job do niveis-autonomia (12/11) sair sem avatar. Criar pela API do HeyGen e mídia paga por API continuam pedindo confirmação.

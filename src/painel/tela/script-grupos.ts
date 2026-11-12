@@ -74,6 +74,20 @@ G.radar={tile:function(d){var fi=d.fila||[],lib=fi.filter(function(i){return i.e
   return sec('Nichos e horários — canal '+esc(d.canal)+' (1 vídeo por hora)',tabela(['Nicho','Projeto','Gera às','Publica a partir de','Hoje'],(d.nichos||[]).map(function(x){return[esc(x.nome),esc(x.projeto),esc(x.gera),esc(x.a_partir),EST[x.hoje]+(x.url?' · <a href="'+esc(x.url)+'" target="_blank" rel="noopener">vídeo</a>':'')]})),1)
   +sec('Fila (sai o mais antigo liberado, 1 por hora)',tabela(['Nicho','Edição','Pronto desde','Estado'],(d.fila||[]).map(function(i){return[esc(i.nome),esc(i.edicao)+(i.video!=='video'?' <span class="fraco">'+esc(i.video)+'</span>':''),quando(i.desde),FE[i.estado]+(i.estado==='espera'?' ('+esc(i.a_partir)+')':'')]})))
   +sec('Últimos envios',tabela(['Quando','Nicho','Resultado'],(d.historico||[]).map(function(h){return[quando(h.quando),esc(h.nome)+' <span class="fraco">'+esc(h.edicao)+'</span>',(h.url?'<a href="'+esc(h.url)+'" target="_blank" rel="noopener">'+esc(h.resultado)+'</a>':esc(h.resultado))+(h.motivo?' <span class="mut">'+esc(h.motivo)+'</span>':'')]})))}};
+// Tendências de rede (Nei, 12/11): resumo do youtube-bombando (1x por dia, 07:15); painel completo em /bombando/.
+function tndNum(v){return v==null?'–':v>=1e6?n(v/1e6)+' mi':v>=1e3?n(v/1e3,0)+' mil':n(v,0)}
+G.tendencias={tile:function(d,g){var ln='<a href="'+esc(d.link||'/bombando/')+'" target="_blank" rel="noopener">abrir painel ↗</a>';
+  if(g.ausentes&&g.ausentes.length||!d.videos)return{frase:'<p class="frase vazia">sem coleta ainda</p>',corpo:'<div class="sem">o youtube-bombando roda 1x por dia às 07:15</div>'+linhaTx(ln,'')};
+  var fr='<p class="frase">'+plural(d.videos,'vídeo','vídeos')+' no YouTube</p>';
+  var c=linhaTx('<b>'+ln+'</b>',quando(d.gerado_em),'mut');
+  c+=linhaTx('<b>Em alta:</b> '+esc((d.assuntos||[]).slice(0,5).map(function(t){return t.termo}).join(' · ')||'–'),'');
+  c+=(d.quentes||[]).slice(0,3).map(function(q){return linhaTx('<span class="fraco">'+esc(q.nicho)+'</span> '+esc(q.titulo),tndNum(q.views),'mut')}).join('');
+  return{frase:fr,corpo:c}},
+ detalhe:function(d){var ln='<p><a href="'+esc(d.link||'/bombando/')+'" target="_blank" rel="noopener">Abrir o painel completo (gráficos, por que bombou, todos os vídeos)</a></p>';
+  if(!d.videos)return sec('Tendências de rede','<p class="sem">sem coleta ainda (~/projetos/youtube-bombando)</p>'+ln,1);
+  return sec('Tendências de rede',ln+(d.conclusao?'<p>'+esc(d.conclusao)+'</p>':'')+'<p class="fraco">coleta '+quando(d.gerado_em)+' · '+plural(d.videos,'vídeo','vídeos')+'</p>',1)
+  +sec('Assuntos em alta',tabela(['Termo','views/h'],(d.assuntos||[]).map(function(t){return[esc(t.termo),n(t.peso,0)]})))
+  +sec('Mais quente de cada nicho',tabela(['Nicho','Vídeo','Views','Views/h'],(d.quentes||[]).map(function(q){return[esc(q.nicho),'<a href="https://www.youtube.com/watch?v='+encodeURIComponent(q.id)+'" target="_blank" rel="noopener">'+esc(q.titulo)+'</a><br><span class="fraco">'+esc(q.canal)+'</span>',tndNum(q.views),n(q.velocidade,0)]})),1)}};
 // Minha escada (Nei, 12/11): quanto da rotina a IA já conduz (AL4+AL5), lido do escada.json diário.
 function setaEsc(v){return v==null?'':v>0?' <span class="s-ok" title="contra o relatório anterior">▲ '+n(v)+' p.p.</span>':v<0?' <span class="s-erro" title="contra o relatório anterior">▼ '+n(-v)+' p.p.</span>':' <span class="fraco">= igual</span>'}
 G.escada={tile:function(d,g){if(g.ausentes&&g.ausentes.length||d.parcela_ia==null)return{frase:'<p class="frase vazia">sem relatório ainda</p>',corpo:'<div class="sem">o relatório da escada roda 1x por dia</div>'};

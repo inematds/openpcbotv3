@@ -32,7 +32,7 @@ function okId(v){return/^[\w-]{11}$/.test(String(v||''))}
 `;
 
 export const JS_LACO = String.raw`
-var NOMES={esperando:'Esperando você',maquina:'Máquina',bots:'Bots',v3:'Bot v3',inemaccbot:'inemaccbot',v2:'Bot v2',producao:'Produção',publicacao:'Publicação',creditos:'Claude e Codex',sites:'Sites',vagas:'Vagas',radar:'Radar Viral',escada:'Minha escada',terminais:'Terminais',vps:'VPS',apis:'Outras APIs'};
+var NOMES={esperando:'Esperando você',maquina:'Máquina',bots:'Bots',v3:'Bot v3',inemaccbot:'inemaccbot',v2:'Bot v2',producao:'Produção',publicacao:'Publicação',creditos:'Claude e Codex',sites:'Sites',vagas:'Vagas',radar:'Radar Viral',escada:'Minha escada',tendencias:'Tendências de rede',terminais:'Terminais',vps:'VPS',apis:'Outras APIs'};
 var ROT={ok:'✓ ok',erro:'✕ erro',aviso:'! atenção',semdados:'– sem dados'};
 function estadoGrupo(nome,g,al){if(!g||!g.ok)return'semdados';var e=al.filter(function(a){return a.grupo===nome});if(e.some(function(a){return a.nivel==='erro'}))return'erro';if(e.length)return'aviso';if(nome==='esperando'&&g.dados){var it=g.dados.itens;if(it.some(function(i){return i.nivel==='erro'}))return'erro';if(it.some(function(i){return i.nivel==='aviso'}))return'aviso'}return'ok'}
 function tok(){return LS.get('painel.token','')}
@@ -103,7 +103,7 @@ function marcarRolagem(){var el=document.getElementById('t-terminais');if(!el)re
 if(typeof document!=='undefined')document.addEventListener('scroll',function(ev){if(ev.target&&ev.target.classList&&ev.target.classList.contains('corpo'))marcarRolagem()},true);
 // Organizar: cada quadro pode trocar de lugar com outro (os lugares têm tamanhos fixos: o da esquerda é alto,
 // o de baixo é largo). Fica guardado neste aparelho. Arrastar com o mouse ou tocar num e depois no outro.
-var AREAS={esperando:'esp',maquina:'maq',v3:'v3',inemaccbot:'icc',v2:'v2',producao:'pro',publicacao:'pub',creditos:'cre',sites:'sit',vagas:'vag',radar:'rad',escada:'esc',terminais:'ter',vps:'vps',apis:'api'};
+var AREAS={esperando:'esp',maquina:'maq',v3:'v3',inemaccbot:'icc',v2:'v2',producao:'pro',publicacao:'pub',creditos:'cre',sites:'sit',vagas:'vag',radar:'rad',escada:'esc',tendencias:'tnd',terminais:'ter',vps:'vps',apis:'api'};
 function lerLayout(){var m;try{m=JSON.parse(LS.get('painel.layout','{}'))||{}}catch(e){m={}}
   var usadas=Object.keys(AREAS).map(function(g){return m[g]||AREAS[g]}),ok=Object.keys(AREAS).every(function(g){return usadas.indexOf(AREAS[g])>=0});return ok?m:{}}
 function aplicarLayout(){var m=lerLayout();Object.keys(AREAS).forEach(function(g){var el=document.getElementById('t-'+g);if(el)el.style.gridArea=m[g]||''})}

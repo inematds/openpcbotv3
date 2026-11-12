@@ -1,6 +1,6 @@
 // Servidor do painel em porta PRÓPRIA (PAINEL_PORT, padrão 3143), separado da
 // 3142 — a 3142 tem o POST /mensagem (agente com permissão total) e NUNCA sai
-// do loopback. Aqui só existem: /login, /logout, /, /painel e /jarvis, /api/painel*,
+// do loopback. Aqui só existem: /login, /logout, /, /painel e /jarvis, /bombando/ (youtube-bombando), /api/painel*,
 // POST /api/vagas. Qualquer outra rota → 404.
 // Autenticação: sessão por senha (cookie HttpOnly, 365 dias deslizante: o aparelho
 // fica lembrado) ou JWT do Cloudflare Access.
@@ -153,7 +153,8 @@ export function criarServidorPainel(o: OpcoesServidor): Server {
         ir(res, '/login', { 'Set-Cookie': cookieSessao(req, '', 0) }); return;
       }
 
-      const ehTela = (p === '/' || p === '/painel' || p === '/jarvis') && m === 'GET';
+      const ehBombando = (p === '/bombando' || p.startsWith('/bombando/')) && m === 'GET';
+      const ehTela = ((p === '/' || p === '/painel' || p === '/jarvis') && m === 'GET') || ehBombando;
       const ehApi = (p === '/api/painel' || p.startsWith('/api/painel/')) && m === 'GET';
       const ehVagas = p === '/api/vagas';
       const ehEnviar = p === '/api/painel/terminal/enviar';
@@ -166,6 +167,7 @@ export function criarServidorPainel(o: OpcoesServidor): Server {
         if (ehTela) { ir(res, '/login'); return; }
         json(res, 401, { erro: 'entre no painel', login: true }); return;
       }
+      if (ehBombando) { await tratarPainel(req, res, url, o.deps); return; }
       if (ehTela) { html(res, 200, p === '/jarvis' ? JARVIS_HTML : PAINEL_HTML); return; }
       if (ehEnviar) {
         if (m !== 'POST') { json(res, 405, { erro: 'use POST' }); return; }
