@@ -74,6 +74,24 @@ G.radar={tile:function(d){var fi=d.fila||[],lib=fi.filter(function(i){return i.e
   return sec('Nichos e horários — canal '+esc(d.canal)+' (1 vídeo por hora)',tabela(['Nicho','Projeto','Gera às','Publica a partir de','Hoje'],(d.nichos||[]).map(function(x){return[esc(x.nome),esc(x.projeto),esc(x.gera),esc(x.a_partir),EST[x.hoje]+(x.url?' · <a href="'+esc(x.url)+'" target="_blank" rel="noopener">vídeo</a>':'')]})),1)
   +sec('Fila (sai o mais antigo liberado, 1 por hora)',tabela(['Nicho','Edição','Pronto desde','Estado'],(d.fila||[]).map(function(i){return[esc(i.nome),esc(i.edicao)+(i.video!=='video'?' <span class="fraco">'+esc(i.video)+'</span>':''),quando(i.desde),FE[i.estado]+(i.estado==='espera'?' ('+esc(i.a_partir)+')':'')]})))
   +sec('Últimos envios',tabela(['Quando','Nicho','Resultado'],(d.historico||[]).map(function(h){return[quando(h.quando),esc(h.nome)+' <span class="fraco">'+esc(h.edicao)+'</span>',(h.url?'<a href="'+esc(h.url)+'" target="_blank" rel="noopener">'+esc(h.resultado)+'</a>':esc(h.resultado))+(h.motivo?' <span class="mut">'+esc(h.motivo)+'</span>':'')]})))}};
+// Minha escada (Nei, 12/11): quanto da rotina a IA já conduz (AL4+AL5), lido do escada.json diário.
+function setaEsc(v){return v==null?'':v>0?' <span class="s-ok" title="contra o relatório anterior">▲ '+n(v)+' p.p.</span>':v<0?' <span class="s-erro" title="contra o relatório anterior">▼ '+n(-v)+' p.p.</span>':' <span class="fraco">= igual</span>'}
+G.escada={tile:function(d,g){if(g.ausentes&&g.ausentes.length||d.parcela_ia==null)return{frase:'<p class="frase vazia">sem relatório ainda</p>',corpo:'<div class="sem">o relatório da escada roda 1x por dia</div>'};
+  var fr='<p class="frase"><span style="font-size:2.1rem">'+n(d.parcela_ia)+'%</span>'+setaEsc(d.variacao)+'</p>';
+  var c='<div class="fraco" style="margin-top:-.2rem">da sua rotina a IA já conduz'+(d.anthropic_ref!=null?' · Anthropic '+n(d.anthropic_ref,0)+'%':'')+'</div>';
+  if(d.missao)c+=linhaTx('<b>Missão de hoje:</b> '+esc(d.missao.titulo),'');
+  c+='<div class="fraco" style="font-size:.8rem">relatório '+quando(d.gerado_em)+'</div>';
+  return{frase:fr,corpo:c}},
+ detalhe:function(d){if(d.parcela_ia==null)return sec('Minha escada','<p class="sem">sem relatório ainda (~/.local/share/minha-escada/escada.json)</p>',1);
+  var f=d.fontes||{},pe=d.periodo;
+  return sec('Missão de hoje',d.missao?'<p><b>'+esc(d.missao.titulo)+'</b></p><p>'+esc(d.missao.texto)+'</p>':'<p class="sem">sem missão no relatório</p>',1)
+  +sec('Quanto a IA já conduz','<p class="frase">'+n(d.parcela_ia)+'%'+setaEsc(d.variacao)+'</p>'+tabela(['Medida','Valor'],[['Relatório anterior',d.parcela_anterior!=null?n(d.parcela_anterior)+'%':'–'],['Anthropic ago/2026',d.anthropic_ref!=null?n(d.anthropic_ref,0)+'%':'–'],['Período',pe?esc(pe.inicio)+' a '+esc(pe.fim)+(pe.dias?' ('+pe.dias+' dias)':''):'–'],['Gerado',quando(d.gerado_em)]]))
+  +sec('Projeção',tabela(['Daqui a','IA conduz'],(d.projecao||[]).map(function(p){return[p.meses===0?'hoje':p.meses+(p.meses===1?' mês':' meses'),n(p.pct)+'%']})))
+  +sec('Tarefas',tabela(['Tarefa','h/sem','Nível','Próximo','Crítica'],(d.tarefas||[]).map(function(t){var mx=Object.keys(t.mix||{}).sort(function(a,b){return t.mix[b]-t.mix[a]}).map(function(k){return k+' '+t.mix[k]+'%'}).join(' · ');
+    return[esc(t.tarefa)+(mx?'<br><span class="fraco">'+esc(mx)+'</span>':''),n(t.horas_semana),esc(t.nivel),esc(t.proximo||'–'),t.critico?'<span class="s-aviso">! crítica</span>':'']})),1)
+  +sec('Três ações',(d.acoes||[]).length?'<ol>'+d.acoes.map(function(a){return'<li>'+esc(a)+'</li>'}).join('')+'</ol>':'<p class="sem">nenhuma</p>')
+  +sec('De onde vem',tabela(['Fonte','Quantidade'],[['Sessões Claude',n(f.claude_sessoes,0)],['Sessões Codex',n(f.codex_sessoes,0)],['Conversas',n(f.conversas,0)],['Automáticas',n(f.automaticas,0)],['Ações',n(f.acoes,0)],['Motor',esc(d.motor||'–')]])
+    +(d.relatorio_md?'<p class="fraco">Relatório completo: <code>'+esc(d.relatorio_md)+'</code></p>':''))}};
 
 G.publicacao={tile:function(d){var fr='<p class="frase">'+plural(d.hoje,'vídeo publicado hoje','vídeos publicados hoje')+'</p>',c;
   if(E.modo==='icones'){var cs=Object.keys(d.semana_por_canal).slice(0,4);c=cs.length?'<div class="icones">'+cs.map(function(k){return ico(String(d.semana_por_canal[k]),k,cor(k),false,k+': '+d.semana_por_canal[k]+' em 7 dias')}).join('')+'</div><div class="fraco" style="font-size:.85rem">envios por canal, últimos 7 dias</div>':'<p class="sem">nenhum envio em 7 dias</p>'}

@@ -1,5 +1,9 @@
 # CHANGELOG — openpcbotv3
 
+## 3.27.14 — 2026-11-12
+
+Quadro **Minha escada** (`fontes/escada.ts`): quanto da rotina a IA já conduz (AL4+AL5), lido só de `~/.local/share/minha-escada/escada.json` (gerado 1x por dia por outro processo). Cartão com a parcela grande, seta contra o relatório anterior e a missão de hoje; detalhe com missão, tarefas (h/sem, nível, próximo, crítica), as 3 ações, projeção 0/1/3/6 meses, comparação com a Anthropic (ago/2026), fontes e motor, e o caminho do relatório. Sem o arquivo: "sem relatório ainda". Também no Jarvis (frase, ícone ⟰, número, explicação, detalhe). Grade: entra no canto direito da linha de baixo (Terminais fica com 4 colunas). Sem alerta novo. Teste `painel/escada.test.ts`.
+
 ## 3.26.14 — 2026-11-11
 
 Correção: pedido de "manda o vídeo" chegava como texto `[SEND_FILE:/caminho]` (Nei: "manda como texto sendfile… pedi várias vezes"). O marcador era do v2 e o canal Telegram do v3 só mandava texto. Agora `src/canais/arquivos.ts` tira `[SEND_FILE:caminho|legenda]`/`[SEND_PHOTO:…]` do texto e o canal manda o arquivo: vídeo como vídeo (streaming), imagem como foto, áudio como áudio, resto como documento; falha no formato próprio cai para documento. Barra segredo (.env, chaves, .ssh, banco, cookies/tokens), caminho relativo, inexistente e > 50 MB, avisando no chat. Teste `canais/arquivos.test.ts`.
