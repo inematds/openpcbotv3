@@ -82,7 +82,7 @@ export function montarPrompt(e: EntradaAgente, agente: Agente, quadro?: string, 
     partes.push('[Contexto dos especialistas]\n' + Object.entries(e.consultas).map(([id, t]) => `## ${id}\n${t.slice(0, 3000)}`).join('\n\n'));
   }
   partes.push(blocoSkills(skillsCacheadas()).join('\n'));
-  partes.push('Regras: nunca gere mídia paga (HeyGen, render) sem confirmação explícita; nunca rode `ollama serve`; nunca imprima valores de API keys. Responda em PT-BR, curto, com o resultado e onde ficou.');
+  partes.push('Regras: avatar do Nei = SEMPRE pelo estúdio HeyGen (assinatura), sem pedir confirmação (regra do Nei, 12/11/2026); vídeo explicativo/de projeto = explicavideos v2 com esse avatar; a skill video-explicativo (sem avatar) só se o Nei pedir pelo nome. Criar vídeo pela API do HeyGen ou gerar mídia paga por API (Magnific, Kling etc.) só com confirmação explícita. Nunca rode `ollama serve`; nunca imprima valores de API keys. Responda em PT-BR, curto, com o resultado e onde ficou.');
   partes.push(`[Mensagem do usuário via ${e.canal}]\n${e.texto}`);
   return partes.filter(Boolean).join('\n\n');
 }

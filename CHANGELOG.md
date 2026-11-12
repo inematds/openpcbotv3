@@ -1,5 +1,9 @@
 # CHANGELOG — openpcbotv3
 
+## 3.28.14 — 2026-11-12
+
+Regra do agente (`orquestrador/agente-cli.ts`): o avatar do Nei sai SEMPRE pelo estúdio HeyGen, sem pedir confirmação; vídeo explicativo/de projeto = explicavideos v2 com avatar; a skill `video-explicativo` (sem avatar) só se o Nei pedir pelo nome. A regra antiga ("nunca gere mídia paga (HeyGen, render) sem confirmação") fez o job do niveis-autonomia (12/11) sair sem avatar. Criar pela API do HeyGen e mídia paga por API continuam pedindo confirmação.
+
 ## 3.27.14 — 2026-11-12
 
 Quadro **Minha escada** (`fontes/escada.ts`): quanto da rotina a IA já conduz (AL4+AL5), lido só de `~/.local/share/minha-escada/escada.json` (gerado 1x por dia por outro processo). Cartão com a parcela grande, seta contra o relatório anterior e a missão de hoje; detalhe com missão, tarefas (h/sem, nível, próximo, crítica), as 3 ações, projeção 0/1/3/6 meses, comparação com a Anthropic (ago/2026), fontes e motor, e o caminho do relatório. Sem o arquivo: "sem relatório ainda". Também no Jarvis (frase, ícone ⟰, número, explicação, detalhe). Grade: entra no canto direito da linha de baixo (Terminais fica com 4 colunas). Sem alerta novo. Teste `painel/escada.test.ts`.
