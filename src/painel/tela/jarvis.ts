@@ -431,11 +431,24 @@ var PRON=[[/\bClaude\b/gi,'Clóde'],[/\bJarvis\b/g,'Djárvis'],[/\bdeploy\b/gi,'
   [/\bdry-run\b/gi,'drái rân'],[/\blogin\b/gi,'lóguin'],[/\bWhisper\b/gi,'uíspêr'],[/\bclub\b/gi,'clâb'],[/\bfeed\b/gi,'fíd'],[/\bctx\b/gi,'contexto']];
 function pronuncia(t){if(vozPt&&/multilingual/i.test(vozPt.name))return t;PRON.forEach(function(p){t=t.replace(p[0],p[1])});return t}
 if(window.speechSynthesis){acharVoz();speechSynthesis.onvoiceschanged=acharVoz}
+// Uma voz só (Nei, 13/11: "dois narradores"): com várias abas do Jarvis abertas, só a aba dona fala.
+// Dona = a última que ganhou foco ou ficou visível; as outras mostram o texto calado. Vale dentro do mesmo navegador.
+var MEU=Math.random().toString(36).slice(2);
+function lerDono(){try{return JSON.parse(localStorage.getItem('jarvis.dono')||'null')}catch(e){return null}}
+function souDono(){var d=lerDono();return!d||d.id===MEU||Date.now()-d.t>15000}
+function reivindicar(){LS.set('jarvis.dono',JSON.stringify({id:MEU,t:Date.now()}))}
+function tomarVoz(){reivindicar()}
+addEventListener('focus',tomarVoz);document.addEventListener('visibilitychange',function(){if(!document.hidden)tomarVoz()});
+addEventListener('storage',function(ev){if(ev.key==='jarvis.dono'&&!souDono()&&window.speechSynthesis)speechSynthesis.cancel()});
+addEventListener('pagehide',function(){var d=lerDono();if(d&&d.id===MEU)try{localStorage.removeItem('jarvis.dono')}catch(e){}});
+if(!document.hidden)tomarVoz();setInterval(function(){if(souDono())reivindicar()},5000);
 var digitando=0;function digitar(texto){var alvo=$('resposta'),id=++digitando,i=0;if(REDUZ){alvo.textContent=texto;return}
   (function passo(){if(id!==digitando)return;i=Math.min(texto.length,i+Math.max(2,Math.round(2*VEL)));alvo.innerHTML=esc(texto.slice(0,i))+'<span class="cursor"></span>';if(i<texto.length)setTimeout(passo,14)})()}
 function falar(texto,rotulo,falado){digitar(texto);ondaAte=performance.now()+Math.min(9000,9*texto.length/VEL+600);$('status').textContent=rotulo||'falando';
   var fim=function(){falando=false;desenhar()};
-  if(!vozLigada||!window.speechSynthesis){falando=true;setTimeout(fim,Math.min(6000,60*texto.length));return}
+  if(!vozLigada||!window.speechSynthesis||!souDono()){falando=true;setTimeout(fim,Math.min(6000,60*texto.length));return}
+  // Vozes ainda não carregaram: espera um pouco em vez de cair na voz padrão (masculina) do sistema.
+  if(!vozes.length&&!falar.esperou){falar.esperou=true;falando=true;setTimeout(function(){acharVoz();falar(texto,rotulo,falado)},900);return}
   try{speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(pronuncia(falado||texto));u.lang=vozPt?vozPt.lang:'pt-BR';u.volume=1;if(vozPt)u.voice=vozPt;u.rate=VEL;
     var vigia=setTimeout(fim,Math.max(3000,90*texto.length/VEL));u.onend=u.onerror=function(){clearTimeout(vigia);fim()};falando=true;speechSynthesis.speak(u)}catch(e){fim()}}
 function saudacao(){var h=new Date().getHours();return h<5?'Boa madrugada':h<12?'Bom dia':h<18?'Boa tarde':'Boa noite'}

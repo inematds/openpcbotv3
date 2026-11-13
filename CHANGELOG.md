@@ -1,5 +1,9 @@
 # CHANGELOG — openpcbotv3
 
+## 3.30.15 — 2026-11-13
+
+Jarvis: **uma voz só**. Com duas abas do Jarvis abertas, as duas liam o mesmo alerta, cada uma com a sua voz (Nei: "falava a Maria e depois o homem"). Agora só a aba dona fala (a última que ganhou foco ou ficou visível; trava em `localStorage` `jarvis.dono`, renovada a cada 5 s); as outras mostram o texto caladas. E a primeira fala espera as vozes do navegador carregarem, em vez de sair na voz padrão (masculina).
+
 ## 3.30.14 — 2026-11-13
 
 Painel Jarvis, quadro **Esperando você** (pedido do Nei, 13/11): **Visto** agora tira o item da lista (antes só esmaecia); **Depois** esconde por 3 h e o item volta sozinho (antes era igual ao Visto). Link "mostrar N escondidos" para desfazer. Marcas antigas são convertidas. Novo item **❓ pergunta**: sessão viva do Claude que terminou a vez perguntando (linha `! Sua resposta:` ou última linha com "?") aparece no quadro (`perguntaPendente` em `fontes/sessoes.ts`, teste em `sessoes.test.ts`). Botão **Avisos** (tecla 6): notificação do navegador para pergunta de sessão, OK do inemaccbot e erro — só em 127.0.0.1:3142 ou ccc.inema.pro (a 3143 por IP não permite).
