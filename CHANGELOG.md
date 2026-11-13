@@ -1,5 +1,9 @@
 # CHANGELOG — openpcbotv3
 
+## 3.30.14 — 2026-11-13
+
+Painel Jarvis, quadro **Esperando você** (pedido do Nei, 13/11): **Visto** agora tira o item da lista (antes só esmaecia); **Depois** esconde por 3 h e o item volta sozinho (antes era igual ao Visto). Link "mostrar N escondidos" para desfazer. Marcas antigas são convertidas. Novo item **❓ pergunta**: sessão viva do Claude que terminou a vez perguntando (linha `! Sua resposta:` ou última linha com "?") aparece no quadro (`perguntaPendente` em `fontes/sessoes.ts`, teste em `sessoes.test.ts`). Botão **Avisos** (tecla 6): notificação do navegador para pergunta de sessão, OK do inemaccbot e erro — só em 127.0.0.1:3142 ou ccc.inema.pro (a 3143 por IP não permite).
+
 ## 3.29.14 — 2026-11-12
 
 Quadro **Tendências de rede** (`fontes/tendencias.ts`): resumo do youtube-bombando (monitor diário 07:15 dos vídeos/assuntos que mais crescem no YouTube), lido de `~/projetos/youtube-bombando/painel/dados.json` (`BOMBANDO_DIR` troca). Cartão com nº de vídeos, assuntos em alta, os 3 primeiros "mais quentes" e o link; detalhe com conclusão do "Por que bombou?", assuntos e o mais quente de cada nicho. O painel completo do youtube-bombando passa a abrir dentro do ccc em **`/bombando/`** (mesmo login; só `index.html`, `dados.json` e `historico/AAAA-MM-DD.html`, nome validado por regex). Também no Jarvis (↗). Grade: linha de baixo vira Terminais (3) + Tendências + Minha escada. Teste `painel/tendencias.test.ts`.

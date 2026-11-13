@@ -44,7 +44,7 @@ main{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,1.05fr) minma
 .esp .botoes{grid-column:2;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .esp button{font:600 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;background:transparent;color:var(--ciano);border:1px solid var(--linha);border-radius:8px;padding:5px 10px;cursor:pointer;min-height:30px}
 .esp button:hover{border-color:var(--ciano);background:rgba(95,227,255,.08)}
-.esp li.marcado{opacity:.45}.esp .marca-tela{font:11px var(--mono);color:var(--mut)}
+.esp li.marcado{opacity:.45}.esp li.pergunta .titulo{color:var(--alerta);font-weight:600}.esp .marca-tela{font:11px var(--mono);color:var(--mut)}
 .aviso-rod{font-size:12px;color:var(--mut);border-top:1px solid var(--linha);margin:8px 0 0;padding-top:8px}
 .nucleo{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:380px}
 #cv{width:100%;max-width:520px;aspect-ratio:1/1;display:block}
@@ -154,6 +154,19 @@ var REDUZ=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matc
 var NOME='Nei';
 var D=null,falando=false,ondaAte=0,vozLigada=LS.get('jarvis.voz','1')==='1',marcas={},falados={},primeira=true,partiu=false;
 try{marcas=JSON.parse(LS.get('jarvis.marcas','{}'))||{}}catch(e){marcas={}}
+// Visto = some da lista (Nei, 13/11). Depois = esconde por DEPOIS_H horas e volta. Marcas antigas ('aprovado'/'depois') são convertidas.
+var DEPOIS_H=3,verOcultos=false;
+Object.keys(marcas).forEach(function(k){var v=marcas[k];if(v==='aprovado')marcas[k]={m:'visto',em:Date.now()};else if(v==='depois')marcas[k]={m:'depois',ate:Date.now()+DEPOIS_H*3600e3};else if(!v||typeof v!=='object')delete marcas[k]});
+function salvarMarcas(){LS.set('jarvis.marcas',JSON.stringify(marcas))}
+salvarMarcas();
+function oculto(id){var m=marcas[id];if(!m)return false;if(m.m==='visto')return true;if(m.m==='depois'&&m.ate>Date.now())return true;delete marcas[id];salvarMarcas();return false}
+function rotMarca(m){return!m?'não':m.m==='visto'?'Visto':'Depois — volta às '+new Date(m.ate).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
+// Aviso do sistema (notificação do navegador) para o que precisa de você: pergunta de sessão, OK do inemaccbot, erro.
+var AV={ligado:LS.get('jarvis.avisos','0')==='1',avisados:{}};
+function avisoPode(){return'Notification'in window&&Notification.permission==='granted'&&AV.ligado}
+function urgente(x){return x.tipo==='pergunta'||x.tipo==='ok'||x.nivel==='erro'}
+function avisarNovos(lista,primeiraVez){lista.forEach(function(x){if(AV.avisados[x.id])return;AV.avisados[x.id]=1;if(primeiraVez||!urgente(x)||oculto(x.id)||!avisoPode())return;
+  try{var nt=new Notification(x.tipo==='pergunta'?'Sessão pedindo sua resposta':x.tipo==='ok'?'Esperando seu OK':'Erro no painel',{body:x.texto,tag:x.id,requireInteraction:x.tipo==='pergunta'});nt.onclick=function(){window.focus();nt.close()}}catch(e){}})}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function n(v,c){return v==null||isNaN(v)?'–':Number(v).toLocaleString('pt-BR',{maximumFractionDigits:c==null?1:c})}
 function hm(t){return t?new Date(t*1000).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'–'}
@@ -193,7 +206,7 @@ function esperando(){var it=(D.grupos.esperando&&D.grupos.esperando.ok&&D.grupos
   var ordem={erro:0,aviso:1,info:2};out.sort(function(a,b){return(ordem[a.nivel]-ordem[b.nivel])});return out}
 function contagem(){var al=D.alertas||[],er=al.filter(function(a){return a.nivel==='erro'}).length,pub=(D.grupos.publicacao&&D.grupos.publicacao.dados&&D.grupos.publicacao.dados.hoje)||0;
   var v=(D.grupos.vagas&&D.grupos.vagas.dados&&D.grupos.vagas.dados.classes)||[],oc=0;v.forEach(function(c){oc+=c.ocupadas||0});
-  var sis=sistemas();return{erros:er,avisos:al.length-er,publicados:pub,ocupadas:oc,ok:sis.filter(function(s){return s.estado==='ok'||s.estado==='rodando'}).length,total:sis.length,abertos:esperando().filter(function(x){return!marcas[x.id]}).length}}
+  var sis=sistemas();return{erros:er,avisos:al.length-er,publicados:pub,ocupadas:oc,ok:sis.filter(function(s){return s.estado==='ok'||s.estado==='rodando'}).length,total:sis.length,abertos:esperando().filter(function(x){return!oculto(x.id)}).length}}
 // ---------- modos visuais (lista / ícones / gráficos) ----------
 var MODO=LS.get('jarvis.modo','lista');if(['lista','icones','graficos'].indexOf(MODO)<0)MODO='lista';
 var GLIFO={maquina:'⚙',bots:'◉',v3:'◉',inemaccbot:'◎',v2:'○',producao:'▶',publicacao:'▲',creditos:'◔',sites:'◎',vagas:'▦',radar:'◈',escada:'⟰',tendencias:'↗',terminais:'▭',vps:'▣',apis:'⌁'};
@@ -325,7 +338,7 @@ function abrirDet(chave){if(!D)return;var p=chave.split(':'),tit='',h='',fala=''
     if(g&&g.ausentes&&g.ausentes.length)h+=bloco('Fontes sem dados',lnt('arquivos',g.ausentes.join(', '),'aviso'))}
   else if(p[0]==='esp'){var x=esperando().filter(function(i){return i.id===p[1]})[0];if(!x)return;tit='Esperando você';fala=x.texto;
     var o={alerta:'Alerta automático do painel: uma regra viu algo fora do normal agora.',manual:'Aviso manual com prazo, guardado em ~/.config/inema/painel-avisos.json.',pendencia:'Pendência anotada no hub ~/projetos/wifi/pendencias.md (o que você pediu para olhar depois).',falha:'Falha de um trabalho dos bots nas últimas 24 h.'};
-    h='<p class="exp">'+esc(x.texto)+'</p>'+lnt('tipo',o[x.tipo]||x.tipo)+lnt('nível',x.nivel==='erro'?'erro':x.nivel==='aviso'?'atenção':'informação',x.nivel)+lnt('marcado na tela',marcas[x.id]?(marcas[x.id]==='aprovado'?'Visto':'Depois'):'não');
+    h='<p class="exp">'+esc(x.texto)+'</p>'+lnt('tipo',o[x.tipo]||x.tipo)+lnt('nível',x.nivel==='erro'?'erro':x.nivel==='aviso'?'atenção':'informação',x.nivel)+lnt('marcado na tela',oculto(x.id)?rotMarca(marcas[x.id]):'não');
     var it=(D.grupos.esperando&&D.grupos.esperando.dados&&D.grupos.esperando.dados.itens)||[],orig=it.concat(D.alertas||[]).filter(function(i){return i.texto===x.texto})[0];
     if(orig&&orig.grupo&&NOMES[orig.grupo])h+='<p class="dica">Vem de <a href="#" data-det="sis:'+orig.grupo+'">'+esc(NOMES[orig.grupo])+'</a> — clique para ver o sistema.</p>'}
   else if(p[0]==='pub'){var u=((dg('publicacao')||{}).ultimos||[])[Number(p[1])];if(!u)return;tit='Publicado';fala=u.titulo||'';
@@ -385,12 +398,21 @@ function desenhar(){if(!D)return;var c=contagem(),sis=sistemas(),ordem={erro:0,a
   $('listaTim').innerHTML=tm.filter(function(t){return t.proxima&&t.proxima>agora-60&&!/watchdog|vigia|ocioso|^continua$|-producao$/.test(t.unidade)}).sort(function(a,b){return a.proxima-b.proxima}).slice(0,8).map(function(t){return'<li data-det="sis:producao" tabindex="0"><span class="ponto info" aria-hidden="true"></span><span class="nome">'+esc(t.unidade)+'</span><span class="rot">'+hm(t.proxima)+'</span><span class="acao">última: '+esc(t.ultima?ha(t.ultima):'ainda não rodou')+'</span></li>'}).join('')||'<li><span></span><span class="acao">nenhum timer à vista</span></li>';
   var ult=(D.grupos.publicacao&&D.grupos.publicacao.dados&&D.grupos.publicacao.dados.ultimos)||[];
   $('listaPub').innerHTML=ult.slice(0,5).map(function(u,i){return'<li data-det="pub:'+i+'" tabindex="0"><span class="ponto" aria-hidden="true"></span><span class="nome" title="'+esc(u.titulo)+'">'+esc(u.titulo||u.video_id)+'</span><span class="rot">'+esc(u.canal)+'</span><span class="acao">'+ha(u.quando)+'</span></li>'}).join('')||'<li><span></span><span class="acao">nada publicado ainda</span></li>';
-  var esp=esperando();$('subEsp').textContent=plural(c.abertos,'aberto','abertos')+' · '+plural(esp.length-c.abertos,'marcado','marcados')+' na tela';
-  $('listaEsp').innerHTML=esp.map(function(x){var m=marcas[x.id];return'<li class="'+(m?'marcado':'')+'" data-det="esp:'+x.id+'" tabindex="0"><span class="ponto '+x.nivel+'" aria-hidden="true"></span><span class="titulo '+x.nivel+'">'+esc(x.texto)+'</span><span class="botoes">'+(m?'<span class="marca-tela">'+(m==='aprovado'?'Visto':'Depois')+' (só na tela)</span><button type="button" data-id="'+x.id+'" data-m="">Desfazer</button>':'<button type="button" data-id="'+x.id+'" data-m="aprovado">Visto</button><button type="button" data-id="'+x.id+'" data-m="depois">Depois</button>')+'</span></li>'}).join('')||'<li><span></span><span class="titulo">Nada esperando você.</span></li>';
+  var esp=esperando(),nOc=esp.length-c.abertos;avisarNovos(esp,!AV.iniciado);AV.iniciado=true;
+  $('subEsp').textContent=plural(c.abertos,'aberto','abertos')+(nOc?' · '+plural(nOc,'escondido','escondidos'):'');
+  var mostra=esp.filter(function(x){return verOcultos||!oculto(x.id)});
+  $('listaEsp').innerHTML=(mostra.map(function(x){var oc=oculto(x.id);return'<li class="'+(oc?'marcado':'')+(x.tipo==='pergunta'?' pergunta':'')+'" data-det="esp:'+x.id+'" tabindex="0"><span class="ponto '+x.nivel+'" aria-hidden="true"></span><span class="titulo '+x.nivel+'">'+(x.tipo==='pergunta'?'❓ ':'')+esc(x.texto)+'</span><span class="botoes">'+(oc?'<span class="marca-tela">'+esc(rotMarca(marcas[x.id]))+'</span><button type="button" data-id="'+x.id+'" data-m="">Desfazer</button>':'<button type="button" data-id="'+x.id+'" data-m="visto" title="Some da lista">Visto</button><button type="button" data-id="'+x.id+'" data-m="depois" title="Esconde por '+DEPOIS_H+' h e volta">Depois</button>')+'</span></li>'}).join('')||'<li><span></span><span class="titulo">Nada esperando você.</span></li>')
+    +(nOc?'<li><span></span><span class="titulo"><button type="button" class="link" data-ver="1">'+(verOcultos?'esconder os marcados':'mostrar '+plural(nOc,'escondido','escondidos'))+'</button></span></li>':'');
   $('contas').innerHTML='<span class="'+(c.erros?'er':'')+'"><b>'+c.erros+'</b> erros</span><span class="al"><b>'+c.avisos+'</b> avisos</span><span><b>'+c.publicados+'</b> publicados hoje</span><span><b>'+c.ocupadas+'</b> vagas ocupadas</span>';
   if(!falando&&partiu)$('status').textContent=c.erros?plural(c.erros,'erro','erros')+' pedindo atenção':c.avisos?plural(c.avisos,'aviso','avisos'):'tudo em ordem';
   var sair=$('sair'),ss=D.sessao;if(sair)sair.hidden=!ss||ss.via!=='senha'}
-$('listaEsp').addEventListener('click',function(ev){var b=ev.target.closest('button[data-id]');if(!b)return;if(b.dataset.m)marcas[b.dataset.id]=b.dataset.m;else delete marcas[b.dataset.id];LS.set('jarvis.marcas',JSON.stringify(marcas));desenhar()});
+$('listaEsp').addEventListener('click',function(ev){var v=ev.target.closest('button[data-ver]');if(v){ev.stopPropagation();verOcultos=!verOcultos;desenhar();return}
+  var b=ev.target.closest('button[data-id]');if(!b)return;ev.stopPropagation();var m=b.dataset.m;
+  if(m==='visto')marcas[b.dataset.id]={m:'visto',em:Date.now()};else if(m==='depois')marcas[b.dataset.id]={m:'depois',ate:Date.now()+DEPOIS_H*3600e3};else delete marcas[b.dataset.id];
+  salvarMarcas();desenhar()});
+// Botão "Avisos no PC": pede a permissão do navegador uma vez. Só funciona em https ou 127.0.0.1 (a 3143 por IP da rede não deixa).
+function pintarAvisos(){var b=$('bAvisos');if(!b)return;var ok='Notification'in window&&window.isSecureContext;b.disabled=!ok;b.title=ok?'Aviso do sistema quando uma sessão perguntar algo, o inemaccbot pedir OK ou der erro':'Este endereço não permite aviso (use 127.0.0.1:3142 ou ccc.inema.pro)';
+  var on=ok&&AV.ligado&&Notification.permission==='granted';b.firstChild.textContent='Avisos: '+(on?'ligados':'desligados');b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))}
 // ---------- fala ----------
 // Voz: prefere mulher em pt-BR (Nei, 10/11: "pode ser uma mulher, q saiba falar português correto e termos em inglês").
 // As vozes vêm do navegador; no Edge as "Multilingual"/"Online (Natural)" leem inglês sozinhas, nas outras uso a lista PRON.
@@ -417,7 +439,7 @@ function falar(texto,rotulo,falado){digitar(texto);ondaAte=performance.now()+Mat
   try{speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(pronuncia(falado||texto));u.lang=vozPt?vozPt.lang:'pt-BR';u.volume=1;if(vozPt)u.voice=vozPt;u.rate=VEL;
     var vigia=setTimeout(fim,Math.max(3000,90*texto.length/VEL));u.onend=u.onerror=function(){clearTimeout(vigia);fim()};falando=true;speechSynthesis.speak(u)}catch(e){fim()}}
 function saudacao(){var h=new Date().getHours();return h<5?'Boa madrugada':h<12?'Bom dia':h<18?'Boa tarde':'Boa noite'}
-function textoBomDia(){var c=contagem(),esp=esperando().filter(function(x){return!marcas[x.id]}),prod=D.grupos.producao&&D.grupos.producao.dados,prox=null;
+function textoBomDia(){var c=contagem(),esp=esperando().filter(function(x){return!oculto(x.id)}),prod=D.grupos.producao&&D.grupos.producao.dados,prox=null;
   if(prod)prox=(prod.timers||[]).filter(function(t){return t.proxima&&/diario|publicar|dia$/.test(t.unidade)}).sort(function(a,b){return a.proxima-b.proxima})[0];
   return saudacao()+', '+NOME+'. '+c.ok+' de '+c.total+' sistemas em ordem'+(c.erros?', '+plural(c.erros,'erro','erros'):'')+(c.avisos?', '+plural(c.avisos,'aviso','avisos'):'')+'. '
     +plural(c.publicados,'vídeo publicado','vídeos publicados')+' hoje. '+(prox?'Próxima rodada: '+prox.unidade.replace(/-/g,' ')+' às '+hm(prox.proxima)+'. ':'')
@@ -425,13 +447,16 @@ function textoBomDia(){var c=contagem(),esp=esperando().filter(function(x){retur
 var CMDS={
   bomdia:function(){falar(textoBomDia(),'bom dia')},
   status:function(){var s=sistemas().map(function(x){return NOMES[x.nome]+': '+x.frase}).slice(0,5).join('. ');falar('Status. '+s+'. Leitura '+ha(D.gerado_em)+'.','status')},
-  espera:function(){var ab=esperando().filter(function(x){return!marcas[x.id]});if(!ab.length)return falar('Nada esperando você. Tudo marcado.','livre');
+  espera:function(){var ab=esperando().filter(function(x){return!oculto(x.id)});if(!ab.length)return falar('Nada esperando você. Tudo marcado.','livre');
     falar(plural(ab.length,'coisa esperando','coisas esperando')+' você. '+ab.slice(0,3).map(function(x,i){return(i+1)+': '+x.texto}).join('. ')+'.','esperando você')},
   modo:function(){var ms=['lista','icones','graficos'],m=ms[(ms.indexOf(MODO)+1)%3];trocarModo(m);falar('Visão: '+{lista:'lista',icones:'ícones',graficos:'gráficos'}[m]+'.','visão')},
+  avisos:function(){if(!('Notification'in window)||!window.isSecureContext)return falar('Este endereço não permite aviso do sistema. Abra pelo 127.0.0.1 ou pelo ccc.inema.pro.','avisos');
+    if(AV.ligado&&Notification.permission==='granted'){AV.ligado=false;LS.set('jarvis.avisos','0');pintarAvisos();return falar('Avisos desligados.','avisos')}
+    Notification.requestPermission().then(function(p){AV.ligado=p==='granted';LS.set('jarvis.avisos',AV.ligado?'1':'0');pintarAvisos();falar(AV.ligado?'Avisos ligados. Quando uma sessão perguntar algo, eu aviso mesmo com a aba escondida.':'O navegador bloqueou os avisos. Libere nas permissões do site.','avisos')})},
   foco:function(){var on=document.body.classList.toggle('foco');$('bFoco').classList.toggle('on',on);$('bFoco').setAttribute('aria-pressed',String(on));falar(on?'Modo foco ligado. Escondi os painéis.':'Modo foco desligado.',on?'modo foco':'')}
 };
 document.querySelectorAll('.barra button').forEach(function(b){b.addEventListener('click',function(){if(D)CMDS[b.dataset.cmd]()})});
-addEventListener('keydown',function(ev){if(ev.target.closest&&ev.target.closest('input,textarea'))return;if($('folha').classList.contains('aberta')&&ev.key!=='Escape')return;var k={'1':'bomdia','2':'status','3':'espera','4':'foco','5':'modo'}[ev.key];if(k&&D)CMDS[k]()});
+addEventListener('keydown',function(ev){if(ev.target.closest&&ev.target.closest('input,textarea'))return;if($('folha').classList.contains('aberta')&&ev.key!=='Escape')return;var k={'1':'bomdia','2':'status','3':'espera','4':'foco','5':'modo','6':'avisos'}[ev.key];if(k&&D)CMDS[k]()});
 function pintarVoz(){$('voz').textContent='Voz: '+(vozLigada?'ligada':'desligada');$('voz').classList.toggle('desl',!vozLigada);$('voz').setAttribute('aria-pressed',String(vozLigada))}
 var VELS=[1,1.3,1.6,2],VEL=Number(LS.get('jarvis.vel','1.3'));if(VELS.indexOf(VEL)<0)VEL=1.3;
 function pintarVel(){$('vel').textContent='Velocidade: '+String(VEL).replace('.',',')+'×'}
@@ -439,6 +464,7 @@ $('vel').addEventListener('click',function(){VEL=VELS[(VELS.indexOf(VEL)+1)%VELS
 $('voz').addEventListener('click',function(){vozLigada=!vozLigada;pintarVoz();LS.set('jarvis.voz',vozLigada?'1':'0');if(!vozLigada&&window.speechSynthesis)speechSynthesis.cancel()});
 if(!window.speechSynthesis){vozLigada=false;$('voz').disabled=true}
 pintarVoz();
+pintarAvisos();
 $('vozSel').addEventListener('click',function(){if(!vozes.length)return;var i=vozes.indexOf(vozPt);vozPt=vozes[(i+1)%vozes.length];vozNome=vozPt.name;LS.set('jarvis.vozNome',vozNome);pintarVozNome();falar('Olá, '+NOME+'. Esta é a voz '+vozPt.name.replace(/^(Microsoft|Google)\s+/,'').replace(/\s*\(.*$/,'')+'. O deploy do Claude subiu no YouTube.','voz')});
 // ---------- conversa com o bot (o que estiver na tela vai junto) ----------
 var CJ={ult:null,esperando:false};
@@ -545,7 +571,7 @@ export const JARVIS_HTML = `<!doctype html>
       <h2 id="hEsp">Esperando você</h2>
       <p class="sub" id="subEsp">lendo…</p>
       <div class="rolar"><ul class="lista esp" id="listaEsp"></ul></div>
-      <p class="aviso-rod">Visto e Depois só marcam nesta tela (ficam neste navegador). Nada é executado.</p>
+      <p class="aviso-rod">Visto tira da lista. Depois esconde por 3 h e volta. Fica neste navegador; nada é executado.</p>
     </section>
   </main>
   <footer>
@@ -558,6 +584,7 @@ export const JARVIS_HTML = `<!doctype html>
       <button type="button" data-cmd="espera">O que espera<kbd>3</kbd></button>
       <button type="button" data-cmd="foco" id="bFoco" aria-pressed="false">Modo foco<kbd>4</kbd></button>
       <button type="button" data-cmd="modo" id="bModo">Trocar visão<kbd>5</kbd></button>
+      <button type="button" data-cmd="avisos" id="bAvisos" aria-pressed="false">Avisos: desligados<kbd>6</kbd></button>
     </div>
   </footer>
 </div>

@@ -25,7 +25,7 @@ export interface InfoSessao {
   entrada: string | null;
   retrato: Retrato | null;
   processo: Processo | null;
-  transcript: { ultima_atividade: number; tamanho_mb: number; ultimo_pedido: string | null; ultima_resposta: string | null; modelo: string | null } | null;
+  transcript: { ultima_atividade: number; tamanho_mb: number; ultimo_pedido: string | null; ultima_resposta: string | null; modelo: string | null; pergunta?: string | null } | null;
 }
 
 /** Mascara chaves e tokens que aparecem em comandos e saídas. */
@@ -113,17 +113,31 @@ export function lerEntrada(arq: string): string | null {
 }
 function lerInicio(arq: string): string { const b = Buffer.alloc(65536); const fd = openSync(arq, 'r'); try { const n = readSync(fd, b, 0, b.length, 0); return b.subarray(0, n).toString('utf8'); } finally { closeSync(fd); } }
 
+/** A sessão terminou a vez perguntando algo? Só conta se a ÚLTIMA mensagem for do Claude (nada de
+ * ferramenta nem pedido seu depois). Prefere a linha "Sua resposta: …" (regra do CLAUDE.md global);
+ * senão, a última linha que termina em "?". Devolve a pergunta (até 200 caracteres) ou null. */
+export function perguntaPendente(conv: Mensagem[]): string | null {
+  const ult = conv[conv.length - 1];
+  if (!ult || ult.quem !== 'claude') return null;
+  const linhas = ult.texto.split('\n').map((l) => l.replace(/^[-+!>*\s`]+/, '').trim()).filter(Boolean);
+  const sua = [...linhas].reverse().find((l) => /^sua resposta\s*:/i.test(l));
+  if (sua) return corta(sua.replace(/^sua resposta\s*:\s*/i, ''), 200) || null;
+  const fim = linhas.slice(-3).reverse().find((l) => /\?\s*\**$/.test(l) && l.length > 8);
+  return fim ? corta(fim.replace(/\*+/g, ''), 200) : null;
+}
+
 export function infoTranscript(arq: string) {
   let st;
   try { st = statSync(arq); } catch { return null; }
   const cauda = lerFim(arq, 400_000) ?? '';
-  const conv = lerConversa(cauda, 400, 300);
+  const conv = lerConversa(cauda, 400, 4000);
   const pedido = [...conv].reverse().find((m) => m.quem === 'voce');
   const resposta = [...conv].reverse().find((m) => m.quem === 'claude');
   return {
     ultima_atividade: Math.floor(st.mtimeMs / 1000), tamanho_mb: Math.round(st.size / 1e5) / 10,
     ultimo_pedido: pedido ? corta(pedido.texto, 220) : null, ultima_resposta: resposta ? corta(resposta.texto, 220) : null,
     modelo: ultimoModelo(cauda),
+    pergunta: perguntaPendente(conv),
   };
 }
 

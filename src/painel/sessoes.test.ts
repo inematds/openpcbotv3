@@ -5,7 +5,7 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { acharTranscript, lerConversa, lerOrigem, mascarar } from './fontes/sessoes.js';
+import { acharTranscript, lerConversa, lerOrigem, mascarar, perguntaPendente } from './fontes/sessoes.js';
 
 describe('mascarar', () => {
   it('esconde chaves, tokens de bot e Bearer', () => {
@@ -76,5 +76,21 @@ describe('lerOrigem', () => {
     const o = lerOrigem(300, null, 'headless', proc);
     expect(o.tipo).toBe('agente');
     expect(o.quem).toContain('outra sessão do Claude');
+  });
+});
+
+describe('perguntaPendente', () => {
+  const m = (quem: 'voce' | 'claude' | 'ferramenta', texto: string) => ({ quando: null, quem, texto });
+  it('pega a linha "Sua resposta:" do bloco diff', () => {
+    expect(perguntaPendente([m('voce', 'faz'), m('claude', 'Pronto.\n```diff\n- Terminei: X\n! Sua resposta: publico também a versão EN?\n```')])).toBe('publico também a versão EN?');
+  });
+  it('cai na última linha com "?"', () => {
+    expect(perguntaPendente([m('claude', 'Fiz o A.\nQuer que eu faça o B também?')])).toBe('Quer que eu faça o B também?');
+  });
+  it('null se depois veio ferramenta ou pedido, ou se não pergunta', () => {
+    expect(perguntaPendente([m('claude', 'Vou ver isso?'), m('ferramenta', 'Bash: ls')])).toBeNull();
+    expect(perguntaPendente([m('claude', 'Quer?'), m('voce', 'sim')])).toBeNull();
+    expect(perguntaPendente([m('claude', 'Terminei: render do vídeo.')])).toBeNull();
+    expect(perguntaPendente([])).toBeNull();
   });
 });

@@ -38,6 +38,8 @@ export function montarEsperando(g: GruposColetados, pendencias: { titulo: string
   for (const r of g.producao.dados?.presas ?? []) out.push({ tipo: 'presa', nivel: 'erro', grupo: 'producao', texto: `${r.unidade} parada há ${r.aberta_min} min` });
   for (const e of g.producao.dados?.esperas ?? []) if (((e.estado === 'falhou' || e.estado === 'parado') && e.recente) || e.passou_teto) out.push({ tipo: 'espera', nivel: 'aviso', grupo: 'producao', texto: `Espera ${e.chave}: ${e.passou_teto ? 'passou do teto' : e.estado}` });
   for (const a of aguardandoOk) out.push({ tipo: 'ok', nivel: 'aviso', grupo: 'bots', texto: `inemaccbot aguarda seu OK: ${a.slug} (${a.fase})` });
+  // Sessão viva que terminou a vez com pergunta (Nei, 13/11): vira item e aviso do navegador.
+  for (const t of g.terminais.dados?.vivos ?? []) { const q = t.transcript?.pergunta; if (q) out.push({ tipo: 'pergunta', nivel: 'aviso', grupo: 'terminais', texto: `${t.projeto} pergunta: ${q}` }); }
   for (const t of g.terminais.dados?.interrompidos ?? []) out.push({ tipo: 'terminal', nivel: 'aviso', grupo: 'terminais', texto: `Terminal interrompido em ${t.projeto}` });
   for (const a of g.creditos.dados?.avisos ?? []) out.push({ tipo: 'manual', nivel: a.vencido || a.nivel === 'erro' ? 'erro' : a.nivel === 'info' ? 'info' : 'aviso', grupo: 'creditos', texto: a.ate && /^\d{4}-\d{2}-\d{2}/.test(a.ate) ? `${a.titulo} até ${a.ate.slice(8, 10)}/${a.ate.slice(5, 7)}` : a.ate ? `${a.titulo} até ${a.ate}` : a.titulo });
   for (const p of pendencias ?? []) out.push({ tipo: 'pendencia', nivel: 'info', grupo: 'esperando', texto: p.titulo });
