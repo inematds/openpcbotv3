@@ -5,6 +5,7 @@
 // Autenticação: sessão por senha (cookie HttpOnly, 365 dias deslizante: o aparelho
 // fica lembrado) ou JWT do Cloudflare Access.
 // Fora do loopback só sobe com senha definida.
+import { tratarPwa } from './pwa.js';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 
 import { enviarComId, painelEmCache, tratarPainel } from './http-painel.js';
@@ -39,7 +40,7 @@ export function bindEfetivo(pedido: string | undefined, temSenha: boolean): { bi
 const CSP = [
   "default-src 'none'", "script-src 'unsafe-inline'", "style-src 'unsafe-inline' https://fonts.googleapis.com",
   'font-src https://fonts.gstatic.com', "img-src 'self' https://i.ytimg.com data:", "connect-src 'self'",
-  "form-action 'self'", "frame-ancestors 'none'", "base-uri 'none'",
+  "form-action 'self'", "manifest-src 'self'", "worker-src 'self'", "frame-ancestors 'none'", "base-uri 'none'",
 ].join('; ');
 
 function seguranca(res: ServerResponse): void {
@@ -121,6 +122,7 @@ export function criarServidorPainel(o: OpcoesServidor): Server {
     const p = url.pathname;
     const m = req.method ?? 'GET';
     try {
+      if (m === 'GET' && tratarPwa(p, res)) return; // app instalável: manifesto, sw.js e ícones (públicos, sem dado)
       if (p === '/login') {
         const h = lerHash(arq);
         if (m === 'GET') {

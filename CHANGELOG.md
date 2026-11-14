@@ -1,5 +1,9 @@
 # CHANGELOG — openpcbotv3
 
+## 3.34.17 — 2026-11-14
+
+Painel **instalável no celular** (Nei, 14/11: "no celular poderá ser instalado ou via web também"). É a mesma página: `/manifest.webmanifest` (standalone, início em `/`, ícones 192/512 + maskable em `assets/painel/`, grade 2×2 preto/amarelo), `/sw.js` mínimo (sem cache: dado ao vivo; sem rede mostra "Sem conexão com o painel"), tags no head do painel, Jarvis e login; CSP com `manifest-src`/`worker-src 'self'`. Rotas do app são públicas (não têm dado). Conferido no Chromium: `Page.getInstallabilityErrors` vazio, SW ativo. No Android: Chrome → ⋮ → Instalar app.
+
 ## 3.33.17 — 2026-11-14
 
 Painel (pedido do Nei, 14/11): quadros **INEMA.PRO** e **Portal**. Fonte: `uso-inema` (`~/projetos/wifi/uso-inema`, timer 1×/dia 07:10, Supabase só leitura e só contagens, autorizado pelo Nei: "pode fazer leitura diária") → `~/.local/share/inema/uso-inema.json`. INEMA.PRO: no ar (do quadro Sites), rotinas do cron (sync-catalogos, gera-embeddings, sync-cerebro, radar-pedidos), o que fizemos (git 24 h / 7 dias), quem entra logado (assinante/vencido/não assinante, por área), visitas por área (contador acumulado + delta do dia) e uso de IA da curadoria (consultas, tokens, US$, modelos). Portal: no ar, git, visitas e sessões, busca (resultado clicado na home + link "Buscas" do menu), eventos (cliques, mais clicados, contador do eventos.inema.pro) e chat (conversas, perguntas, erros do modelo, leads, pedidos). Rotina com erro ou vigia parado (> 30 h) vira aviso em "Esperando você". Grade do desktop ganha a 5ª linha.

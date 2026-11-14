@@ -1,3 +1,4 @@
+import { PWA_HEAD } from '../pwa.js';
 // Versão JARVIS do painel (3.14.7): o visual HUD do kit jarvis-painel (núcleo com
 // anéis, partida "bom dia", voz em português, barra de comando) com os dados de
 // verdade do /api/painel. Mesmo login e mesmas rotas de dados do painel clássico;
@@ -553,7 +554,7 @@ partida();
 
 export const JARVIS_HTML = `<!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8">
-<title>JARVIS — Painel INEMA</title>
+<title>JARVIS — Painel INEMA</title>${PWA_HEAD}
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="dark">
 <style>${JARVIS_CSS}</style></head>

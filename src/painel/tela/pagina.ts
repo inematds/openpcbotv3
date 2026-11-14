@@ -1,5 +1,6 @@
 // Página do painel: HTML + CSS + JS inline, sem build nem CDN obrigatório
 // (Sora/Inter do Google Fonts com fallback de sistema).
+import { PWA_HEAD } from '../pwa.js';
 import { CHAT_HTML, JS_CHAT } from './script-chat.js';
 import { PAINEL_CSS } from './estilo.js';
 import { JS_AJUDA, JS_LACO } from './script-base.js';
@@ -16,7 +17,7 @@ export const PAINEL_HTML = `<!doctype html>
 <title>Painel INEMA</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="dark">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+${PWA_HEAD}<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@500;600;700&display=swap" rel="stylesheet">
 <style>${PAINEL_CSS}</style></head>
 <body><div class="app">

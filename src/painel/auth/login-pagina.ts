@@ -1,3 +1,4 @@
+import { PWA_HEAD } from '../pwa.js';
 // Tela de entrada do painel, no mesmo visual (preto INEMA, amarelo só no botão).
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
 
@@ -15,7 +16,7 @@ export function paginaLogin(o: { mensagem?: string; erro?: boolean; semSenha?: b
 </form>`;
   return `<!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><title>Entrar no painel INEMA</title>
-<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark">${PWA_HEAD}<meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@600;700&display=swap" rel="stylesheet">
 <style>
