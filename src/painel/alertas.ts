@@ -15,6 +15,7 @@ import type { coletarSites } from './fontes/sites.js';
 import type { coletarTerminais } from './fontes/terminais.js';
 import type { coletarVps } from './fontes/vps.js';
 import type { coletarApis } from './fontes/apis.js';
+import { alertasPay, type DadosPay } from './fontes/pay.js';
 
 type D<F extends (...a: never[]) => unknown> = Awaited<ReturnType<F>> extends { dados: infer X } ? X : never;
 export interface GruposColetados {
@@ -27,6 +28,7 @@ export interface GruposColetados {
   terminais: Grupo<D<typeof coletarTerminais>>;
   vps: Grupo<D<typeof coletarVps>>;
   apis: Grupo<D<typeof coletarApis>>;
+  pay?: Grupo<DadosPay>;
 }
 
 export const LIMITES = { discoPct: 90, memoriaGb: 10, reinicioH: 6, limitePct: 80 };
@@ -101,6 +103,8 @@ export const REGRAS: Regra[] = [
     if (m.disco_pct !== null && m.disco_pct >= LIMITES.discoPct) return [{ chave: `vps-disco:${v.id}`, nivel: m.disco_pct >= 95 ? 'erro' as const : 'aviso' as const, texto: `${v.id.toUpperCase()} (${v.nome}) com disco em ${m.disco_pct}%` }];
     return [];
   }) },
+  // Pay e bancos (Nei, 14/11): robô de pagamento parado é sempre erro.
+  { id: 'pay', grupo: 'pay', avaliar: (g) => alertasPay(g.pay?.dados) },
   { id: 'terminal-interrompido', grupo: 'terminais', avaliar: (g) => (g.terminais.dados?.interrompidos ?? [])
     .map((t) => ({ chave: `terminal-interrompido:${t.session_id}`, nivel: 'aviso' as const, texto: `Terminal interrompido em ${t.projeto}` })) },
 ];

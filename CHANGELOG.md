@@ -1,5 +1,9 @@
 # CHANGELOG — openpcbotv3
 
+## 3.32.15 — 2026-11-14
+
+Quadro novo **Pay e bancos** (pedido do Nei, 14/11), na linha de baixo ao lado de Tendências de rede. Mostra os robôs de pagamento (hoje: PIX do Nubank na VPS1): funcionando/atenção/PARADO, falhas seguidas, último sucesso, PIX baixados em 24 h e 7 dias (quantidade e valor, sem nome de pagador), e quando o token do Gmail vence. Fonte: `~/.local/share/inema/pay.json`, do pay-monitor (`~/projetos/wifi/pay-monitor`, timer de 10 min, SSH só leitura); arquivo com mais de 30 min = "monitor parado". Robô com problema vira **alerta** (regra `pay`) e item vermelho no topo de **Esperando você**; o aviso 🟥/🟩 no v3 sai do próprio pay-monitor. Testes em `pay.test.ts`.
+
 ## 3.31.15 — 2026-11-13
 
 **Radar de oportunidades no painel** (pedido do Nei, 13/11). O quadro **Tendências de rede** mostra as pautas do dia do `~/projetos/wifi/radar-oportunidades` (`painel.json`, gravado às 08:15 e a cada aprovação), com estado de cada uma (esperando, em produção, feito, falhou). Em **Esperando você** entram as pautas aguardando o "faz N" no v3 (aviso) e o erro quando o radar não rodou até 09:45 ou uma pauta falhou. Nova skill `radar-oportunidades`: "faz 1 3" / "nenhum" no v3 roda o `oportunidades.py aprovar|nenhum`. Testes em `tendencias.test.ts`.

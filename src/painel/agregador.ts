@@ -10,6 +10,7 @@ import { coletarProducao } from './fontes/producao.js';
 import { coletarPublicacao } from './fontes/publicacao.js';
 import { coletarEscada } from './fontes/escada.js';
 import { coletarTendencias, type Oportunidades } from './fontes/tendencias.js';
+import { alertasPay, coletarPay } from './fontes/pay.js';
 import { coletarRadar } from './fontes/radar.js';
 import { coletarVps } from './fontes/vps.js';
 import { coletarApis } from './fontes/apis.js';
@@ -32,6 +33,8 @@ export interface ItemEsperando { tipo: string; texto: string; nivel: 'erro' | 'a
 
 export function montarEsperando(g: GruposColetados, pendencias: { titulo: string }[] | null, aguardandoOk: { fluxo_id: number; fase: string; slug: string }[], oport: Oportunidades | null = null): ItemEsperando[] {
   const out: ItemEsperando[] = [];
+  // Pay e bancos (Nei, 14/11): robô de pagamento com problema vai para o topo.
+  for (const a of alertasPay(g.pay?.dados)) out.push({ tipo: 'falha', nivel: a.nivel, grupo: 'pay', texto: a.texto });
   // Radar de oportunidades (Nei, 13/11): pauta esperando "faz N" no v3, ou erro se não rodou.
   if (oport) {
     const esp = oport.pautas.filter((p) => p.estado === 'esperando');
@@ -55,13 +58,13 @@ export function montarEsperando(g: GruposColetados, pendencias: { titulo: string
 
 export interface Painel {
   versao: string; gerado_em: number; ms: number;
-  grupos: GruposColetados & { vagas: Grupo<Awaited<ReturnType<typeof coletarVagas>>['dados']>; radar: Grupo<ReturnType<typeof coletarRadar>['dados']>; escada: Grupo<ReturnType<typeof coletarEscada>['dados']>; tendencias: Grupo<ReturnType<typeof coletarTendencias>['dados']>; esperando: Grupo<{ itens: ItemEsperando[] }>; v3: Grupo<unknown>; inemaccbot: Grupo<unknown>; v2: Grupo<unknown> };
+  grupos: GruposColetados & { vagas: Grupo<Awaited<ReturnType<typeof coletarVagas>>['dados']>; radar: Grupo<ReturnType<typeof coletarRadar>['dados']>; escada: Grupo<ReturnType<typeof coletarEscada>['dados']>; tendencias: Grupo<ReturnType<typeof coletarTendencias>['dados']>; pay: Grupo<ReturnType<typeof coletarPay>['dados']>; esperando: Grupo<{ itens: ItemEsperando[] }>; v3: Grupo<unknown>; inemaccbot: Grupo<unknown>; v2: Grupo<unknown> };
   alertas: AlertaPainel[];
 }
 
 export async function montarPainel(d: DepsPainel): Promise<Painel> {
   const t0 = Date.now();
-  const [maquina, bots, producao, publicacao, creditos, sites, vagas, terminais, radar, vps, apis, escada, tendencias] = await Promise.all([
+  const [maquina, bots, producao, publicacao, creditos, sites, vagas, terminais, radar, vps, apis, escada, tendencias, pay] = await Promise.all([
     grupo(d, async () => ({ dados: await coletarMaquina(d), ausentes: [] })),
     grupo(d, () => coletarBots(d)),
     grupo(d, () => coletarProducao(d)),
@@ -75,8 +78,9 @@ export async function montarPainel(d: DepsPainel): Promise<Painel> {
     grupo(d, () => coletarApis(d)),
     grupo(d, () => coletarEscada(d)),
     grupo(d, () => coletarTendencias(d)),
+    grupo(d, () => coletarPay(d)),
   ]);
-  const g: GruposColetados = { maquina, bots, producao, publicacao, creditos, sites, terminais, vps, apis };
+  const g: GruposColetados = { maquina, bots, producao, publicacao, creditos, sites, terminais, vps, apis, pay };
   const esperando = await grupo(d, () => {
     const pend = coletarPendencias(d);
     return { dados: { itens: montarEsperando(g, pend, bots.dados?.inemaccbot?.aguardando_ok ?? [], tendencias.dados?.oportunidades ?? null) }, ausentes: pend === null ? ['pendencias.md'] : [] };
@@ -90,7 +94,7 @@ export async function montarPainel(d: DepsPainel): Promise<Painel> {
   const v3 = fatia((b) => ({ servico: b.servicos.openpcbotv3 ?? 'desconhecido', bot: b.v3 }));
   const inemaccbot = fatia((b) => ({ servico: b.servicos.inemaccbot ?? 'desconhecido', bot: b.inemaccbot }));
   const v2 = fatia((b) => ({ servico: b.servicos.openpcbot ?? 'desconhecido', bot: b.v2 }));
-  return { versao: d.versao, gerado_em: d.agora(), ms: Date.now() - t0, grupos: { ...g, vagas, radar, escada, tendencias, esperando, v3, inemaccbot, v2 }, alertas };
+  return { versao: d.versao, gerado_em: d.agora(), ms: Date.now() - t0, grupos: { ...g, vagas, radar, escada, tendencias, pay, esperando, v3, inemaccbot, v2 }, alertas };
 }
 
 export { falhaCompletaV3 };

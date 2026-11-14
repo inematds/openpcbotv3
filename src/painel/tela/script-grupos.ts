@@ -75,6 +75,26 @@ G.radar={tile:function(d){var fi=d.fila||[],lib=fi.filter(function(i){return i.e
   +sec('Fila (sai o mais antigo liberado, 1 por hora)',tabela(['Nicho','Edição','Pronto desde','Estado'],(d.fila||[]).map(function(i){return[esc(i.nome),esc(i.edicao)+(i.video!=='video'?' <span class="fraco">'+esc(i.video)+'</span>':''),quando(i.desde),FE[i.estado]+(i.estado==='espera'?' ('+esc(i.a_partir)+')':'')]})))
   +sec('Últimos envios',tabela(['Quando','Nicho','Resultado'],(d.historico||[]).map(function(h){return[quando(h.quando),esc(h.nome)+' <span class="fraco">'+esc(h.edicao)+'</span>',(h.url?'<a href="'+esc(h.url)+'" target="_blank" rel="noopener">'+esc(h.resultado)+'</a>':esc(h.resultado))+(h.motivo?' <span class="mut">'+esc(h.motivo)+'</span>':'')]})))}};
 // Tendências de rede (Nei, 12/11): resumo do youtube-bombando (1x por dia, 07:15); painel completo em /bombando/.
+// Pay e bancos (Nei, 14/11): robôs de pagamento (PIX Nubank na VPS1), pelo pay-monitor (10 min).
+function real(v){return v==null?'–':'R$ '+n(v,2)}
+var PAYE={ok:['','funcionando'],aviso:['s-aviso','atenção'],erro:['s-erro','PARADO']};
+G.pay={tile:function(d,g){if(g.ausentes&&g.ausentes.length)return{frase:'<p class="frase s-erro">sem leitura do pay-monitor</p>',corpo:'<div class="sem">timer pay-monitor (10 min) não gravou ~/.local/share/inema/pay.json</div>'};
+  var rs=d.robos||[],er=rs.filter(function(r){return r.estado==='erro'}),av=rs.filter(function(r){return r.estado==='aviso'});
+  var fr=d.parado?'<p class="frase s-erro">monitor parado</p>':er.length?'<p class="frase s-erro">'+esc(er[0].nome)+' PARADO</p>':av.length?'<p class="frase s-aviso">'+esc(av[0].nome)+': atenção</p>':'<p class="frase">'+plural(rs.length,'robô funcionando','robôs funcionando')+'</p>';
+  var c=rs.map(function(r){var e=PAYE[r.estado]||PAYE.erro;return linhaTx('<b>'+esc(r.nome)+'</b> <span class="fraco">'+esc(r.onde)+'</span>','<span class="'+e[0]+'">'+e[1]+'</span>','mut')
+    +(r.motivo?linhaTx('<span class="'+e[0]+'">'+esc(r.motivo)+'</span>',''):'')
+    +linhaTx('PIX baixados 24 h · 7 dias',(r.pix_24h==null?'–':r.pix_24h)+' · '+(r.pix_7d==null?'–':r.pix_7d)+' ('+real(r.valor_7d)+')','mut')
+    +(r.token_vence?linhaTx('token do Gmail vence',quando(r.token_vence),'mut'):'')}).join('');
+  return{frase:fr,corpo:c+linhaTx('<span class="fraco">atualizado</span>',quando(d.atualizado),'mut')}},
+ detalhe:function(d){var rs=d.robos||[];
+  return sec('Pay e bancos','<p class="fraco">Robôs de pagamento vigiados a cada 10 min pelo pay-monitor (~/projetos/wifi/pay-monitor, SSH só leitura). Falha = aviso 🟥 no v3 e item em Esperando você.</p>'+(d.parado?'<p class="s-erro">O pay-monitor não atualiza há mais de 30 min.</p>':''),1)
+  +rs.map(function(r){var e=PAYE[r.estado]||PAYE.erro;return sec(esc(r.nome)+' · '+esc(r.onde),tabela(['',''],[
+    ['Estado','<span class="'+e[0]+'">'+e[1]+'</span>'+(r.motivo?' — '+esc(r.motivo):'')],
+    ['Último sucesso',quando(r.ultimo_ok)],['Última execução',quando(r.ultima_execucao)],
+    ['Execuções 7 dias',(r.execucoes_7d==null?'–':r.execucoes_7d)+' ('+(r.falhas_7d||0)+' falhas'+(r.falhas_seguidas?', '+r.falhas_seguidas+' seguidas agora':'')+')'],
+    ['PIX baixados 24 h',(r.pix_24h==null?'–':r.pix_24h)+' · '+real(r.valor_24h)],['PIX baixados 7 dias',(r.pix_7d==null?'–':r.pix_7d)+' · '+real(r.valor_7d)],
+    ['Último PIX',quando(r.ultimo_pix)],['Token do Gmail vence',r.token_vence?quando(r.token_vence)+' <span class="fraco">(app OAuth em modo de teste: 7 dias)</span>':'sem prazo'],
+    ['Último erro',r.erro?esc(r.erro):'–']]),1)}).join('')}};
 // Radar de oportunidades (Nei, 13/11): pautas do dia, sua aprovação pendente ou erro.
 var OPE={'aguardando':['s-aviso','esperando seu "faz N" no v3'],'aprovado':['','aprovado'],'nenhum':['','você recusou hoje'],'sem oportunidade':['','hoje sem oportunidade'],'aguardando 08:15':['','roda às 08:15'],'erro':['s-erro','erro'],'nao rodou':['s-erro','não rodou hoje'],'sem rodada':['s-erro','sem rodada']};
 function oportLinha(o){if(!o)return'';var e=OPE[o.estado]||['',o.estado];var t='<b>Oportunidades:</b> <span class="'+e[0]+'">'+esc(e[1])+'</span>'+(o.erro?' <span class="s-erro">'+esc(o.erro)+'</span>':'');

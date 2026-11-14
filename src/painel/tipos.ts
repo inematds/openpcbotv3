@@ -37,6 +37,7 @@ export interface Caminhos {
   escada: string;
   bombando: string;
   oportunidades: string;
+  pay: string;
 }
 
 export function caminhosPadrao(home = homedir(), raizBot = process.cwd()): Caminhos {
@@ -73,6 +74,7 @@ export function caminhosPadrao(home = homedir(), raizBot = process.cwd()): Camin
     escada: h('.local/share/minha-escada/escada.json'),
     bombando: process.env.BOMBANDO_DIR || h('projetos/youtube-bombando/painel'),
     oportunidades: process.env.OPORTUNIDADES_JSON || h('projetos/wifi/radar-oportunidades/painel.json'),
+    pay: process.env.PAY_JSON || h('.local/share/inema/pay.json'),
   };
 }
 
@@ -114,7 +116,7 @@ export function depsPadrao(p: Partial<DepsPainel> & { versao: string; concorrenc
   };
 }
 
-export type NomeGrupo = 'maquina' | 'bots' | 'producao' | 'publicacao' | 'creditos' | 'sites' | 'vagas' | 'radar' | 'escada' | 'tendencias' | 'terminais' | 'esperando' | 'vps' | 'apis' | 'v3' | 'inemaccbot' | 'v2';
+export type NomeGrupo = 'maquina' | 'bots' | 'producao' | 'publicacao' | 'creditos' | 'sites' | 'vagas' | 'radar' | 'escada' | 'tendencias' | 'pay' | 'terminais' | 'esperando' | 'vps' | 'apis' | 'v3' | 'inemaccbot' | 'v2';
 
 export interface Grupo<T = Record<string, unknown>> {
   ok: boolean;
