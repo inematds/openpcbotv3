@@ -45,3 +45,18 @@ describe('Pay e bancos — desenho do quadro', async () => {
     expect(G.pay.tile({ robos: [] }, { ausentes: ['pay.json'] }).frase).toContain('sem leitura');
   });
 });
+
+describe('Pay e bancos — Asaas', async () => {
+  const { JS_AJUDA } = await import('./tela/script-base.js');
+  const { JS_GRUPOS } = await import('./tela/script-grupos.js');
+  type Desenho = { tile: (d: unknown, g: unknown) => { frase: string; corpo: string }; detalhe: (d: unknown, g: unknown) => string };
+  const G = (new Function(`${JS_AJUDA}\nvar NOMES={};function tok(){return'x'}\n${JS_GRUPOS}\nreturn G;`)() as Record<string, Desenho>);
+  it('webhook interrompido: erro, rótulo próprio e linhas extras no detalhe', () => {
+    const d = normalizarPay({ atualizado: AGORA - 60, robos: [{ nome: 'Asaas', onde: 'pay.inema.pro', estado: 'erro', motivo: 'webhook pay.inema.pro INTERROMPIDO', rotulo: 'pagamentos recebidos', pix_24h: 7, pix_7d: 67, valor_7d: 3121.48, extra: [['webhook pay.inema.pro', 'INTERROMPIDO'], ['links ativos', '7']] }] }, AGORA);
+    expect(alertasPay(d)[0].nivel).toBe('erro');
+    expect(G.pay.tile(d, { ok: true }).corpo).toContain('pagamentos recebidos');
+    const det = G.pay.detalhe(d, { ok: true });
+    expect(det).toContain('links ativos');
+    expect(det).not.toContain('Execuções 7 dias');
+  });
+});

@@ -83,18 +83,19 @@ G.pay={tile:function(d,g){if(g.ausentes&&g.ausentes.length)return{frase:'<p clas
   var fr=d.parado?'<p class="frase s-erro">monitor parado</p>':er.length?'<p class="frase s-erro">'+esc(er[0].nome)+' PARADO</p>':av.length?'<p class="frase s-aviso">'+esc(av[0].nome)+': atenção</p>':'<p class="frase">'+plural(rs.length,'robô funcionando','robôs funcionando')+'</p>';
   var c=rs.map(function(r){var e=PAYE[r.estado]||PAYE.erro;return linhaTx('<b>'+esc(r.nome)+'</b> <span class="fraco">'+esc(r.onde)+'</span>','<span class="'+e[0]+'">'+e[1]+'</span>','mut')
     +(r.motivo?linhaTx('<span class="'+e[0]+'">'+esc(r.motivo)+'</span>',''):'')
-    +linhaTx('PIX baixados 24 h · 7 dias',(r.pix_24h==null?'–':r.pix_24h)+' · '+(r.pix_7d==null?'–':r.pix_7d)+' ('+real(r.valor_7d)+')','mut')
+    +linhaTx(esc(r.rotulo||'PIX baixados')+' 24 h · 7 dias',(r.pix_24h==null?'–':r.pix_24h)+' · '+(r.pix_7d==null?'–':r.pix_7d)+' ('+real(r.valor_7d)+')','mut')
     +(r.token_vence?linhaTx('token do Gmail vence',quando(r.token_vence),'mut'):'')}).join('');
   return{frase:fr,corpo:c+linhaTx('<span class="fraco">atualizado</span>',quando(d.atualizado),'mut')}},
  detalhe:function(d){var rs=d.robos||[];
-  return sec('Pay e bancos','<p class="fraco">Robôs de pagamento vigiados a cada 10 min pelo pay-monitor (~/projetos/wifi/pay-monitor, SSH só leitura). Falha = aviso 🟥 no v3 e item em Esperando você.</p>'+(d.parado?'<p class="s-erro">O pay-monitor não atualiza há mais de 30 min.</p>':''),1)
+  return sec('Pay e bancos','<p class="fraco">Robôs e contas de pagamento vigiados a cada 10 min pelo pay-monitor (~/projetos/wifi/pay-monitor): PIX Nubank por SSH na VPS1 e Asaas pela API, ambos só leitura. Falha = aviso 🟥 no v3 e item em Esperando você.</p>'+(d.parado?'<p class="s-erro">O pay-monitor não atualiza há mais de 30 min.</p>':''),1)
   +rs.map(function(r){var e=PAYE[r.estado]||PAYE.erro;return sec(esc(r.nome)+' · '+esc(r.onde),tabela(['',''],[
     ['Estado','<span class="'+e[0]+'">'+e[1]+'</span>'+(r.motivo?' — '+esc(r.motivo):'')],
-    ['Último sucesso',quando(r.ultimo_ok)],['Última execução',quando(r.ultima_execucao)],
-    ['Execuções 7 dias',(r.execucoes_7d==null?'–':r.execucoes_7d)+' ('+(r.falhas_7d||0)+' falhas'+(r.falhas_seguidas?', '+r.falhas_seguidas+' seguidas agora':'')+')'],
-    ['PIX baixados 24 h',(r.pix_24h==null?'–':r.pix_24h)+' · '+real(r.valor_24h)],['PIX baixados 7 dias',(r.pix_7d==null?'–':r.pix_7d)+' · '+real(r.valor_7d)],
-    ['Último PIX',quando(r.ultimo_pix)],['Token do Gmail vence',r.token_vence?quando(r.token_vence)+' <span class="fraco">(app OAuth em modo de teste: 7 dias)</span>':'sem prazo'],
-    ['Último erro',r.erro?esc(r.erro):'–']]),1)}).join('')}};
+    ['Última leitura',quando(r.ultima_execucao)]]
+    .concat(r.execucoes_7d!=null?[['Último sucesso',quando(r.ultimo_ok)],['Execuções 7 dias',r.execucoes_7d+' ('+(r.falhas_7d||0)+' falhas'+(r.falhas_seguidas?', '+r.falhas_seguidas+' seguidas agora':'')+')']]:[])
+    .concat([[esc(r.rotulo||'PIX baixados')+' 24 h',(r.pix_24h==null?'–':r.pix_24h)+' · '+real(r.valor_24h)],[esc(r.rotulo||'PIX baixados')+' 7 dias',(r.pix_7d==null?'–':r.pix_7d)+' · '+real(r.valor_7d)],['Último',quando(r.ultimo_pix)]])
+    .concat((r.extra||[]).map(function(x){return[esc(x[0]),esc(x[1])]}))
+    .concat(r.token_vence?[['Token do Gmail vence',quando(r.token_vence)+' <span class="fraco">(app OAuth em modo de teste: 7 dias)</span>']]:[])
+    .concat(r.erro?[['Último erro',esc(r.erro)]]:[])),1)}).join('')}};
 // Radar de oportunidades (Nei, 13/11): pautas do dia, sua aprovação pendente ou erro.
 var OPE={'aguardando':['s-aviso','esperando seu "faz N" no v3'],'aprovado':['','aprovado'],'nenhum':['','você recusou hoje'],'sem oportunidade':['','hoje sem oportunidade'],'aguardando 08:15':['','roda às 08:15'],'erro':['s-erro','erro'],'nao rodou':['s-erro','não rodou hoje'],'sem rodada':['s-erro','sem rodada']};
 function oportLinha(o){if(!o)return'';var e=OPE[o.estado]||['',o.estado];var t='<b>Oportunidades:</b> <span class="'+e[0]+'">'+esc(e[1])+'</span>'+(o.erro?' <span class="s-erro">'+esc(o.erro)+'</span>':'');

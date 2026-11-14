@@ -1,5 +1,9 @@
 # CHANGELOG — openpcbotv3
 
+## 3.32.16 — 2026-11-14
+
+Pay e bancos: **Asaas** entra no quadro (API do Asaas só leitura, autorizada pelo Nei em 14/11 para o painel). Linha "Asaas · pay.inema.pro + aventura": pagamentos recebidos em 24 h e 7 dias (quantidade e valor), estado dos 2 webhooks (pay.inema.pro e aventura.inema.club), links ativos e fim da campanha, cobranças vencidas em 30 dias. Webhook interrompido ou desligado = erro (🟥 no v3, alerta vermelho); falhas de entrega ou link de campanha a ≤ 3 dias do fim = aviso. Cada robô tem rótulo próprio e linhas extras no detalhe.
+
 ## 3.32.15 — 2026-11-14
 
 Quadro novo **Pay e bancos** (pedido do Nei, 14/11), na linha de baixo ao lado de Tendências de rede. Mostra os robôs de pagamento (hoje: PIX do Nubank na VPS1): funcionando/atenção/PARADO, falhas seguidas, último sucesso, PIX baixados em 24 h e 7 dias (quantidade e valor, sem nome de pagador), e quando o token do Gmail vence. Fonte: `~/.local/share/inema/pay.json`, do pay-monitor (`~/projetos/wifi/pay-monitor`, timer de 10 min, SSH só leitura); arquivo com mais de 30 min = "monitor parado". Robô com problema vira **alerta** (regra `pay`) e item vermelho no topo de **Esperando você**; o aviso 🟥/🟩 no v3 sai do próprio pay-monitor. Testes em `pay.test.ts`.

@@ -10,6 +10,7 @@ export interface RoboPay {
   ultimo_ok: number | null; ultima_execucao: number | null;
   pix_24h: number | null; valor_24h: number | null; pix_7d: number | null; valor_7d: number | null;
   ultimo_pix: number | null; token_vence: number | null; erro: string | null;
+  rotulo: string; extra: [string, string][];
 }
 export interface DadosPay { atualizado: number | null; parado: boolean; robos: RoboPay[] }
 
@@ -27,6 +28,8 @@ export function normalizarPay(b: { atualizado?: unknown; robos?: unknown } | nul
     ultimo_ok: num(r.ultimo_ok), ultima_execucao: num(r.ultima_execucao),
     pix_24h: num(r.pix_24h), valor_24h: num(r.valor_24h), pix_7d: num(r.pix_7d), valor_7d: num(r.valor_7d),
     ultimo_pix: num(r.ultimo_pix), token_vence: num(r.token_vence), erro: str(r.erro, 160),
+    rotulo: str(r.rotulo, 40) ?? 'PIX baixados',
+    extra: (Array.isArray(r.extra) ? r.extra as unknown[] : []).filter((x): x is [string, string] => Array.isArray(x) && x.length === 2).slice(0, 8).map(([k, v]) => [corta(String(k), 60), corta(String(v), 120)] as [string, string]),
   }));
   return { atualizado, parado: atualizado == null || agora - atualizado > PARADO_S, robos };
 }
