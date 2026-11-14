@@ -36,6 +36,7 @@ export interface Caminhos {
   v2Db: string;
   escada: string;
   bombando: string;
+  oportunidades: string;
 }
 
 export function caminhosPadrao(home = homedir(), raizBot = process.cwd()): Caminhos {
@@ -71,6 +72,7 @@ export function caminhosPadrao(home = homedir(), raizBot = process.cwd()): Camin
     v2Db: h('projetos/openpcbotv2/store/openpcbot.db'),
     escada: h('.local/share/minha-escada/escada.json'),
     bombando: process.env.BOMBANDO_DIR || h('projetos/youtube-bombando/painel'),
+    oportunidades: process.env.OPORTUNIDADES_JSON || h('projetos/wifi/radar-oportunidades/painel.json'),
   };
 }
 

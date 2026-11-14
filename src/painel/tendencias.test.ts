@@ -80,3 +80,24 @@ describe('tendências de rede (youtube-bombando)', () => {
     expect(r.headers.Location).toBe('/bombando/');
   });
 });
+
+describe('radar de oportunidades (painel.json do wifi)', () => {
+  // 1_794_662_633 = 14/11/2026 ~10:23 em Brasília
+  const AGORA = 1_794_662_633;
+  it('lista de hoje com pauta esperando vira item "esperando seu faz N"', async () => {
+    const { normalizarOportunidades } = await import('./fontes/tendencias.js');
+    const { montarEsperando } = await import('./agregador.js');
+    const o = normalizarOportunidades({ data: '2026-11-14', estado: 'aguardando', erro: null, atualizado: AGORA, pautas: [{ n: 1, tema: 'T', slug: 'kit-a', canal: 'lives1', estado: 'esperando', ultima: '' }, { n: 2, tema: 'U', slug: 'kit-b', canal: 'lives8', estado: 'falhou', ultima: 'FALHOU: guia — 404' }], fora: [] }, AGORA);
+    expect(o.estado).toBe('aguardando');
+    const g = { bots: {}, producao: {}, creditos: {}, terminais: {} } as never;
+    const itens = montarEsperando(g, [], [], o);
+    expect(itens.map((i) => i.nivel)).toEqual(['aviso', 'erro']);
+    expect(itens[0].texto).toContain('1) kit-a');
+    expect(itens[1].texto).toContain('guia — 404');
+  });
+  it('arquivo de ontem depois das 09:45 = não rodou (erro); antes = aguardando 08:15', async () => {
+    const { normalizarOportunidades } = await import('./fontes/tendencias.js');
+    expect(normalizarOportunidades({ data: '2026-11-13', estado: 'aprovado' }, AGORA).estado).toBe('nao rodou');
+    expect(normalizarOportunidades(null, AGORA - 4 * 3600).estado).toBe('aguardando 08:15');
+  });
+});

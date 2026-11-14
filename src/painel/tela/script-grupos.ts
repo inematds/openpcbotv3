@@ -75,17 +75,23 @@ G.radar={tile:function(d){var fi=d.fila||[],lib=fi.filter(function(i){return i.e
   +sec('Fila (sai o mais antigo liberado, 1 por hora)',tabela(['Nicho','Edição','Pronto desde','Estado'],(d.fila||[]).map(function(i){return[esc(i.nome),esc(i.edicao)+(i.video!=='video'?' <span class="fraco">'+esc(i.video)+'</span>':''),quando(i.desde),FE[i.estado]+(i.estado==='espera'?' ('+esc(i.a_partir)+')':'')]})))
   +sec('Últimos envios',tabela(['Quando','Nicho','Resultado'],(d.historico||[]).map(function(h){return[quando(h.quando),esc(h.nome)+' <span class="fraco">'+esc(h.edicao)+'</span>',(h.url?'<a href="'+esc(h.url)+'" target="_blank" rel="noopener">'+esc(h.resultado)+'</a>':esc(h.resultado))+(h.motivo?' <span class="mut">'+esc(h.motivo)+'</span>':'')]})))}};
 // Tendências de rede (Nei, 12/11): resumo do youtube-bombando (1x por dia, 07:15); painel completo em /bombando/.
+// Radar de oportunidades (Nei, 13/11): pautas do dia, sua aprovação pendente ou erro.
+var OPE={'aguardando':['s-aviso','esperando seu "faz N" no v3'],'aprovado':['','aprovado'],'nenhum':['','você recusou hoje'],'sem oportunidade':['','hoje sem oportunidade'],'aguardando 08:15':['','roda às 08:15'],'erro':['s-erro','erro'],'nao rodou':['s-erro','não rodou hoje'],'sem rodada':['s-erro','sem rodada']};
+function oportLinha(o){if(!o)return'';var e=OPE[o.estado]||['',o.estado];var t='<b>Oportunidades:</b> <span class="'+e[0]+'">'+esc(e[1])+'</span>'+(o.erro?' <span class="s-erro">'+esc(o.erro)+'</span>':'');
+  return linhaTx(t,o.pautas&&o.pautas.length?plural(o.pautas.length,'pauta','pautas'):'','mut')+(o.pautas||[]).map(function(p){var c=p.estado==='esperando'?'s-aviso':p.estado==='falhou'?'s-erro':'';return linhaTx(esc(p.n+') '+p.slug)+' <span class="fraco">'+esc(p.canal)+'</span>','<span class="'+c+'">'+esc(p.estado)+'</span>','mut')}).join('')}
 function tndNum(v){return v==null?'–':v>=1e6?n(v/1e6)+' mi':v>=1e3?n(v/1e3,0)+' mil':n(v,0)}
 G.tendencias={tile:function(d,g){var ln='<a href="'+esc(d.link||'/bombando/')+'" target="_blank" rel="noopener">abrir painel ↗</a>';
-  if(g.ausentes&&g.ausentes.length||!d.videos)return{frase:'<p class="frase vazia">sem coleta ainda</p>',corpo:'<div class="sem">o youtube-bombando roda 1x por dia às 07:15</div>'+linhaTx(ln,'')};
-  var fr='<p class="frase">'+plural(d.videos,'vídeo','vídeos')+' no YouTube</p>';
-  var c=linhaTx('<b>'+ln+'</b>',quando(d.gerado_em),'mut');
+  var o=d.oportunidades,oe=o&&(o.estado==='erro'||o.estado==='nao rodou'||o.pautas.some(function(p){return p.estado==='falhou'})),oa=o&&o.pautas.some(function(p){return p.estado==='esperando'});
+  if(g.ausentes&&g.ausentes.length||!d.videos)return{frase:'<p class="frase vazia">sem coleta ainda</p>',corpo:'<div class="sem">o youtube-bombando roda 1x por dia às 07:15</div>'+linhaTx(ln,'')+oportLinha(o)};
+  var fr=oe?'<p class="frase s-erro">radar de oportunidades com erro</p>':oa?'<p class="frase s-aviso">pautas esperando seu OK no v3</p>':'<p class="frase">'+plural(d.videos,'vídeo','vídeos')+' no YouTube</p>';
+  var c=oportLinha(o)+linhaTx('<b>'+ln+'</b>',quando(d.gerado_em),'mut');
   c+=linhaTx('<b>Em alta:</b> '+esc((d.assuntos||[]).slice(0,5).map(function(t){return t.termo}).join(' · ')||'–'),'');
   c+=(d.quentes||[]).slice(0,3).map(function(q){return linhaTx('<span class="fraco">'+esc(q.nicho)+'</span> '+esc(q.titulo),tndNum(q.views),'mut')}).join('');
   return{frase:fr,corpo:c}},
  detalhe:function(d){var ln='<p><a href="'+esc(d.link||'/bombando/')+'" target="_blank" rel="noopener">Abrir o painel completo (gráficos, por que bombou, todos os vídeos)</a></p>';
   if(!d.videos)return sec('Tendências de rede','<p class="sem">sem coleta ainda (~/projetos/youtube-bombando)</p>'+ln,1);
-  return sec('Tendências de rede',ln+(d.conclusao?'<p>'+esc(d.conclusao)+'</p>':'')+'<p class="fraco">coleta '+quando(d.gerado_em)+' · '+plural(d.videos,'vídeo','vídeos')+'</p>',1)
+  var o=d.oportunidades,os=o?sec('Radar de oportunidades (08:15)',oportLinha(o)+((o.fora||[]).length?'<p class="fraco">Ficaram de fora: '+o.fora.map(function(f){return esc(f.tema)+' ('+esc(f.motivo)+')'}).join(' · ')+'</p>':'')+((o.pautas||[]).length?tabela(['Pauta','Canal','Estado','Último passo'],o.pautas.map(function(p){return[esc(p.n+') '+p.tema),esc(p.canal),esc(p.estado),'<span class="fraco">'+esc(p.ultima||'–')+'</span>']})):''),1):'';
+  return os+sec('Tendências de rede',ln+(d.conclusao?'<p>'+esc(d.conclusao)+'</p>':'')+'<p class="fraco">coleta '+quando(d.gerado_em)+' · '+plural(d.videos,'vídeo','vídeos')+'</p>',1)
   +sec('Assuntos em alta',tabela(['Termo','views/h'],(d.assuntos||[]).map(function(t){return[esc(t.termo),n(t.peso,0)]})))
   +sec('Mais quente de cada nicho',tabela(['Nicho','Vídeo','Views','Views/h'],(d.quentes||[]).map(function(q){return[esc(q.nicho),'<a href="https://www.youtube.com/watch?v='+encodeURIComponent(q.id)+'" target="_blank" rel="noopener">'+esc(q.titulo)+'</a><br><span class="fraco">'+esc(q.canal)+'</span>',tndNum(q.views),n(q.velocidade,0)]})),1)}};
 // Minha escada (Nei, 12/11): quanto da rotina a IA já conduz (AL4+AL5), lido do escada.json diário.

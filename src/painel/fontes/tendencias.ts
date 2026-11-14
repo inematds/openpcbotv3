@@ -15,7 +15,14 @@ export interface DadosTendencias {
   conclusao: string | null;
   quentes: QuenteTend[];
   link: string;
+  oportunidades: Oportunidades | null;
 }
+
+// Radar de oportunidades (Nei, 13/11/2026): ~/projetos/wifi/radar-oportunidades/painel.json, gravado pelo
+// oportunidades.py (08:15 + a cada aprovação). "nao rodou" = passou das 09:45 e o arquivo não é de hoje.
+export interface PautaOport { n: number; tema: string; slug: string; canal: string; estado: string; ultima: string }
+export interface Oportunidades { data: string; estado: string; erro: string | null; atualizado: number | null; pautas: PautaOport[]; fora: { tema: string; motivo: string }[] }
+const HORA_LIMITE_MIN = 9 * 60 + 45;
 
 interface VideoBruto { id?: string; titulo?: string; canal?: string; views?: unknown; velocidade?: unknown; indisponivel?: unknown; nichos?: string[]; notas?: Record<string, unknown> }
 interface Bruto {
@@ -28,7 +35,7 @@ interface Bruto {
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 export const LINK_BOMBANDO = '/bombando/';
 
-export const VAZIO_TENDENCIAS: DadosTendencias = { gerado_em: null, videos: 0, erros: 0, assuntos: [], conclusao: null, quentes: [], link: LINK_BOMBANDO };
+export const VAZIO_TENDENCIAS: DadosTendencias = { gerado_em: null, videos: 0, erros: 0, assuntos: [], conclusao: null, quentes: [], link: LINK_BOMBANDO, oportunidades: null };
 
 export function normalizarTendencias(b: Bruto): DadosTendencias {
   const videos = Array.isArray(b.videos) ? b.videos : [];
@@ -50,11 +57,35 @@ export function normalizarTendencias(b: Bruto): DadosTendencias {
     conclusao: typeof b.porque?.geral?.conclusao === 'string' ? corta(b.porque.geral.conclusao, 300) : null,
     quentes,
     link: LINK_BOMBANDO,
+    oportunidades: null,
   };
 }
 
+/** Data e minuto do dia em Brasília (UTC-3) para um epoch em segundos. */
+function brasilia(epoch: number): { dia: string; min: number } {
+  const t = new Date((epoch - 3 * 3600) * 1000);
+  return { dia: t.toISOString().slice(0, 10), min: t.getUTCHours() * 60 + t.getUTCMinutes() };
+}
+
+interface OportBruto { data?: unknown; estado?: unknown; erro?: unknown; atualizado?: unknown; pautas?: unknown; fora?: unknown }
+export function normalizarOportunidades(b: OportBruto | null, agora: number): Oportunidades {
+  const hoje = brasilia(agora);
+  const str = (v: unknown, n: number) => (typeof v === 'string' ? corta(v, n) : '');
+  const data = str(b?.data, 10);
+  if (!b || data !== hoje.dia) {
+    const atrasado = hoje.min >= HORA_LIMITE_MIN;
+    return { data: hoje.dia, estado: atrasado ? 'nao rodou' : 'aguardando 08:15', erro: atrasado ? 'o radar de oportunidades não rodou hoje' : null, atualizado: null, pautas: [], fora: [] };
+  }
+  const pautas = (Array.isArray(b.pautas) ? b.pautas : []).map((p: Record<string, unknown>) => ({
+    n: num(p.n) ?? 0, tema: str(p.tema, 140), slug: str(p.slug, 60), canal: str(p.canal, 20), estado: str(p.estado, 20), ultima: str(p.ultima, 200),
+  }));
+  const fora = (Array.isArray(b.fora) ? b.fora : []).slice(0, 5).map((f: Record<string, unknown>) => ({ tema: str(f.tema, 140), motivo: str(f.motivo, 160) }));
+  return { data, estado: str(b.estado, 20) || 'desconhecido', erro: str(b.erro, 220) || null, atualizado: num(b.atualizado), pautas, fora };
+}
+
 export function coletarTendencias(d: DepsPainel): { dados: DadosTendencias; ausentes: string[] } {
+  const oportunidades = normalizarOportunidades(lerJson<OportBruto>(d.caminhos.oportunidades), d.agora());
   const b = lerJson<Bruto>(join(d.caminhos.bombando, 'dados.json'));
-  if (!b || typeof b !== 'object') return { ausentes: ['youtube-bombando/painel/dados.json'], dados: VAZIO_TENDENCIAS };
-  return { ausentes: [], dados: normalizarTendencias(b) };
+  if (!b || typeof b !== 'object') return { ausentes: ['youtube-bombando/painel/dados.json'], dados: { ...VAZIO_TENDENCIAS, oportunidades } };
+  return { ausentes: [], dados: { ...normalizarTendencias(b), oportunidades } };
 }

@@ -9,7 +9,7 @@ import { coletarMaquina } from './fontes/maquina.js';
 import { coletarProducao } from './fontes/producao.js';
 import { coletarPublicacao } from './fontes/publicacao.js';
 import { coletarEscada } from './fontes/escada.js';
-import { coletarTendencias } from './fontes/tendencias.js';
+import { coletarTendencias, type Oportunidades } from './fontes/tendencias.js';
 import { coletarRadar } from './fontes/radar.js';
 import { coletarVps } from './fontes/vps.js';
 import { coletarApis } from './fontes/apis.js';
@@ -30,8 +30,15 @@ async function grupo<T>(d: DepsPainel, f: () => Promise<{ dados: T; ausentes: st
 
 export interface ItemEsperando { tipo: string; texto: string; nivel: 'erro' | 'aviso' | 'info'; grupo: NomeGrupo }
 
-export function montarEsperando(g: GruposColetados, pendencias: { titulo: string }[] | null, aguardandoOk: { fluxo_id: number; fase: string; slug: string }[]): ItemEsperando[] {
+export function montarEsperando(g: GruposColetados, pendencias: { titulo: string }[] | null, aguardandoOk: { fluxo_id: number; fase: string; slug: string }[], oport: Oportunidades | null = null): ItemEsperando[] {
   const out: ItemEsperando[] = [];
+  // Radar de oportunidades (Nei, 13/11): pauta esperando "faz N" no v3, ou erro se não rodou.
+  if (oport) {
+    const esp = oport.pautas.filter((p) => p.estado === 'esperando');
+    if (esp.length) out.push({ tipo: 'ok', nivel: 'aviso', grupo: 'tendencias', texto: `Radar de oportunidades: ${esp.length} pauta${esp.length > 1 ? 's' : ''} esperando seu "faz N" no v3 (${esp.map((p) => p.n + ') ' + p.slug).join(' · ')})` });
+    if (oport.estado === 'erro' || oport.estado === 'nao rodou') out.push({ tipo: 'falha', nivel: 'erro', grupo: 'tendencias', texto: `Radar de oportunidades: ${oport.erro ?? 'erro'}` });
+    for (const p of oport.pautas.filter((x) => x.estado === 'falhou')) out.push({ tipo: 'falha', nivel: 'erro', grupo: 'tendencias', texto: `Radar: pauta ${p.slug} falhou — ${p.ultima.replace(/^FALHOU:\s*/, '')}` });
+  }
   for (const f of g.bots.dados?.v3?.falhas_24h ?? []) out.push({ tipo: 'falha', nivel: 'erro', grupo: 'bots', texto: `v3 #${f.id} ${f.tarefa} falhou` });
   for (const f of g.bots.dados?.inemaccbot?.falhas_24h ?? []) out.push({ tipo: 'falha', nivel: 'erro', grupo: 'bots', texto: `inemaccbot #${f.id} ${f.tarefa} falhou` });
   for (const r of g.producao.dados?.falhas ?? []) out.push({ tipo: 'falha', nivel: 'erro', grupo: 'producao', texto: `${r.unidade} falhou${r.motivo ? ': ' + r.motivo : ''}` });
@@ -72,7 +79,7 @@ export async function montarPainel(d: DepsPainel): Promise<Painel> {
   const g: GruposColetados = { maquina, bots, producao, publicacao, creditos, sites, terminais, vps, apis };
   const esperando = await grupo(d, () => {
     const pend = coletarPendencias(d);
-    return { dados: { itens: montarEsperando(g, pend, bots.dados?.inemaccbot?.aguardando_ok ?? []) }, ausentes: pend === null ? ['pendencias.md'] : [] };
+    return { dados: { itens: montarEsperando(g, pend, bots.dados?.inemaccbot?.aguardando_ok ?? [], tendencias.dados?.oportunidades ?? null) }, ausentes: pend === null ? ['pendencias.md'] : [] };
   });
   const alertas = avaliarAlertas(g, d.agora());
   if (d.enviarTelegram) {
