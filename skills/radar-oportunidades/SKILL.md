@@ -13,7 +13,7 @@ Script: `python3 ~/projetos/wifi/radar-oportunidades/oportunidades.py`
 
 | O Nei disse | Rode |
 |---|---|
-| "faz 1", "faz 1 e 3", "faz a 2" | `... aprovar <data> 1 3` |
+| "faz 1", "faz 1 e 3", "faz a 2" | `... aprovar 1 3` (sem data = lista mais recente) |
 | "faz todas", "faz tudo" | `... aprovar <data> <todos os números da mensagem>` |
 | "nenhum", "nenhuma", "pula hoje" | `... nenhum <data>` |
 | "como está o radar", "e as pautas?" | `... status [<data>]` |
