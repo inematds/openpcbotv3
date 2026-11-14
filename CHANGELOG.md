@@ -1,5 +1,9 @@
 # CHANGELOG — openpcbotv3
 
+## 3.32.17 — 2026-11-14
+
+Painel (pedido do Nei, 14/11): **Visto/Depois agora valem para o vermelho.** Antes a marca só tirava o item da lista "Esperando você"; o quadro, a contagem de erros, os bots e o círculo do Jarvis continuavam lendo todos os alertas. Agora leem só os alertas ainda abertos (`alertasAbertos()`). **Rodada interrompida pelo reinício:** rodada com início antes do último boot (`btime` do `/proc/stat`) e sem fim não é mais "presa/rodando há N min"; vira `interrompida`: aviso amarelo de 24 h "X falhou hoje (a máquina reiniciou no meio) — vai rodar de novo <quando>", com o próximo disparo do timer (regra `rodada-interrompida`). Caso real: a máquina travou às 10:20 e futviral-semanal, previsao-dia e contaviral-semanal apareciam "presas há 510 min".
+
 ## 3.32.16 — 2026-11-14
 
 Pay e bancos: **Asaas** entra no quadro (API do Asaas só leitura, autorizada pelo Nei em 14/11 para o painel). Linha "Asaas · pay.inema.pro + aventura": pagamentos recebidos em 24 h e 7 dias (quantidade e valor), estado dos 2 webhooks (pay.inema.pro e aventura.inema.club), links ativos e fim da campanha, cobranças vencidas em 30 dias. Webhook interrompido ou desligado = erro (🟥 no v3, alerta vermelho); falhas de entrega ou link de campanha a ≤ 3 dias do fim = aviso. Cada robô tem rótulo próprio e linhas extras no detalhe.

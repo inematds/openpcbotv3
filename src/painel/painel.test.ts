@@ -99,6 +99,18 @@ describe('rodadas', () => {
     expect(por.saude.resultado).toBe('falhou');
     expect(por['sem-ts']).toBeUndefined();
   });
+  it('rodada aberta que começou antes do boot é interrompida, não presa', () => {
+    const boot = Date.parse('2026-11-09T18:00:00') / 1000;
+    const r = montarRodadas([
+      { ts: '2026-11-09T17:00:00', unidade: 'finviral', fase: 'inicio' },
+      { ts: '2026-11-09T19:40:00', unidade: 'r7ex', fase: 'inicio' },
+    ], AGORA, boot);
+    const por = Object.fromEntries(r.map((x) => [x.unidade, x]));
+    expect(por.finviral.interrompida).toBe(true);
+    expect(por.finviral.presa).toBe(false);
+    expect(por.finviral.resultado).toBe('interrompida');
+    expect(por.r7ex.interrompida).toBe(false);
+  });
 });
 
 function gruposBase(): GruposColetados {

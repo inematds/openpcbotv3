@@ -1,6 +1,7 @@
 // Produção: placar `rodadas.jsonl` (início/fim de cada unidade), esperas do
 // vigia `continua` e próximos timers do systemd do usuário.
 import type { DepsPainel } from '../tipos.js';
+import { readFileSync } from 'node:fs';
 import { corta, inicioDoDia, lerFim, lerJson, linhasJson, paraEpoch } from '../util.js';
 
 export const PRESA_MIN = 90;
@@ -10,10 +11,14 @@ export interface Rodada {
   unidade: string; edicao: string | null; inicio: number | null; fim: number | null;
   resultado: string | null; motivo: string | null; url: string | null; dur_s: number | null;
   presa: boolean; aberta_min: number | null;
+  /** Começou antes do último boot e não fechou: o processo morreu com a máquina (14/11: travou às 10:20 e três rodadas ficaram "presas há 510 min"). */
+  interrompida: boolean;
+  /** Próximo disparo do timer da unidade (só preenchido nas interrompidas). */
+  proxima?: number | null;
 }
 
 /** Junta início/fim por unidade (+ edição quando houver). Tolerante a linha sem campo. */
-export function montarRodadas(linhas: LinhaRodada[], agora: number): Rodada[] {
+export function montarRodadas(linhas: LinhaRodada[], agora: number, boot: number | null = null): Rodada[] {
   const ev = linhas
     .map((l) => ({ ...l, t: paraEpoch(l.ts) }))
     .filter((l): l is LinhaRodada & { t: number; unidade: string } => l.t !== null && typeof l.unidade === 'string' && !!l.unidade)
@@ -23,7 +28,7 @@ export function montarRodadas(linhas: LinhaRodada[], agora: number): Rodada[] {
   for (const l of ev) {
     const ed = typeof l.edicao === 'string' && l.edicao ? l.edicao : null;
     if (l.fase === 'inicio') {
-      const r: Rodada = { unidade: l.unidade, edicao: ed, inicio: l.t, fim: null, resultado: null, motivo: null, url: null, dur_s: null, presa: false, aberta_min: null };
+      const r: Rodada = { unidade: l.unidade, edicao: ed, inicio: l.t, fim: null, resultado: null, motivo: null, url: null, dur_s: null, presa: false, aberta_min: null, interrompida: false };
       out.push(r);
       const k = l.unidade; abertas.set(k, [...(abertas.get(k) ?? []), r]);
       continue;
@@ -34,7 +39,7 @@ export function montarRodadas(linhas: LinhaRodada[], agora: number): Rodada[] {
     if (i < 0) i = lista.length - 1;
     let r: Rodada;
     if (i >= 0) { r = lista[i]; lista.splice(i, 1); } else {
-      r = { unidade: l.unidade, edicao: ed, inicio: null, fim: null, resultado: null, motivo: null, url: null, dur_s: null, presa: false, aberta_min: null };
+      r = { unidade: l.unidade, edicao: ed, inicio: null, fim: null, resultado: null, motivo: null, url: null, dur_s: null, presa: false, aberta_min: null, interrompida: false };
       out.push(r);
     }
     r.fim = l.t; r.resultado = typeof l.resultado === 'string' ? l.resultado : 'ok';
@@ -43,7 +48,9 @@ export function montarRodadas(linhas: LinhaRodada[], agora: number): Rodada[] {
     r.dur_s = typeof l.dur_s === 'number' ? Math.round(l.dur_s) : (r.inicio !== null ? r.fim - r.inicio : null);
   }
   for (const r of out) {
-    if (r.fim === null && r.inicio !== null) {
+    if (r.fim === null && r.inicio !== null && boot !== null && r.inicio < boot) {
+      r.interrompida = true; r.resultado = 'interrompida';
+    } else if (r.fim === null && r.inicio !== null) {
       r.aberta_min = Math.round((agora - r.inicio) / 60);
       r.presa = r.aberta_min > PRESA_MIN;
     }
@@ -83,7 +90,7 @@ export async function proximosTimers(d: DepsPainel): Promise<{ unidade: string; 
       return j.filter((t) => t.unit).map((t) => ({
         unidade: String(t.unit).replace(/\.timer$/, ''),
         proxima: t.next ? Math.round(t.next / 1e6) : null, ultima: t.last ? Math.round(t.last / 1e6) : null,
-      })).sort((a, b) => (a.proxima ?? Infinity) - (b.proxima ?? Infinity)).slice(0, 12);
+      })).sort((a, b) => (a.proxima ?? Infinity) - (b.proxima ?? Infinity));
     } catch { return null; }
   });
 }
@@ -92,19 +99,24 @@ export async function coletarProducao(d: DepsPainel) {
   const agora = d.agora();
   const ausentes: string[] = [];
   const texto = lerFim(d.caminhos.rodadas, 512 * 1024);
-  let hoje: Rodada[] = [], presas: Rodada[] = [], falhas: Rodada[] = [];
+  let hoje: Rodada[] = [], presas: Rodada[] = [], falhas: Rodada[] = [], interrompidas: Rodada[] = [];
+  // btime fixo do /proc/stat; ignorado se estiver no futuro do relógio injetado (testes com data antiga).
+  let boot: number | null = null;
+  try { const m = /^btime (\d+)/m.exec(readFileSync('/proc/stat', 'utf8')); boot = m && Number(m[1]) <= agora ? Number(m[1]) : null; } catch { /* sem /proc */ }
   if (texto === null) ausentes.push('rodadas.jsonl');
   else {
-    const todas = montarRodadas(linhasJson<LinhaRodada>(texto), agora);
+    const todas = montarRodadas(linhasJson<LinhaRodada>(texto), agora, boot);
     const ini = inicioDoDia(agora);
     hoje = todas.filter((r) => (r.inicio ?? r.fim ?? 0) >= ini).reverse();
     presas = todas.filter((r) => r.presa && agora - (r.inicio ?? 0) < 2 * 86400);
+    interrompidas = todas.filter((r) => r.interrompida && agora - (r.inicio ?? 0) < 86400).reverse();
     falhas = todas.filter((r) => r.resultado === 'falhou' && agora - (r.fim ?? 0) < 86400).reverse();
   }
   const cont = lerJson<Record<string, Record<string, unknown>>>(d.caminhos.continua);
   if (cont === null) ausentes.push('continua/estado.json');
   const esperas = lerContinua(cont, agora);
   const timers = await proximosTimers(d);
+  for (const r of interrompidas) r.proxima = timers?.find((t) => t.unidade === r.unidade)?.proxima ?? null;
   if (timers === null) ausentes.push('timers');
-  return { dados: { hoje: hoje.slice(0, 40), presas, falhas, esperas, timers: timers ?? [] }, ausentes };
+  return { dados: { hoje: hoje.slice(0, 40), presas, falhas, interrompidas, esperas, timers: (timers ?? []).slice(0, 12) }, ausentes };
 }

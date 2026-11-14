@@ -36,6 +36,14 @@ export const LIMITES = { discoPct: 90, memoriaGb: 10, reinicioH: 6, limitePct: 8
 interface Regra { id: string; grupo: NomeGrupo; avaliar: (g: GruposColetados, agora: number) => Omit<AlertaPainel, 'grupo'>[] }
 
 const hora = (t: number | null) => (t ? new Date(t * 1000).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '?');
+// "hoje às 10:00", "amanhã às 10:00" ou "sáb 21/11 às 09:00".
+const quando = (t: number) => {
+  const d = new Date(t * 1000), h = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const dia = (x: Date) => x.toDateString(), hoje = new Date(), amanha = new Date(Date.now() + 86400e3);
+  if (dia(d) === dia(hoje)) return `hoje às ${h}`;
+  if (dia(d) === dia(amanha)) return `amanhã às ${h}`;
+  return `${d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')} ${d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} às ${h}`;
+};
 const host = (u: string) => u.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
 export const REGRAS: Regra[] = [
@@ -71,6 +79,8 @@ export const REGRAS: Regra[] = [
     .map((r) => ({ chave: `rodada-falhou:${r.unidade}:${r.edicao ?? r.fim}`, nivel: 'erro' as const, texto: `Rodada ${r.unidade} falhou às ${hora(r.fim)}${r.motivo ? ': ' + r.motivo : ''}` })) },
   { id: 'rodada-presa', grupo: 'producao', avaliar: (g) => (g.producao.dados?.presas ?? [])
     .map((r) => ({ chave: `rodada-presa:${r.unidade}:${r.inicio}`, nivel: 'erro' as const, texto: `Rodada ${r.unidade} começou às ${hora(r.inicio)} e não terminou` })) },
+  { id: 'rodada-interrompida', grupo: 'producao', avaliar: (g) => (g.producao.dados?.interrompidas ?? [])
+    .map((r) => ({ chave: `rodada-interrompida:${r.unidade}:${r.inicio}`, nivel: 'aviso' as const, texto: `${r.unidade} falhou hoje (a máquina reiniciou no meio)${r.proxima ? ' — vai rodar de novo ' + quando(r.proxima) : ''}` })) },
   { id: 'espera', grupo: 'producao', avaliar: (g) => (g.producao.dados?.esperas ?? [])
     .filter((e) => e.passou_teto || (e.estado === 'falhou' && e.recente))
     .map((e) => ({ chave: `espera:${e.chave}:${e.estado}`, nivel: 'aviso' as const, texto: e.estado === 'falhou' ? `Espera ${e.chave} falhou` : `Espera ${e.chave} passou do teto de ${e.teto_h} h` })) },

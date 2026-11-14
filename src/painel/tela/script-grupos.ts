@@ -31,7 +31,7 @@ G.bots={tile:function(d){var fl=falhasDe(d),v=d.v3,a=d.inemaccbot,rod=(v?v.jobs.
   +(a?sec('inemaccbot',tabela(['Medida','Valor'],[['Rodando / na fila',a.jobs.rodando+' / '+a.jobs.na_fila]])+'<h3 style="margin-top:.8rem">Fluxos abertos</h3>'+tabela(['#','Tipo','Assunto','Estado'],a.fluxos_abertos.map(function(f){return[f.id,esc(f.tipo),esc(f.slug),esc(f.status)]}))+'<h3 style="margin-top:.8rem">Aguardando seu OK</h3>'+tabela(['Fluxo','Fase'],a.aguardando_ok.map(function(x){return['#'+x.fluxo_id+' '+esc(x.slug),esc(x.fase)]}))):'')
   +sec('Falhas das últimas 24 h',hf,1)}};
 
-function rodadaEstado(r){if(r.presa)return['erro','parada há '+dur(r.aberta_min*60)];if(r.fim==null)return['aviso','rodando há '+dur((r.aberta_min||0)*60)];if(r.resultado==='falhou')return['erro','falhou'];return['ok',r.resultado.replace('_',' ')+(r.dur_s!=null?', '+dur(r.dur_s):'')]}
+function rodadaEstado(r){if(r.interrompida)return['aviso','interrompida pelo reinício'];if(r.presa)return['erro','parada há '+dur(r.aberta_min*60)];if(r.fim==null)return['aviso','rodando há '+dur((r.aberta_min||0)*60)];if(r.resultado==='falhou')return['erro','falhou'];return['ok',r.resultado.replace('_',' ')+(r.dur_s!=null?', '+dur(r.dur_s):'')]}
 // Uma linha por unidade no cartão (Nei, 11/11: "radar viral 1x"): fica a mais recente, com ×N.
 function umaVez(l){var vistos={},out=[];l.forEach(function(r){var u=r.unidade;if(vistos[u]){vistos[u]._n=(vistos[u]._n||1)+1;return}var c={};for(var k in r)c[k]=r[k];vistos[u]=c;out.push(c)});return out}
 function modoRodadas(lista,max,horiz){var l=lista.slice(0,max);if(!l.length)return'<p class="sem">nenhuma rodada registrada hoje</p>';
