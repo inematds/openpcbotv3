@@ -38,6 +38,7 @@ export interface Caminhos {
   bombando: string;
   oportunidades: string;
   pay: string;
+  uso: string;
 }
 
 export function caminhosPadrao(home = homedir(), raizBot = process.cwd()): Caminhos {
@@ -75,6 +76,7 @@ export function caminhosPadrao(home = homedir(), raizBot = process.cwd()): Camin
     bombando: process.env.BOMBANDO_DIR || h('projetos/youtube-bombando/painel'),
     oportunidades: process.env.OPORTUNIDADES_JSON || h('projetos/wifi/radar-oportunidades/painel.json'),
     pay: process.env.PAY_JSON || h('.local/share/inema/pay.json'),
+    uso: process.env.USO_INEMA_JSON || h('.local/share/inema/uso-inema.json'),
   };
 }
 
@@ -116,7 +118,7 @@ export function depsPadrao(p: Partial<DepsPainel> & { versao: string; concorrenc
   };
 }
 
-export type NomeGrupo = 'maquina' | 'bots' | 'producao' | 'publicacao' | 'creditos' | 'sites' | 'vagas' | 'radar' | 'escada' | 'tendencias' | 'pay' | 'terminais' | 'esperando' | 'vps' | 'apis' | 'v3' | 'inemaccbot' | 'v2';
+export type NomeGrupo = 'maquina' | 'bots' | 'producao' | 'publicacao' | 'creditos' | 'sites' | 'vagas' | 'radar' | 'escada' | 'tendencias' | 'pay' | 'inemapro' | 'portal' | 'terminais' | 'esperando' | 'vps' | 'apis' | 'v3' | 'inemaccbot' | 'v2';
 
 export interface Grupo<T = Record<string, unknown>> {
   ok: boolean;

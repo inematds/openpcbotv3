@@ -16,6 +16,7 @@ import type { coletarTerminais } from './fontes/terminais.js';
 import type { coletarVps } from './fontes/vps.js';
 import type { coletarApis } from './fontes/apis.js';
 import { alertasPay, type DadosPay } from './fontes/pay.js';
+import { alertasUso, type DadosUso } from './fontes/uso.js';
 
 type D<F extends (...a: never[]) => unknown> = Awaited<ReturnType<F>> extends { dados: infer X } ? X : never;
 export interface GruposColetados {
@@ -29,6 +30,7 @@ export interface GruposColetados {
   vps: Grupo<D<typeof coletarVps>>;
   apis: Grupo<D<typeof coletarApis>>;
   pay?: Grupo<DadosPay>;
+  inemapro?: Grupo<DadosUso>;
 }
 
 export const LIMITES = { discoPct: 90, memoriaGb: 10, reinicioH: 6, limitePct: 80 };
@@ -115,6 +117,8 @@ export const REGRAS: Regra[] = [
   }) },
   // Pay e bancos (Nei, 14/11): robô de pagamento parado é sempre erro.
   { id: 'pay', grupo: 'pay', avaliar: (g) => alertasPay(g.pay?.dados) },
+  // INEMA.PRO (Nei, 14/11): rotina do cron com erro ou uso-inema parado.
+  { id: 'inemapro', grupo: 'inemapro', avaliar: (g) => alertasUso(g.inemapro?.dados) },
   { id: 'terminal-interrompido', grupo: 'terminais', avaliar: (g) => (g.terminais.dados?.interrompidos ?? [])
     .map((t) => ({ chave: `terminal-interrompido:${t.session_id}`, nivel: 'aviso' as const, texto: `Terminal interrompido em ${t.projeto}` })) },
 ];

@@ -1,5 +1,9 @@
 # CHANGELOG — openpcbotv3
 
+## 3.33.17 — 2026-11-14
+
+Painel (pedido do Nei, 14/11): quadros **INEMA.PRO** e **Portal**. Fonte: `uso-inema` (`~/projetos/wifi/uso-inema`, timer 1×/dia 07:10, Supabase só leitura e só contagens, autorizado pelo Nei: "pode fazer leitura diária") → `~/.local/share/inema/uso-inema.json`. INEMA.PRO: no ar (do quadro Sites), rotinas do cron (sync-catalogos, gera-embeddings, sync-cerebro, radar-pedidos), o que fizemos (git 24 h / 7 dias), quem entra logado (assinante/vencido/não assinante, por área), visitas por área (contador acumulado + delta do dia) e uso de IA da curadoria (consultas, tokens, US$, modelos). Portal: no ar, git, visitas e sessões, busca (resultado clicado na home + link "Buscas" do menu), eventos (cliques, mais clicados, contador do eventos.inema.pro) e chat (conversas, perguntas, erros do modelo, leads, pedidos). Rotina com erro ou vigia parado (> 30 h) vira aviso em "Esperando você". Grade do desktop ganha a 5ª linha.
+
 ## 3.32.17 — 2026-11-14
 
 Painel (pedido do Nei, 14/11): **Visto/Depois agora valem para o vermelho.** Antes a marca só tirava o item da lista "Esperando você"; o quadro, a contagem de erros, os bots e o círculo do Jarvis continuavam lendo todos os alertas. Agora leem só os alertas ainda abertos (`alertasAbertos()`). **Rodada interrompida pelo reinício:** rodada com início antes do último boot (`btime` do `/proc/stat`) e sem fim não é mais "presa/rodando há N min"; vira `interrompida`: aviso amarelo de 24 h "X falhou hoje (a máquina reiniciou no meio) — vai rodar de novo <quando>", com o próximo disparo do timer (regra `rodada-interrompida`). Caso real: a máquina travou às 10:20 e futviral-semanal, previsao-dia e contaviral-semanal apareciam "presas há 510 min".

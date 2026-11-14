@@ -175,11 +175,13 @@ function hm(t){return t?new Date(t*1000).toLocaleTimeString('pt-BR',{hour:'2-dig
 function ha(t){if(!t)return'ainda não rodou';var s=Date.now()/1000-t;if(s<0)return'agora';if(s<90)return'há 1 min';if(s<3600)return'há '+Math.round(s/60)+' min';if(s<86400)return'há '+Math.round(s/3600)+' h';return'há '+Math.round(s/86400)+' d'}
 function plural(q,um,varios){return q+' '+(q===1?um:varios)}
 function idDe(s){s=String(s);var h=0;for(var i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return'i'+h.toString(36)}
-var NOMES={maquina:'Máquina',v3:'Bot v3',inemaccbot:'inemaccbot',v2:'Bot v2',producao:'Produção',publicacao:'Publicação',creditos:'Claude e Codex',sites:'Sites',vagas:'Vagas',radar:'Radar Viral',escada:'Minha escada',tendencias:'Tendências de rede',pay:'Pay e bancos',terminais:'Terminais',vps:'VPS',apis:'Outras APIs'};
+var NOMES={maquina:'Máquina',v3:'Bot v3',inemaccbot:'inemaccbot',v2:'Bot v2',producao:'Produção',publicacao:'Publicação',creditos:'Claude e Codex',sites:'Sites',vagas:'Vagas',radar:'Radar Viral',escada:'Minha escada',tendencias:'Tendências de rede',pay:'Pay e bancos',inemapro:'INEMA.PRO',portal:'Portal',terminais:'Terminais',vps:'VPS',apis:'Outras APIs'};
 var ROT={ok:'ok',erro:'erro',aviso:'atenção',semdados:'sem dados',rodando:'rodando'};
 function estadoGrupo(nome,g,al){if(!g||!g.ok)return'semdados';var e=al.filter(function(a){return a.grupo===nome});if(e.some(function(a){return a.nivel==='erro'}))return'erro';if(e.length)return'aviso';return'ok'}
 // Uma frase curta por sistema, a partir dos dados de cada grupo.
 var FRASE={
+  inemapro:function(d){var a=(d.acessos_7d||{}).pessoas,e=(d.rotinas||[]).filter(function(r){return r.estado==='erro'});return e.length?e[0].nome+' falhou':(a==null?'sem leitura':a+' pessoas logadas em 7 dias')},
+  portal:function(d){var v=(d.visitas_24h||{}).visitas;return v==null?'sem leitura':v+' visitas em 24 h'},
   pay:function(d){var rs=d.robos||[],e=rs.filter(function(r){return r.estado!=='ok'});return d.parado?'monitor parado':e.length?e[0].nome+': '+(e[0].motivo||e[0].estado):rs.length+' robô(s) funcionando'},
   tendencias:function(d){return !d.videos?'sem coleta ainda':d.videos+' vídeos · em alta: '+(d.assuntos||[]).slice(0,3).map(function(t){return t.termo}).join(', ')},
   escada:function(d){return d.parcela_ia==null?'sem relatório ainda':'IA conduz '+n(d.parcela_ia,0)+'%'+(d.variacao?' ('+(d.variacao>0?'+':'')+n(d.variacao)+' p.p.)':'')+(d.missao?' · missão: '+d.missao.titulo:'')},
@@ -212,7 +214,7 @@ function contagem(){var al=alertasAbertos(),er=al.filter(function(a){return a.ni
   var sis=sistemas();return{erros:er,avisos:al.length-er,publicados:pub,ocupadas:oc,ok:sis.filter(function(s){return s.estado==='ok'||s.estado==='rodando'}).length,total:sis.length,abertos:esperando().filter(function(x){return!oculto(x.id)}).length}}
 // ---------- modos visuais (lista / ícones / gráficos) ----------
 var MODO=LS.get('jarvis.modo','lista');if(['lista','icones','graficos'].indexOf(MODO)<0)MODO='lista';
-var GLIFO={maquina:'⚙',bots:'◉',v3:'◉',inemaccbot:'◎',v2:'○',producao:'▶',publicacao:'▲',creditos:'◔',sites:'◎',vagas:'▦',radar:'◈',escada:'⟰',tendencias:'↗',pay:'$',terminais:'▭',vps:'▣',apis:'⌁'};
+var GLIFO={maquina:'⚙',bots:'◉',v3:'◉',inemaccbot:'◎',v2:'○',producao:'▶',publicacao:'▲',creditos:'◔',sites:'◎',vagas:'▦',radar:'◈',escada:'⟰',tendencias:'↗',pay:'$',inemapro:'◆',portal:'◇',terminais:'▭',vps:'▣',apis:'⌁'};
 function dg(nome){var g=D.grupos[nome];return g&&g.ok&&g.dados?g.dados:null}
 function numero(nome){var d=dg(nome);if(!d)return['–','sem dados'];
   if(nome==='maquina')return[n(d.memoria&&d.memoria.disponivel_gb,0)+' GB','memória livre'];
@@ -271,6 +273,8 @@ document.querySelectorAll('[data-modo]').forEach(function(b){b.addEventListener(
 marcarModo();
 // ---------- detalhe (clique em qualquer item) ----------
 var EXPLICA={
+  inemapro:'INEMA.PRO: o que fizemos (git), rotinas do cron, quem entra logado e uso de IA da curadoria, lidos 1 vez por dia.',
+  portal:'Portal inema.club: visitas, busca, eventos e chat, lidos 1 vez por dia.',
   pay:'Robôs de pagamento (PIX do Nubank na VPS1) vigiados a cada 10 min: falha vira alerta aqui e aviso no v3.',
   tendencias:'Monitor diário (07:15) dos vídeos e assuntos que mais crescem no YouTube nos seus nichos; o painel completo abre em /bombando/.',
   escada:'Mede pelos seus logs do Claude Code e do Codex quanto do seu trabalho a IA já conduz (AL4+AL5), comparado com a Anthropic; o relatório roda 1x por dia.',
@@ -290,6 +294,8 @@ function bloco(t,linhas){return linhas?'<h4>'+esc(t)+'</h4>'+linhas:''}
 function quando(t){return t?new Date(t*1000).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+' ('+ha(t)+')':'–'}
 function emQuanto(t){if(!t)return'–';var s=t-Date.now()/1000;return hm(t)+(s>0?' (daqui a '+(s<3600?Math.round(s/60)+' min':Math.round(s/3600)+' h')+')':'')}
 var DET={
+  inemapro:function(d){var a=d.acessos_7d||{},i=d.ia_7d||{};return bloco('INEMA.PRO',lnt('logados 7 dias',(a.pessoas==null?'–':a.pessoas)+'')+lnt('IA 7 dias',(i.consultas||0)+' consultas')+lnt('rotinas',(d.rotinas||[]).map(function(r){return r.nome+' '+r.estado}).join(', ')))},
+  portal:function(d){var v=d.visitas_24h||{},c=d.cliques_7d||{},h=d.chat_7d||{};return bloco('Portal',lnt('visitas 24 h',(v.visitas==null?'–':v.visitas)+'')+lnt('busca 7 dias',(c.busca||0)+' resultados · '+(c.busca_menu||0)+' no menu')+lnt('chat 7 dias',(h.conversas||0)+' conversas'))},
   pay:function(d){return (d.robos||[]).map(function(r){return bloco(r.nome+' · '+r.onde,lnt('estado',r.estado+(r.motivo?' — '+r.motivo:''))+lnt('último sucesso',quando(r.ultimo_ok))+lnt('PIX 7 dias',(r.pix_7d==null?'–':r.pix_7d)+'')+lnt('token vence',r.token_vence?quando(r.token_vence):'sem prazo'))}).join('')||bloco('Pay e bancos',lnt('robôs','sem leitura'))},
   tendencias:function(d){var a='<a href="'+esc(d.link||'/bombando/')+'" target="_blank" rel="noopener">abrir o painel de tendências</a>';if(!d.videos)return bloco('Tendências de rede',lnt('coleta','sem coleta ainda')+ln('painel',a));return bloco('Tendências de rede',ln('painel',a)+lnt('vídeos',String(d.videos))+lnt('coleta',quando(d.gerado_em))+(d.conclusao?'<p class="sub">'+esc(d.conclusao)+'</p>':''))+bloco('Em alta',(d.assuntos||[]).map(function(t){return lnt(t.termo,n(t.peso,0)+' views/h')}).join(''))+bloco('Mais quente por nicho',(d.quentes||[]).map(function(q){return lnt(q.nicho,q.titulo)}).join(''))},
   escada:function(d){if(d.parcela_ia==null)return bloco('Minha escada',lnt('relatório','sem relatório ainda'));var f=d.fontes||{};return bloco('Missão de hoje',d.missao?lnt(d.missao.titulo,'')+'<p class="sub">'+esc(d.missao.texto)+'</p>':lnt('missão','–'))+bloco('IA conduz',lnt('agora',n(d.parcela_ia)+'%')+lnt('relatório anterior',d.parcela_anterior!=null?n(d.parcela_anterior)+'%':'–')+lnt('Anthropic ago/2026',d.anthropic_ref!=null?n(d.anthropic_ref,0)+'%':'–')+(d.projecao||[]).filter(function(p){return p.meses>0}).map(function(p){return lnt('em '+p.meses+(p.meses===1?' mês':' meses'),n(p.pct)+'%')}).join(''))

@@ -4,11 +4,12 @@ import { CHAT_HTML, JS_CHAT } from './script-chat.js';
 import { PAINEL_CSS } from './estilo.js';
 import { JS_AJUDA, JS_LACO } from './script-base.js';
 import { JS_GRUPOS } from './script-grupos.js';
+import { JS_USO } from './script-uso.js';
 
-const GRUPOS = ['esperando', 'maquina', 'v3', 'inemaccbot', 'v2', 'producao', 'publicacao', 'creditos', 'sites', 'vagas', 'radar', 'escada', 'tendencias', 'pay', 'vps', 'apis', 'terminais'];
+const GRUPOS = ['esperando', 'maquina', 'v3', 'inemaccbot', 'v2', 'producao', 'publicacao', 'creditos', 'sites', 'vagas', 'radar', 'escada', 'tendencias', 'pay', 'inemapro', 'portal', 'vps', 'apis', 'terminais'];
 
 /** JS completo do cliente (exportado para o teste de sintaxe). */
-export const PAINEL_JS = `(function(){'use strict';\n${JS_AJUDA}\n${JS_GRUPOS}\n${JS_CHAT}\n${JS_LACO}\n})();`;
+export const PAINEL_JS = `(function(){'use strict';\n${JS_AJUDA}\n${JS_GRUPOS}\n${JS_USO}\n${JS_CHAT}\n${JS_LACO}\n})();`;
 
 export const PAINEL_HTML = `<!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8">
