@@ -314,6 +314,22 @@ export const MIGRATIONS: Migration[] = [
       ALTER TABLE sessions ADD COLUMN resumo_em INTEGER;
     `,
   },
+  {
+    version: 12,
+    nome: 'sessions_por_motor',
+    sql: `
+      ALTER TABLE sessions RENAME TO sessions_legado;
+      CREATE TABLE sessions (
+        chat_id TEXT NOT NULL, agente TEXT NOT NULL,
+        motor TEXT NOT NULL DEFAULT 'claude', session_id TEXT NOT NULL,
+        ultimo_uso INTEGER NOT NULL, resumo TEXT, resumo_de TEXT, resumo_em INTEGER,
+        PRIMARY KEY (chat_id, agente, motor)
+      );
+      INSERT INTO sessions (chat_id, agente, session_id, ultimo_uso, resumo, resumo_de, resumo_em)
+        SELECT chat_id, agente, session_id, ultimo_uso, resumo, resumo_de, resumo_em FROM sessions_legado;
+      DROP TABLE sessions_legado;
+    `,
+  },
 ];
 
 const SCHEMA_CONTROLE = `

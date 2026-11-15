@@ -85,7 +85,7 @@ export interface Config {
 
 export function lerConfig(): Config {
   return {
-    versao: '3.35.17',
+    versao: '3.36.17',
     instancia: `${hostname()}:${process.pid}`,
     telegramToken: process.env.TELEGRAM_BOT_TOKEN_V3 || undefined,
     chatPermitido: process.env.ALLOWED_CHAT_ID || undefined,
@@ -103,7 +103,7 @@ export function lerConfig(): Config {
     slackAtivo: process.env.SLACK_ENABLED === '1',
     claudeBin: process.env.CLAUDE_BIN || 'claude',
     agenteMemoriaMax: process.env.AGENTE_MEMORIA_MAX === 'off' ? undefined : (process.env.AGENTE_MEMORIA_MAX || '16G'),
-    codexBin: process.env.CODEX_BIN || 'codex',
+    codexBin: process.env.CODEX_BIN || resolve(homedir(), '.npm-global/bin/codex'),
     logLevel: process.env.LOG_LEVEL || 'info',
   };
 }

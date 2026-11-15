@@ -10,6 +10,7 @@ import { montarContextoMemoria } from '../cerebro/contexto.js';
 import { classificarSetor } from '../cerebro/memoria.js';
 import { redigir } from '../canais/guarda.js';
 import { agentesCacheados } from './agentes.js';
+import { perfilAgente } from '../config/agentes-ia.js';
 import { identidade, type EntradaAgente } from './agente-cli.js';
 import { executarComando } from './comandos.js';
 import { rotear, type Decisao } from './roteador.js';
@@ -194,6 +195,7 @@ export class Orquestrador {
   async despacharAgente(m: MensagemRecebida, d: Decisao, memoria: string, aviso?: (jobId: number) => string): Promise<void> {
     const app = this.app;
     const agente = d.agente ?? 'lead';
+    const perfilDe = (id: string) => perfilAgente(app.prefs, m.chatId, agentesCacheados().find(a => a.id === id) ?? { modelo: 'sonnet', esforco: 'medium' });
     const bloqueio = app.interruptores.bloqueiaAgente(agente);
     if (bloqueio) { this.enviar(m, `⛔ Agente ${agente} parado (${bloqueio}). /retomar libera; enquanto isso respondo só pelo modelo local.`); return; }
     const entrada: EntradaAgente = { chatId: m.chatId, canal: m.canal, texto: m.texto, agente, memoria, traceId: m.traceId, personalidade: blocoPersonalidade(app.prefs, m.chatId) || undefined };
@@ -201,12 +203,14 @@ export class Orquestrador {
     // recebe as saídas via `consultas` quando a tarefa `agente-lead` rodar.
     const consultas = (d.consultar ?? []).map((id) => app.fila.enfileirar({
       fila: 'agente', kind: 'agent', tarefa: `consulta:${id}`, input: JSON.stringify({ ...entrada, agente: id, somenteLeitura: true } satisfies EntradaAgente),
+      perfil: perfilDe(id),
       chat_id: numOuNull(m.chatId), max_tentativas: 1, prioridade: 1, flow_ref: `${m.canal}:${m.chatId}`,
     }).id);
     const job = app.fila.enfileirar({
       fila: consultas.length ? 'io' : 'agente',
       kind: consultas.length ? 'function' : 'agent',
       tarefa: consultas.length ? 'agente-lead' : `agente:${agente}`,
+      perfil: perfilDe(agente),
       input: consultas.length ? JSON.stringify({ entrada, consultas }) : JSON.stringify(entrada),
       chat_id: numOuNull(m.chatId), max_tentativas: 1, flow_ref: `${m.canal}:${m.chatId}`,
     });

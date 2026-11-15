@@ -8,6 +8,9 @@ import type { RegistroCusto, Tier } from './registro.js';
 import type { ConfigPrecos } from '../config/yaml.js';
 import type { GestorOllama } from '../ollama/gestor.js';
 import type { MensagemLLM, Provedor, RespostaLLM } from '../provedores/tipos.js';
+import type { Runner } from '../fila/runner.js';
+import { interpretarSaidaCli } from '../fila/saida-claude.js';
+import { interpretarSaidaCodex } from '../fila/saida-codex.js';
 
 export interface PedidoGateway {
   tier: Tier;
@@ -51,6 +54,31 @@ export interface OpcoesGateway {
 
 export class GatewayLLM {
   constructor(private readonly o: OpcoesGateway) {}
+
+  /** Agentes CLI também entram no gateway; assinatura não consome orçamento de API. */
+  runnerAssinatura(base: Runner): Runner {
+    return { nome: base.nome, iniciar: ctx => {
+      if (!['claude', 'codex'].includes(ctx.perfil.motor)) throw new Error('Gateway: assinatura desconhecida');
+      const t0 = Date.now();
+      const registrar = (ok: boolean, uso: { tokensIn?: number; tokensOut?: number; custoUsd?: number; tokensCache?: number } = {}) => this.o.registro.gravar({
+        ...ctx.chamada, provedor: `${ctx.perfil.motor}-cli`, modelo: ctx.perfil.modelo,
+        tier: 'premium', tokensIn: uso.tokensIn ?? 0, tokensOut: uso.tokensOut ?? 0,
+        tokensCache: uso.tokensCache, custoUsd: uso.custoUsd ?? 0, latenciaMs: Date.now() - t0,
+        ok, erro: ok ? undefined : 'Execução da assinatura falhou; consulte o erro saneado do job', motivoTier: 'agente CLI pela assinatura',
+      });
+      let exec;
+      try { exec = base.iniciar(ctx); } catch (e) { registrar(false); throw e; }
+      return { cancelar: () => exec.cancelar(), limpar: () => exec.limpar(), aguardar: async () => {
+        let bruto: string;
+        try {
+          bruto = await exec.aguardar();
+          const uso = ctx.perfil.motor === 'codex' ? interpretarSaidaCodex(bruto) : interpretarSaidaCli(bruto);
+          registrar(true, uso);
+        } catch (e) { registrar(false); throw e; }
+        return bruto;
+      } };
+    } };
+  }
 
   private alvo(tier: Tier, modelo?: string): { provedor: Provedor; modelo: string } {
     const t = this.o.precos.tiers[tier];

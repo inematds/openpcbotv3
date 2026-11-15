@@ -1,86 +1,79 @@
 import { describe, expect, it } from 'vitest';
-
 import { CodexRunner, argumentosCodex, esforcoCodex, mapaModelos } from './runner-codex.js';
+import { interpretarSaidaCodex } from './saida-codex.js';
+import { ambienteAssinatura } from './ambiente-assinatura.js';
 import { RUNNERS } from './runner.js';
 
-const ctx = (modelo: string, esforco: string) => ({
-  prompt: 'faça X', cwd: '/tmp',
-  perfil: { motor: 'codex', modelo, esforco }, vars: {},
+const ctx = (modelo = 'gpt-6.1-sol', esforco = 'medium') => ({
+  prompt: 'faça X', cwd: '/tmp', perfil: { motor: 'codex', modelo, esforco }, vars: {},
 });
+const jsonl = (...events: object[]) => events.map(e => JSON.stringify(e)).join('\n');
 
-describe('mapaModelos', () => {
-  it('sem CODEX_MODELOS, não mapeia nada (vale o config.toml da máquina)', () => {
-    expect(mapaModelos({})).toEqual({});
-    expect(mapaModelos({ CODEX_MODELOS: '  ' })).toEqual({});
+describe('Codex por assinatura', () => {
+  it('traduz apenas aliases configurados e exige modelo explícito', () => {
+    expect(mapaModelos({ CODEX_MODELOS: 'sonnet=gpt-6.1-sol,lixo,=x,y=' })).toEqual({ sonnet: 'gpt-6.1-sol' });
+    expect(argumentosCodex(ctx('sonnet'), { sonnet: 'gpt-6.1-sol' })).toContain('gpt-6.1-sol');
+    expect(() => argumentosCodex(ctx('opus'), {})).toThrow(/explícito/);
+    expect(argumentosCodex(ctx(), {})).toContain('gpt-6.1-sol');
+    expect(argumentosCodex(ctx(), { 'gpt-6.1-sol': 'outro-modelo' })).toContain('gpt-6.1-sol');
   });
-
-  it('lê pares alias=id separados por vírgula', () => {
-    expect(mapaModelos({ CODEX_MODELOS: 'sonnet=gpt-5.1-codex, opus=gpt-5.6-sol' }))
-      .toEqual({ sonnet: 'gpt-5.1-codex', opus: 'gpt-5.6-sol' });
+  it('não reduz esforço silenciosamente', () => {
+    expect(esforcoCodex('xhigh')).toBe('xhigh');
+    expect(() => esforcoCodex('max')).toThrow(/não suportado/);
   });
-
-  it('ignora pedaço malformado em vez de derrubar o boot', () => {
-    expect(mapaModelos({ CODEX_MODELOS: 'sonnet=gpt-5.1-codex,lixo,=x,y=' }))
-      .toEqual({ sonnet: 'gpt-5.1-codex' });
+  it('fixa assinatura, sandbox, esforço e saída JSONL', () => {
+    const a = argumentosCodex(ctx());
+    expect(a[0]).toBe('exec');
+    expect(a).toContain('--json');
+    expect(a).toContain('sandbox_mode="danger-full-access"');
+    expect(a).toContain('forced_login_method="chatgpt"');
+    expect(a).toContain('model_reasoning_effort="medium"');
+    expect(a).toContain('approval_policy="never"');
+    expect(a.at(-1)).toBe('faça X');
   });
-});
-
-describe('esforcoCodex', () => {
-  it('passa direto os degraus que o codex conhece', () => {
-    for (const e of ['minimal', 'low', 'medium', 'high']) expect(esforcoCodex(e)).toBe(e);
+  it('retoma só o identificador fornecido, sem --last e com configurações explícitas', () => {
+    const a = argumentosCodex({ ...ctx(), vars: { OPENPCBOT_SESSION: 'thread-1' } });
+    expect(a.slice(0, 2)).toEqual(['exec', 'resume']);
+    expect(a.slice(-2)).toEqual(['thread-1', 'faça X']);
+    expect(a).not.toContain('--last');
+    expect(a).toContain('gpt-6.1-sol');
   });
-
-  // O bot tem cinco degraus e o codex quatro. Colapsar no teto é decisão
-  // consciente: recusar o job seria pior que entregá-lo no máximo do motor.
-  it('colapsa xhigh e max no teto do motor', () => {
-    expect(esforcoCodex('xhigh')).toBe('high');
-    expect(esforcoCodex('max')).toBe('high');
+  it('especialista usa sandbox de leitura e não herda MCPs pessoais', () => {
+    const a = argumentosCodex({ ...ctx(), vars: { OPENPCBOT_SOMENTE_LEITURA: '1' } });
+    expect(a).toContain('sandbox_mode="read-only"');
+    expect(a).toContain('--ignore-user-config');
+    expect(() => argumentosCodex({ ...ctx(), vars: { OPENPCBOT_MCP: '/nao/importar.json' } })).toThrow(/precisa ser adaptado/);
   });
-});
-
-describe('argumentosCodex', () => {
-  it('roda em modo não-interativo, fora de repo git e sem sandbox', () => {
-    const args = argumentosCodex(ctx('sonnet', 'low'));
-    expect(args[0]).toBe('exec');
-    expect(args).toContain('--skip-git-repo-check');
-    expect(args.join(' ')).toContain('-s danger-full-access');
+  it('isola autenticação de modelo sem retirar credenciais de ferramentas', () => {
+    const env = ambienteAssinatura('codex', { OPENAI_API_KEY: 'teste', ANTHROPIC_API_KEY: 'teste', OPENROUTER_API_KEY: 'teste', OPENAI_BASE_URL: 'x', TELEGRAM_BOT_TOKEN_V3: 'ferramenta', HOME: '/tmp' });
+    expect(env.OPENAI_API_KEY).toBeUndefined();
+    expect(env.ANTHROPIC_API_KEY).toBeUndefined();
+    expect(env.OPENROUTER_API_KEY).toBeUndefined();
+    expect(env.OPENAI_BASE_URL).toBeUndefined();
+    expect(env.TELEGRAM_BOT_TOKEN_V3).toBe('ferramenta');
   });
-
-  // O `-s` explícito é o ponto: sem ele, o comportamento do serviço passaria a
-  // depender do `~/.codex/config.toml` da máquina — a mesma armadilha do PATH
-  // que o CLAUDE_BIN já custou caro.
-  it('não passa --model quando não há mapa: vale o config da máquina', () => {
-    expect(argumentosCodex(ctx('opus', 'high'), {})).not.toContain('--model');
+  it('retorna resposta final, sessão e tokens, sem logs de comandos ou raciocínio', () => {
+    const s = interpretarSaidaCodex(jsonl(
+      { type: 'thread.started', thread_id: 't1' },
+      { type: 'item.completed', item: { type: 'command_execution', aggregated_output: 'NAO ENTREGAR' } },
+      { type: 'item.completed', item: { type: 'reasoning', text: 'NAO ENTREGAR' } },
+      { type: 'item.completed', item: { type: 'agent_message', text: 'feito' } },
+      { type: 'turn.completed', usage: { input_tokens: 10, output_tokens: 5, cached_input_tokens: 2 } },
+    ));
+    expect(s).toEqual({ texto: 'feito', sessionId: 't1', tokensIn: 10, tokensOut: 5, tokensCache: 2 });
   });
-
-  it('traduz o alias no id do motor quando o mapa diz', () => {
-    const args = argumentosCodex(ctx('opus', 'high'), { opus: 'gpt-5.6-sol' });
-    expect(args.join(' ')).toContain('--model gpt-5.6-sol');
+  it('recusa falha de cota, resposta ausente e saída truncada', () => {
+    expect(() => interpretarSaidaCodex(jsonl({ type: 'turn.failed', error: { message: 'usage limit reached' } }))).toThrow(/usage limit/);
+    expect(() => interpretarSaidaCodex(jsonl({ type: 'turn.completed' }))).toThrow(/sem resposta/);
+    expect(() => interpretarSaidaCodex('{quebrado')).toThrow(/inválida/);
+    expect(() => interpretarSaidaCodex(jsonl({ type: 'item.completed', item: { type: 'agent_message', text: 'parcial' } }))).toThrow(/incompleta/);
   });
-
-  it('leva o esforço como override de config', () => {
-    expect(argumentosCodex(ctx('sonnet', 'max'))).toContain('model_reasoning_effort="high"');
-  });
-
-  it('nunca usa shell: o prompt é o ÚLTIMO argumento, sem interpolação', () => {
-    const args = argumentosCodex({ ...ctx('sonnet', 'low'), prompt: 'rm -rf / ; echo oi' });
-    expect(args[args.length - 1]).toBe('rm -rf / ; echo oi');
-  });
-});
-
-describe('registro de motores', () => {
-  it('registra "codex" em RUNNERS sem tocar em "claude"', () => {
+  it('registra o executor e preserva o Claude', () => {
     expect(RUNNERS.codex).toBeInstanceOf(CodexRunner);
-    expect(RUNNERS.codex.nome).toBe('codex');
     expect(RUNNERS.claude?.nome).toBe('claude');
   });
-});
-
-describe('execução real de subprocesso (usa /bin/echo como binário)', () => {
-  it('herda a maquinaria do ClaudeRunner e devolve o stdout', async () => {
-    const r = new CodexRunner('/bin/echo');
-    const saida = await r.iniciar(ctx('sonnet', 'low')).aguardar();
-    expect(saida).toContain('exec');
-    expect(saida).toContain('faça X');
+  it('herda execução por subprocesso sem shell', async () => {
+    const saida = await new CodexRunner('/bin/echo').iniciar({ ...ctx(), prompt: 'literal $(echo nao-executar)' }).aguardar();
+    expect(saida).toContain('literal $(echo nao-executar)');
   });
 });

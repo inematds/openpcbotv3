@@ -8,6 +8,8 @@ Plano e arquitetura: [PLANO-MIGRACAO-V3.md](PLANO-MIGRACAO-V3.md). Estado por fa
 
 Bot no Telegram: **@inemav3bot** (o v2 continua no @inemaclaudebot).
 
+**Agentes por assinatura (3.36.17):** padrão Codex; `/motor codex|claude|padrao` seleciona o motor por chat. Configuração em `config/agentes-ia.yaml`. [Operação e limites](docs/MOTORES-ASSINATURA.md) · [Plano completo, sujeito a aprovação](docs/PLANO-MULTIPROVEDORES.md).
+
 **Conectar e-mails, agendas e o Telegram ao cérebro:** [docs/CONECTORES.md](docs/CONECTORES.md).
 
 ## Jev para observar o roteamento

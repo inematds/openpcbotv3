@@ -25,6 +25,11 @@ Fase 8 (corte) **não** começa sem ordem explícita. O v2 (`openpcbot`) continu
 - Restart: `bash scripts/instalar-servico.sh` (rebuild + `systemctl --user restart openpcbotv3`). Sem sudo.
 - Diagnóstico: `npm run doctor`; logs `journalctl --user -u openpcbotv3 -n 50 --no-pager -o cat`.
 
+## Motores dos agentes (3.36.17)
+
+- Padrão Codex pela assinatura; `/motor codex|claude|padrao` por chat. Configuração própria dos agentes em `config/agentes-ia.yaml` (Codex explícito, Claude mantém fonte central). Operação: [docs/MOTORES-ASSINATURA.md](docs/MOTORES-ASSINATURA.md).
+- Versão completa: [docs/PLANO-MULTIPROVEDORES.md](docs/PLANO-MULTIPROVEDORES.md). Exige aprovação em nova sessão. Apoio Astra só após perguntar ao usuário; nenhuma API nova autorizada.
+
 ## Git
 
 Remote `inematds/openpcbotv3`; autor `inematds <inematds@gmail.com>` (regra global). Commit por fase; push no fim.

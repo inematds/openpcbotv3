@@ -1,0 +1,8 @@
+# Etapa 1: agentes por ASSINATURA. Não habilita APIs nem troca automática.
+# /motor codex ou /motor claude muda só o chat; novos jobs guardam o perfil.
+# Alterações aqui valem para os próximos pedidos, sem editar código.
+motor: codex
+codex:
+  modelo: gpt-6.1-sol
+  esforco: medium
+# Claude mantém modelo/esforço de cada agent.yaml e a fonte central existente.

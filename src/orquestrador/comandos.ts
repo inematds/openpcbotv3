@@ -8,6 +8,7 @@ import { FILAS } from '../fila/filas.js';
 import { rssMb } from '../ollama/ram.js';
 import { parsearQuando } from '../tarefas/usuario.js';
 import { agentesCacheados } from './agentes.js';
+import { CHAVE_MOTOR, ehMotor, perfilAgente } from '../config/agentes-ia.js';
 import { cancelarEmVoo, filtroDoAlvo, parsearAlvo } from './interruptores.js';
 import { DESCRICAO, MODOS, gravarModo, lerModo, parsearModo } from './modo-fila.js';
 import { formatarMedicao, medirContexto } from './contexto-cmd.js';
@@ -29,6 +30,7 @@ const AJUDA = `*openpcbot v3* — comandos
 /fontes — chats observados e o que já virou memória (/fontes ingerir [gmail|agenda])
 /cron lista|on <nome>|off <nome>
 /agentes · /skills · /novo (conversa nova daqui pra frente; o que já roda termina) · /compress
+/motor [codex|claude|padrao] — motor por assinatura deste chat; não altera jobs já criados
 /consolidar — roda a consolidação de memória agora
 
 *Controle da conversa*
@@ -40,6 +42,7 @@ const AJUDA = `*openpcbot v3* — comandos
 /ajuda <comando> — detalhe de um comando`;
 
 const DETALHE: Record<string, string> = {
+  motor: '/motor mostra motor/modelo/esforço deste chat. /motor codex ou /motor claude escolhe a assinatura para os próximos pedidos. /motor padrao volta ao config/agentes-ia.yaml. Jobs já criados mantêm o perfil. Ao trocar, sessão nova recebe o contexto disponível; não há transferência de sessão nativa nem troca automática por cota.',
   jev: '/jev observar ativa comparação neste chat pelo OpenRouter. /jev mostra a última sugestão e custo; /jev off desliga. /jev historico [n] lista as últimas comparações; /jev relatorio dia|semana resume o período (enviado sozinho às 8h05 e às segundas 8h10; /cron off jev-relatorio-diario desliga). Não altera rotas nem executa skills. Critérios e mensagem atual são enviados ao provedor, sem memória/histórico. Limiar didático não comprova calibração.',
   parar: `*/parar [tudo|agentes|<agente>] [motivo]*
 tudo: nenhuma resposta nem agente (comandos e manutenção no Ollama seguem).
@@ -74,6 +77,14 @@ export async function executarComando(app: App, m: MensagemRecebida): Promise<st
   const chat = m.chatId;
 
   switch (cmd) {
+    case 'motor': {
+      const alvo = args[0];
+      if (alvo && alvo !== 'padrao' && !ehMotor(alvo)) return 'Uso: /motor [codex|claude|padrao]. Só assinaturas; sem troca automática.';
+      if (alvo === 'padrao') app.prefs.apagar(chat, CHAVE_MOTOR);
+      else if (alvo) app.prefs.gravar(chat, CHAVE_MOTOR, alvo);
+      const p = perfilAgente(app.prefs, chat, agentesCacheados().find(a => a.id === 'lead')!);
+      return `Motor deste chat: ${p.motor} pela assinatura · ${p.modelo} · ${p.esforco}. Próximos pedidos usam esse motor; jobs já criados mantêm o perfil. /motor codex|claude|padrao muda.`;
+    }
     case 'jev': return comandoJev(app, chat, resto);
     case 'start':
     case 'ajuda':
@@ -91,7 +102,7 @@ export async function executarComando(app: App, m: MensagemRecebida): Promise<st
         const p = pedidoDe(j);
         return `*Job #${j.id}* ${j.fila}/${j.tarefa}\nstatus: ${j.status} · tentativas ${j.tentativas}/${j.max_tentativas} · ${dur}` +
           (p ? `\npedido: "${p.slice(0, 200)}${p.length > 200 ? '…' : ''}"` : '') +
-          (j.kind === 'agent' ? `\nconversa salva: ${j.sessao ? 'sim (/job ' + j.id + ' <texto> continua)' : 'não'}` : '') +
+          (j.kind === 'agent' ? `\nmotor: ${j.motor ?? 'legado'} · ${j.modelo ?? '-'} · ${j.esforco ?? '-'}\nconversa salva: ${j.sessao ? 'sim (/job ' + j.id + ' <texto> continua)' : 'não'}` : '') +
           (j.erro ? `\nerro: ${j.erro.slice(0, 300)}` : '') + (j.resultado && j.status === 'done' ? `\n\n${j.resultado.slice(0, 1500)}` : '');
       }
       // Primeiro o que é SEU e está aberto; o cron `lembretes` (1/min) enterrava tudo nos "recentes".
@@ -117,9 +128,11 @@ export async function executarComando(app: App, m: MensagemRecebida): Promise<st
       if (!j || j.flow_ref !== flow) return `Job #${id} não é deste chat.`;
       if (j.kind !== 'agent' || !j.tarefa.startsWith('agente:')) return `Job #${id} (${j.tarefa}) não é de agente; /job só continua job de agente.`;
       const agente = j.tarefa.slice('agente:'.length);
+      const perfil = perfilAgente(app.prefs, chat, agentesCacheados().find(a => a.id === agente) ?? { modelo: 'sonnet', esforco: 'medium' });
       const original = pedidoDe(j);
       const novo = app.fila.enfileirar({
         fila: 'agente', kind: 'agent', tarefa: `agente:${agente}`,
+        perfil,
         input: JSON.stringify({
           chatId: chat, canal: m.canal, agente, continuaJob: id,
           texto: `[Continuação do job #${id} — pedido original: "${original.slice(0, 800)}"]\n${texto}`,
@@ -128,7 +141,8 @@ export async function executarComando(app: App, m: MensagemRecebida): Promise<st
       });
       app.cerebro.logarTurno(chat, m.canal, 'user', texto, undefined, agente);
       const aberto = j.status === 'running' || j.status === 'queued';
-      const conversa = aberto ? 'na mesma conversa dele' : j.sessao ? 'na mesma conversa dele' : 'em conversa nova (ele não deixou conversa salva), levando o pedido original';
+      const mesmoMotor = (j.motor ?? 'claude') === perfil.motor;
+      const conversa = mesmoMotor && (aberto || j.sessao) ? 'na mesma conversa dele' : 'em conversa nova, levando o pedido original e o contexto disponível';
       return `↪️ Continuação do #${id} virou o job #${novo.id} (${agente}), ${conversa}.${aberto ? ` Roda quando o #${id} terminar.` : ''} /status ${novo.id} acompanha.`;
     }
 

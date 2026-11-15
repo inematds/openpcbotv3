@@ -40,7 +40,7 @@ export interface Job {
   erro: string | null;
   /** Quando o término foi notificado ao `chat_id`. NULL = ainda não avisamos. */
   notificado_em: number | null;
-  /** Sessão do `claude` que o job de agente retomou ou deixou (migração 10). */
+  /** Sessão nativa do motor do job; nunca reutilizar em outro motor. */
   sessao?: string | null;
   criado_em: number;
   iniciado_em: number | null;

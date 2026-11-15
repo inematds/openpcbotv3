@@ -8,6 +8,8 @@ export interface ContextoExecucao {
   cwd: string;
   perfil: Perfil;
   vars: Record<string, string>;
+  /** Identificação para registro central da execução no gateway. */
+  chamada?: { chatId?: string; agente?: string; traceId?: string; jobId?: number };
   /**
    * Teto de PAREDE desta execução (vem do registry da skill). Ausente = sem
    * teto, que é o comportamento que só faz sentido em teste: em produção um

@@ -38,7 +38,7 @@ export type Resumidor = (c: Candidato, cwd: string, modelo: string) => Promise<s
 export function sessoesParaResumir(db: Database.Database, agora: number): Candidato[] {
   return db.prepare(
     `SELECT chat_id, agente, session_id, ultimo_uso FROM sessions
-      WHERE ultimo_uso BETWEEN ? AND ? AND (resumo_de IS NULL OR resumo_de != session_id)`,
+      WHERE motor = 'claude' AND ultimo_uso BETWEEN ? AND ? AND (resumo_de IS NULL OR resumo_de != session_id)`,
   ).all(agora - RESUMO_ATE_SEG, agora - RESUMO_DE_SEG) as Candidato[];
 }
 
@@ -82,14 +82,14 @@ export async function resumirSessoesParadas(db: Database.Database, agora: number
   const feitos: string[] = [];
   for (const c of sessoesParaResumir(db, agora)) {
     if (chatOcupado(db, c.chat_id)) continue;
-    db.prepare('UPDATE sessions SET resumo_de = ?, resumo = NULL, resumo_em = ? WHERE chat_id = ? AND agente = ?')
+    db.prepare("UPDATE sessions SET resumo_de = ?, resumo = NULL, resumo_em = ? WHERE chat_id = ? AND agente = ? AND motor = 'claude'")
       .run(c.session_id, agora, c.chat_id, c.agente);
     const ag = agentesCacheados().find((a) => a.id === c.agente);
     const cwd = ag && existsSync(ag.cwd) ? ag.cwd : RAIZ;
     try {
       const texto = await resumir(c, cwd, ag?.modelo ?? 'opus');
       // Só grava se a sessão ainda for a mesma (uma mensagem nova pode ter chegado no meio).
-      db.prepare('UPDATE sessions SET resumo = ? WHERE chat_id = ? AND agente = ? AND session_id = ?')
+      db.prepare("UPDATE sessions SET resumo = ? WHERE chat_id = ? AND agente = ? AND session_id = ? AND motor = 'claude'")
         .run(texto.slice(0, 4000), c.chat_id, c.agente, c.session_id);
       feitos.push(`${c.agente}@${c.chat_id}`);
     } catch (e) {
@@ -105,7 +105,7 @@ export async function resumirSessoesParadas(db: Database.Database, agora: number
  * (sem sessão anterior, ainda quente, velha demais ou /novo depois dela).
  */
 export function blocoRetomada(db: Database.Database, chatId: string, agente: string, criadoEm: number, novoEm: number, agora: number = criadoEm): string | undefined {
-  const l = db.prepare('SELECT session_id, ultimo_uso, resumo, resumo_de FROM sessions WHERE chat_id = ? AND agente = ?')
+  const l = db.prepare("SELECT session_id, ultimo_uso, resumo, resumo_de FROM sessions WHERE chat_id = ? AND agente = ? AND motor = 'claude'")
     .get(chatId, agente) as { session_id: string; ultimo_uso: number; resumo: string | null; resumo_de: string | null } | undefined;
   if (!l) return undefined;
   const parada = agora - l.ultimo_uso; // mesmo relógio de Sessoes.obter

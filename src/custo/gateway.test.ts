@@ -9,6 +9,7 @@ import { GatewayLLM } from './gateway.js';
 import { Orcamento } from './orcamento.js';
 import { calcularCusto } from './precos.js';
 import { RegistroCusto } from './registro.js';
+import { FakeRunner } from '../fila/runner.js';
 
 function fake(nome: Provedor['nome'], tokensOut = 10, custo?: number): Provedor & { chamadas: number } {
   const p = { nome, chamadas: 0, async chamar() { p.chamadas += 1; return { texto: `resp-${nome}`, tokensIn: 100, tokensOut, custoUsdInformado: custo }; } };
@@ -30,6 +31,38 @@ function montar(o: { ram?: number; residente?: boolean; mensal?: number; gastoIn
 }
 
 describe('gateway — único ponto de chamada de LLM', () => {
+  const ctxCodex = { prompt: 'teste', cwd: '/tmp', vars: {}, perfil: { motor: 'codex', modelo: 'gpt-6.1-sol', esforco: 'medium' }, chamada: { jobId: 1, chatId: 'teste', agente: 'lead' } };
+  it('registra uso Codex sem cobrar API mesmo com orçamento esgotado', async () => {
+    const { gw, registro, barato } = montar({ mensal: 0 });
+    const bruto = [
+      { type: 'item.completed', item: { type: 'agent_message', text: 'feito' } },
+      { type: 'turn.completed', usage: { input_tokens: 100, output_tokens: 7 } },
+    ].map(e => JSON.stringify(e)).join('\n');
+    const base = new FakeRunner({ respostas: [bruto] });
+    expect(await gw.runnerAssinatura(base).iniciar(ctxCodex).aguardar()).toBe(bruto);
+    expect(registro.hoje()).toMatchObject({ chamadas: 1, tokensIn: 100, tokensOut: 7 });
+    expect(registro.mesPago().chamadas).toBe(0);
+    expect(barato.chamadas).toBe(0);
+  });
+  it('falha de cota Codex é erro, não resultado concluído nem fallback pago', async () => {
+    const { gw, registro, barato } = montar();
+    const base = new FakeRunner({ respostas: [JSON.stringify({ type: 'turn.failed', error: { message: 'usage limit' } })] });
+    await expect(gw.runnerAssinatura(base).iniciar(ctxCodex).aguardar()).rejects.toThrow(/usage limit/);
+    expect(registro.hoje().chamadas).toBe(1);
+    expect(barato.chamadas).toBe(0);
+    expect(base.chamadas).toHaveLength(1);
+  });
+  it('o gateway preserva cancelamento e limpeza do processo', async () => {
+    const { gw } = montar();
+    const base = new FakeRunner({ travar: true });
+    const exec = gw.runnerAssinatura(base).iniciar(ctxCodex);
+    const p = exec.aguardar();
+    await exec.cancelar();
+    await expect(p).rejects.toThrow(/cancelado/);
+    await exec.limpar();
+    expect(base.cancelamentos).toBe(1);
+    expect(base.limpezas).toBe(1);
+  });
   it('toda chamada é registrada, inclusive Ollama com custo 0', async () => {
     const { gw, registro, local } = montar();
     const r = await gw.chamar({ tier: 'local', mensagens: [{ role: 'user', content: 'oi' }], agente: 't' });

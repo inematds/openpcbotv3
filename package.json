@@ -1,11 +1,12 @@
 {
   "name": "openpcbotv3",
-  "version": "3.35.17",
+  "version": "3.36.17",
   "description": "openpcbot v3 — assistente pessoal multicanal com fila durável, gestor do Ollama, custo por chamada e cérebro com aprendizado",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx src/index.ts",
+    "ia": "tsx scripts/ia-agentes.ts",
     "build": "tsc",
     "start": "node --max-old-space-size=1024 dist/index.js",
     "typecheck": "tsc --noEmit",

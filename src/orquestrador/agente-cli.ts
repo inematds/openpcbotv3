@@ -12,6 +12,10 @@ import type { RegistroCusto } from '../custo/registro.js';
 import { RAIZ } from '../config/env.js';
 import { blocoSkills, skillsCacheadas } from './skills.js';
 import { agentesCacheados, type Agente } from './agentes.js';
+import { interpretarSaidaCli } from '../fila/saida-claude.js';
+export { interpretarSaidaCli } from '../fila/saida-claude.js';
+import { interpretarSaidaCodex } from '../fila/saida-codex.js';
+import type { Perfil } from '../fila/types.js';
 import { CACHE_SEG, blocoRetomada } from './resumo-sessao.js';
 
 export interface EntradaAgente {
@@ -29,14 +33,6 @@ export interface EntradaAgente {
   somenteLeitura?: boolean;
   /** `/job N texto`: retoma a sessão DO JOB N, não a do chat (3.8.5). */
   continuaJob?: number;
-}
-
-export interface SaidaCli {
-  texto: string;
-  sessionId?: string;
-  custoUsd?: number;
-  tokensIn?: number;
-  tokensOut?: number;
 }
 
 /** Conversa, consulta, pergunta: 20 min bastam e seguram pouco a fila (concorrência 1). */
@@ -83,6 +79,7 @@ export function montarPrompt(e: EntradaAgente, agente: Agente, quadro?: string, 
   }
   partes.push(blocoSkills(skillsCacheadas()).join('\n'));
   partes.push('Regras: avatar do Nei = SEMPRE pelo estúdio HeyGen (assinatura), sem pedir confirmação (regra do Nei, 12/11/2026); vídeo explicativo/de projeto = explicavideos v2 com esse avatar; a skill video-explicativo (sem avatar) só se o Nei pedir pelo nome. Criar vídeo pela API do HeyGen ou gerar mídia paga por API (Magnific, Kling etc.) só com confirmação explícita. Nunca rode `ollama serve`; nunca imprima valores de API keys. Responda em PT-BR, curto, com o resultado e onde ficou.');
+  partes.push('Ao trabalhar em um projeto, leia as regras AGENTS.md/CLAUDE.md dele antes de agir. API de modelo ou serviço só com autorização explícita aplicável; assinatura não vira API.');
   partes.push(`[Mensagem do usuário via ${e.canal}]\n${e.texto}`);
   return partes.filter(Boolean).join('\n\n');
 }
@@ -101,25 +98,6 @@ export function argumentosCli(bin: string, ctx: ContextoExecucao): string[] {
     ...(mcp ? ['--mcp-config', mcp, '--strict-mcp-config'] : []),
     '-p', ctx.prompt,
   ].filter((a) => a !== bin);
-}
-
-/** Saída JSON do `claude -p --output-format json`; cai para texto se não for JSON. */
-export function interpretarSaidaCli(bruto: string): SaidaCli {
-  const t = bruto.trim();
-  try {
-    const j = JSON.parse(t) as Record<string, unknown>;
-    const texto = typeof j.result === 'string' ? j.result : t;
-    const usage = (j.usage ?? {}) as Record<string, number>;
-    return {
-      texto,
-      sessionId: typeof j.session_id === 'string' ? j.session_id : undefined,
-      custoUsd: typeof j.total_cost_usd === 'number' ? j.total_cost_usd : undefined,
-      tokensIn: usage.input_tokens ?? undefined,
-      tokensOut: usage.output_tokens ?? undefined,
-    };
-  } catch {
-    return { texto: t };
-  }
 }
 
 /**
@@ -185,26 +163,28 @@ export class Sessoes {
       .run(chatId, CHAVE_NOVO, String(this.agora()), this.agora());
   }
 
-  obter(chatId: string, agente: string, criadoEm: number = this.agora()): string | undefined {
-    const l = this.db.prepare('SELECT session_id, ultimo_uso FROM sessions WHERE chat_id = ? AND agente = ?').get(chatId, agente) as { session_id: string; ultimo_uso: number } | undefined;
+  obter(chatId: string, agente: string, criadoEm: number = this.agora(), motor = 'claude'): string | undefined {
+    const l = this.db.prepare('SELECT session_id, ultimo_uso FROM sessions WHERE chat_id = ? AND agente = ? AND motor = ?').get(chatId, agente, motor) as { session_id: string; ultimo_uso: number } | undefined;
     // Sessão fria (> 55 min) não é retomada: o cache do provedor venceu e ela releria tudo (job #89966).
     // A sessão nova recebe o resumo de retomada + últimas mensagens (resumo-sessao.ts).
     if (!l || this.agora() - l.ultimo_uso > CACHE_SEG) return undefined;
+    const outra = this.db.prepare('SELECT 1 FROM sessions WHERE chat_id = ? AND agente = ? AND motor != ? AND ultimo_uso >= ?').get(chatId, agente, motor, l.ultimo_uso);
+    if (outra) return undefined; // outro motor trabalhou: atualizar contexto numa sessão nova
     const novo = this.novoEm(chatId);
     // Job de depois do /novo não herda sessão de antes; job de antes não pega a nova.
     if (novo > 0 && (criadoEm >= novo) !== (l.ultimo_uso >= novo)) return undefined;
-    if (this.travouDepois(chatId, agente, l.ultimo_uso)) {
-      this.db.prepare('DELETE FROM sessions WHERE chat_id = ? AND agente = ?').run(chatId, agente);
+    if (this.travouDepois(chatId, agente, l.ultimo_uso, motor)) {
+      this.db.prepare('DELETE FROM sessions WHERE chat_id = ? AND agente = ? AND motor = ?').run(chatId, agente, motor);
       return undefined;
     }
     return l.session_id;
   }
 
   /** Grava a sessão do chat; job anterior ao último `/novo` não grava (devolve false). */
-  gravar(chatId: string, agente: string, sessionId: string, criadoEm: number = this.agora()): boolean {
+  gravar(chatId: string, agente: string, sessionId: string, criadoEm: number = this.agora(), motor = 'claude'): boolean {
     const novo = this.novoEm(chatId);
     if (novo > 0 && criadoEm < novo) return false;
-    this.db.prepare('INSERT INTO sessions (chat_id, agente, session_id, ultimo_uso) VALUES (?, ?, ?, ?) ON CONFLICT(chat_id, agente) DO UPDATE SET session_id = excluded.session_id, ultimo_uso = excluded.ultimo_uso').run(chatId, agente, sessionId, this.agora());
+    this.db.prepare('INSERT INTO sessions (chat_id, agente, motor, session_id, ultimo_uso) VALUES (?, ?, ?, ?, ?) ON CONFLICT(chat_id, agente, motor) DO UPDATE SET session_id = excluded.session_id, ultimo_uso = excluded.ultimo_uso').run(chatId, agente, motor, sessionId, this.agora());
     return true;
   }
 
@@ -213,16 +193,39 @@ export class Sessoes {
     return blocoRetomada(this.db, chatId, agente, criadoEm, this.novoEm(chatId), this.agora());
   }
 
+  perfilDoJob(jobId: number): Perfil | undefined {
+    const j = this.db.prepare('SELECT motor, modelo, esforco FROM jobs WHERE id = ?').get(jobId) as Perfil | undefined;
+    return j?.motor && j.modelo && j.esforco ? j : undefined;
+  }
+
+  fixarPerfil(jobId: number, perfil: Perfil): void {
+    this.db.prepare('UPDATE jobs SET motor = ?, modelo = ?, esforco = ? WHERE id = ?')
+      .run(perfil.motor, perfil.modelo, perfil.esforco, jobId);
+  }
+
+  contextoNovo(chatId: string, agente: string, criadoEm: number): string | undefined {
+    const novo = this.novoEm(chatId);
+    // /novo nunca recupera contexto da geração anterior.
+    const turnos = (this.db.prepare('SELECT role, content FROM conversation_log WHERE chat_id = ? AND created_at >= ? AND created_at <= ? ORDER BY id DESC LIMIT 6')
+      .all(chatId, novo, criadoEm) as { role: string; content: string }[]).reverse();
+    const l = this.db.prepare('SELECT resumo FROM sessions WHERE chat_id = ? AND agente = ? AND ultimo_uso >= ? AND resumo_de = session_id ORDER BY ultimo_uso DESC LIMIT 1')
+      .get(chatId, agente, novo) as { resumo: string | null } | undefined;
+    if (!turnos.length && !l?.resumo) return undefined;
+    return '[Contexto de continuidade do bot: sessão nova; confira arquivos e estado real antes de repetir ações.]\n' +
+      (l?.resumo ? `Resumo anterior: ${l.resumo.slice(0, 4000)}\n` : '') +
+      turnos.map(t => `${t.role}: ${t.content.slice(0, 1400)}`).join('\n');
+  }
+
   limpar(chatId: string): number {
     return this.db.prepare('DELETE FROM sessions WHERE chat_id = ?').run(chatId).changes;
   }
 
   /** Último job deste agente no chat, terminado depois de `desde`, morreu travado? */
-  private travouDepois(chatId: string, agente: string, desde: number): boolean {
+  private travouDepois(chatId: string, agente: string, desde: number, motor: string): boolean {
     const j = this.db.prepare(
-      `SELECT status, erro FROM jobs WHERE tarefa = ? AND (flow_ref = ? OR flow_ref LIKE ?) AND terminado_em IS NOT NULL AND terminado_em > ?
+      `SELECT status, erro FROM jobs WHERE tarefa = ? AND (flow_ref = ? OR flow_ref LIKE ?) AND COALESCE(motor, 'claude') = ? AND terminado_em IS NOT NULL AND terminado_em > ?
        ORDER BY terminado_em DESC, id DESC LIMIT 1`,
-    ).get(`agente:${agente}`, chatId, `%:${chatId}`, desde) as { status: string; erro: string | null } | undefined;
+    ).get(`agente:${agente}`, chatId, `%:${chatId}`, motor, desde) as { status: string; erro: string | null } | undefined;
     if (!j || j.status !== 'failed' || !j.erro) return false;
     return /timeout de|não respondeu/.test(j.erro);
   }
@@ -232,9 +235,9 @@ export class Sessoes {
   }
 
   /** Sessão para continuar o job; a que travou ("não respondeu") não volta. */
-  doJob(jobId: number): string | undefined {
-    const l = this.db.prepare('SELECT sessao, erro FROM jobs WHERE id = ?').get(jobId) as { sessao: string | null; erro: string | null } | undefined;
-    if (!l?.sessao || (l.erro && l.erro.includes('não respondeu'))) return undefined;
+  doJob(jobId: number, motor = 'claude'): string | undefined {
+    const l = this.db.prepare('SELECT sessao, erro, motor FROM jobs WHERE id = ?').get(jobId) as { sessao: string | null; erro: string | null; motor: string | null } | undefined;
+    if (!l?.sessao || (l.motor ?? 'claude') !== motor || (l.erro && l.erro.includes('não respondeu'))) return undefined;
     return l.sessao;
   }
 }
@@ -243,45 +246,49 @@ export class Sessoes {
  * `promptDe` do worker da lane `agente`: transforma o job (input JSON =
  * EntradaAgente) no ContextoExecucao do runner `claude`.
  */
-export function criarPromptDe(o: { sessoes: Sessoes; registro: RegistroCusto; claudeBin: string; bloqueiaAgente?: (id: string) => string | null; quadro?: (job: Job) => string }) {
+export function criarPromptDe(o: { sessoes: Sessoes; registro?: RegistroCusto; claudeBin: string; bloqueiaAgente?: (id: string) => string | null; quadro?: (job: Job) => string; perfilDe?: (e: EntradaAgente, agente: Agente) => Perfil }) {
   return async (job: Job): Promise<ContextoExecucao> => {
     const e = JSON.parse(job.input) as EntradaAgente;
     // Job enfileirado ANTES do /parar: falha aqui, sem gastar tokens.
     const bloqueio = o.bloqueiaAgente?.(e.agente);
     if (bloqueio) throw new Error(`interruptor ligado (${bloqueio}); /retomar libera`);
     const agente = agentesCacheados().find((a) => a.id === e.agente) ?? agentesCacheados().find((a) => a.id === 'lead')!;
-    const sessao = e.somenteLeitura ? undefined
-      : e.continuaJob !== undefined ? o.sessoes.doJob(e.continuaJob)
-      : o.sessoes.obter(e.chatId, agente.id, job.criado_em);
+    const perfil = o.sessoes.perfilDoJob(job.id) ?? o.perfilDe?.(e, agente) ?? { motor: 'claude', modelo: job.modelo ?? agente.modelo, esforco: job.esforco ?? agente.esforco };
+    o.sessoes.fixarPerfil(job.id, perfil);
+    const leitura = e.somenteLeitura || agente.somenteLeitura;
+    const sessao = leitura ? undefined
+      : e.continuaJob !== undefined ? o.sessoes.doJob(e.continuaJob, perfil.motor)
+      : o.sessoes.obter(e.chatId, agente.id, job.criado_em, perfil.motor);
     // Gravada já na largada: se este job morrer no timeout, `/job N` ainda acha a conversa.
     if (sessao) o.sessoes.gravarDoJob(job.id, sessao);
     // Sem sessão para retomar porque esfriou: o resumo e as últimas mensagens seguram o fio.
-    const retomada = !sessao && !e.somenteLeitura && e.continuaJob === undefined
-      ? o.sessoes.retomada(e.chatId, agente.id, job.criado_em) : undefined;
+    const retomada = !sessao && !leitura
+      ? o.sessoes.contextoNovo(e.chatId, agente.id, job.criado_em) : undefined;
     const cwd = existsSync(agente.cwd) ? agente.cwd : RAIZ;
-    const transcript = sessao ? transcriptDe(cwd, sessao) : undefined;
+    const transcript = sessao && perfil.motor === 'claude' ? transcriptDe(cwd, sessao) : undefined;
     const t0 = Date.now();
     return {
       prompt: montarPrompt(e, agente, o.quadro?.(job), retomada),
       cwd,
-      perfil: { motor: 'claude', modelo: job.modelo ?? agente.modelo, esforco: job.esforco ?? agente.esforco },
-      vars: { ...(sessao ? { OPENPCBOT_SESSION: sessao } : {}), ...(agente.mcpConfig && existsSync(agente.mcpConfig) ? { OPENPCBOT_MCP: agente.mcpConfig } : {}), OPENPCBOT_CHAT: e.chatId, OPENPCBOT_TRACE: e.traceId ?? '', LONGRUN_PAUSA_TOKENS: '0' },
+      perfil,
+      chamada: { chatId: e.chatId, agente: agente.id, traceId: e.traceId, jobId: job.id },
+      vars: { ...(leitura ? { OPENPCBOT_SOMENTE_LEITURA: '1' } : {}), ...(sessao ? { OPENPCBOT_SESSION: sessao } : {}), ...(agente.mcpConfig && existsSync(agente.mcpConfig) ? { OPENPCBOT_MCP: agente.mcpConfig } : {}), OPENPCBOT_CHAT: e.chatId, OPENPCBOT_TRACE: e.traceId ?? '', LONGRUN_PAUSA_TOKENS: '0' },
       timeoutMs: timeoutDoPedido(e.texto),
       // Só vigia sessão RETOMADA cujo transcript existe: caminho errado não pode matar job sadio.
       ...(transcript && existsSync(transcript) ? { vigia: { arquivo: transcript, prazoMs: VIGIA_RETOMADA_MS } } : {}),
       interpretarSaida: (bruto: string): string => {
-        const s = interpretarSaidaCli(bruto);
+        const s = perfil.motor === 'codex' ? interpretarSaidaCodex(bruto) : interpretarSaidaCli(bruto);
         if (!e.chatId) throw new Error('EntradaAgente sem chatId — input do job malformado');
         // Texto de hook não é resposta: falha o job (o Nei recebe o erro) e não grava a sessão.
         if (bloqueadoPorHook(s.texto)) throw new Error(`hook barrou o pedido mesmo em sessão nova: ${s.texto.slice(0, 300)}`);
-        o.registro.gravar({
-          traceId: e.traceId, provedor: 'claude-cli', modelo: job.modelo ?? agente.modelo, tier: 'premium', agente: agente.id, jobId: job.id, chatId: e.chatId,
+        o.registro?.gravar({
+          traceId: e.traceId, provedor: `${perfil.motor}-cli`, modelo: perfil.modelo, tier: 'premium', agente: agente.id, jobId: job.id, chatId: e.chatId,
           tokensIn: s.tokensIn ?? 0, tokensOut: s.tokensOut ?? 0, custoUsd: s.custoUsd ?? 0, latenciaMs: Date.now() - t0, ok: true, motivoTier: 'agente CLI',
         });
-        if (s.sessionId && !e.somenteLeitura) {
+        if (s.sessionId && !leitura) {
           o.sessoes.gravarDoJob(job.id, s.sessionId);
           // Continuação de job antigo não sequestra a sessão atual do chat.
-          if (e.continuaJob === undefined) o.sessoes.gravar(e.chatId, agente.id, s.sessionId, job.criado_em);
+          if (e.continuaJob === undefined) o.sessoes.gravar(e.chatId, agente.id, s.sessionId, job.criado_em, perfil.motor);
         }
         return s.texto;
       },

@@ -2,6 +2,7 @@
 // Trocar de motor = escrever outro arquivo como este e registrá-lo em RUNNERS.
 import { spawn } from 'node:child_process';
 import { statSync } from 'node:fs';
+import { ambienteAssinatura } from './ambiente-assinatura.js';
 
 import { RUNNERS, type ContextoExecucao, type Execucao, type Runner } from './runner.js';
 
@@ -94,7 +95,7 @@ export class ClaudeRunner implements Runner {
       cwd: ctx.cwd,
       detached: true,
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: { ...process.env, ...ctx.vars },
+      env: ambienteAssinatura(ctx.perfil.motor, { ...process.env, ...ctx.vars }),
     });
 
     let cancelado = false;

@@ -2,6 +2,11 @@
 
 | data | o que quebrou | menor correção | prompt \| infra |
 |---|---|---|---|
+| 2026-11-15 | lock ainda em 3.26.14: troca textual por 3.35.17 não atualizou a versão | ler os dois marcadores reais do lock e alinhar a 3.36.17 | prompt |
+| 2026-11-15 | teste legado de modelo Codex fornece contexto parcial sem vars | normalizar vars ausente para objeto vazio na tradução de argumentos | prompt |
+| 2026-11-15 | fixture de teste passou no Vitest mas faltava traceId obrigatório no tsc | preencher o contrato MensagemRecebida no fixture | prompt |
+| 2026-11-15 | typecheck recusou custoUsd na união de respostas Codex/Claude | compartilhar interface normalizada com campos opcionais | prompt |
+| 2026-11-15 | patch múltiplo rejeitado por contexto de import incompleto | conferir import literal e reaplicar sem contexto inventado | prompt |
 | 2026-11-13 | Jarvis com 2 abas abertas lia o mesmo alerta 2 vezes, com vozes diferentes (Maria e depois homem) | trava "aba dona da voz" em localStorage + esperar as vozes carregarem (3.30.15) | infra |
 | 2026-11-11 | pedido "manda o vídeo" no v3 chegava como texto `[SEND_FILE:/caminho]` (desde 23/10, várias vezes) | canal Telegram passa a tratar o marcador (src/canais/arquivos.ts, 3.26.14) | infra |
 | 2026-11-09 | Login do painel (3143) recusado no navegador como "outra origem": `Referrer-Policy: no-referrer` faz o navegador mandar `Origin: null` no POST do formulário (os testes com fetch passavam) | `Referrer-Policy: same-origin`; conferir login com navegador real, não só fetch | prompt |

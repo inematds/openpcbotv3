@@ -14,6 +14,8 @@ import { FilaSqlite } from './fila/store.js';
 import { Worker } from './fila/worker.js';
 import { CONCORRENCIAS, FILAS } from './fila/filas.js';
 import { ClaudeRunner } from './fila/runner-claude.js';
+import { CodexRunner } from './fila/runner-codex.js';
+import { lerAgentesIA, perfilAgente } from './config/agentes-ia.js';
 import { GestorOllama } from './ollama/gestor.js';
 import { GatewayLLM } from './custo/gateway.js';
 import { RegistroCusto } from './custo/registro.js';
@@ -48,6 +50,7 @@ import { montarCronPadrao } from './tarefas/padrao.js';
 const agora = (): number => Math.floor(Date.now() / 1000);
 
 export function montarApp(): App {
+  lerAgentesIA(); // falhar antes de abrir canais se a seleção de agentes for inválida
   carregarEnv();
   const cfg = lerConfig();
   const log = (m: string): void => { logger.info(m); };
@@ -101,13 +104,14 @@ async function main(): Promise<void> {
   orq = new Orquestrador(app);
   orq.ligar();
 
-  // Workers: um por lane, com o runner claude configurado para o v3.
+  // Workers: um por lane; agentes pela assinatura escolhida no perfil do job.
   const runnerClaude = comRepeticaoSemBloqueio(new ClaudeRunner({ binario: cfg.claudeBin, memoriaMax: cfg.agenteMemoriaMax, montarArgs: (ctx) => argumentosCli(cfg.claudeBin, ctx) }), log);
-  const promptDe = criarPromptDe({ sessoes: app.sessoes, registro: app.registro, claudeBin: cfg.claudeBin, bloqueiaAgente: (id) => app.interruptores.bloqueiaAgente(id), quadro: (job) => quadroDoChat(fila, job.flow_ref, agora(), job.id) });
+  const runnerCodex = new CodexRunner(cfg.codexBin, cfg.agenteMemoriaMax);
+  const promptDe = criarPromptDe({ sessoes: app.sessoes, claudeBin: cfg.claudeBin, perfilDe: (e, agente) => perfilAgente(app.prefs, e.chatId, agente), bloqueiaAgente: (id) => app.interruptores.bloqueiaAgente(id), quadro: (job) => quadroDoChat(fila, job.flow_ref, agora(), job.id) });
   const entregar = criarEntregador(app);
   const workers = FILAS.map((f) => new Worker(fila, {
     fila: f, dono: cfg.instancia, concorrencia: CONCORRENCIAS[f], leaseSegundos: 120,
-    tarefas, runners: { claude: runnerClaude }, promptDe, log,
+    tarefas, runners: { claude: app.gateway.runnerAssinatura(runnerClaude), codex: app.gateway.runnerAssinatura(runnerCodex) }, promptDe, log,
     aoTerminar: entregar,
     redigir: (t) => redigir(t).texto,
     guardarSaidaBruta: (job, bruto) => { try { const p = resolve(RAIZ, 'store/saidas'); mkdirSync(p, { recursive: true }); const arq = resolve(p, `job-${job.id}.txt`); writeFileSync(arq, bruto); return arq; } catch { return undefined; } },

@@ -50,6 +50,7 @@ export function criarTarefas(app: App, orq: () => Orquestrador): Record<string, 
       const lead = fila.enfileirar({
         fila: 'agente', kind: 'agent', tarefa: `agente:${entrada.agente}`,
         input: JSON.stringify({ ...entrada, consultas: ctx } satisfies EntradaAgente),
+        perfil: job.motor && job.modelo && job.esforco ? { motor: job.motor, modelo: job.modelo, esforco: job.esforco } : undefined,
         chat_id: job.chat_id, max_tentativas: 1, flow_ref: job.flow_ref,
       });
       return `lead enfileirado: #${lead.id}`;
