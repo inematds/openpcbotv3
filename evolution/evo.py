@@ -112,6 +112,61 @@ def qrvivo():
     print('Tempo esgotado.')
 
 
+def _env(arq, nome):
+    if not os.path.exists(arq):
+        return ''
+    for linha in open(arq):
+        if linha.startswith(nome + '='):
+            return linha.split('=', 1)[1].strip().strip('"\'')
+    return ''
+
+
+def _telegram_v3(texto):
+    """Manda no chat do Nei pelo bot v3. Devolve os números das mensagens."""
+    v3 = os.path.join(AQUI, '..', '.env')
+    v2 = os.path.expanduser('~/projetos/openpcbotv2/.env')
+    tok = _env(v3, 'TELEGRAM_BOT_TOKEN_V3')
+    chat = _env(v3, 'ALLOWED_CHAT_ID') or _env(v2, 'ALLOWED_CHAT_ID')
+    if not tok or not chat:
+        sys.exit('faltam TELEGRAM_BOT_TOKEN_V3/ALLOWED_CHAT_ID')
+    partes, atual = [], ''
+    for linha in texto.split('\n'):
+        if len(atual) + len(linha) > 3800:
+            partes.append(atual)
+            atual = ''
+        atual += linha + '\n'
+    partes.append(atual)
+    ids = []
+    for p in partes:
+        req = urllib.request.Request(f'https://api.telegram.org/bot{tok}/sendMessage',
+                                     data=json.dumps({'chat_id': chat, 'text': p}).encode(),
+                                     headers={'Content-Type': 'application/json'})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            ids.append(json.loads(r.read())['result']['message_id'])
+    return ids
+
+
+def grupos():
+    """Lista numerada dos grupos (só nomes e nº de pessoas, nenhuma mensagem) → bot v3 + evolution/grupos.json.
+    Os nomes não saem no terminal."""
+    s, d = chamar('GET', f'/group/fetchAllGroups/{INST}?getParticipants=false')
+    if s != 200 or not isinstance(d, list):
+        sys.exit(f'falhou: HTTP {s}')
+    lista = sorted(({'id': g.get('id'), 'nome': (g.get('subject') or '(sem nome)').strip(), 'pessoas': g.get('size')} for g in d),
+                   key=lambda g: g['nome'].lower())
+    for n, g in enumerate(lista, 1):
+        g['n'] = n
+    arq = os.path.join(AQUI, 'grupos.json')
+    with open(arq, 'w') as f:
+        json.dump(lista, f, ensure_ascii=False, indent=1)
+    os.chmod(arq, 0o600)
+    linhas = [f'WhatsApp: seus {len(lista)} grupos (só nomes, nenhuma mensagem lida).',
+              'Responda com os números que PODEM ser acessados, ex.: "podem: 3, 7, 12". Os outros ficam bloqueados.', '']
+    linhas += [f"{g['n']}. {g['nome']}" + (f" ({g['pessoas']})" if g['pessoas'] else '') for g in lista]
+    ids = _telegram_v3('\n'.join(linhas))
+    print(f'{len(lista)} grupos → bot v3, msg {", ".join(map(str, ids))}; mapa em {arq}')
+
+
 def sair():
     print('logout:', chamar('DELETE', f'/instance/logout/{INST}')[0])
 
@@ -121,4 +176,4 @@ if __name__ == '__main__':
     if cmd == 'codigo':
         codigo(sys.argv[2] if len(sys.argv) > 2 else '')
     else:
-        {'criar': criar, 'qr': qr, 'qrvivo': qrvivo, 'estado': estado, 'sair': sair}.get(cmd, lambda: print(__doc__))()
+        {'criar': criar, 'qr': qr, 'qrvivo': qrvivo, 'grupos': grupos, 'estado': estado, 'sair': sair}.get(cmd, lambda: print(__doc__))()
