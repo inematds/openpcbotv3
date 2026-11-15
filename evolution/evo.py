@@ -3,6 +3,7 @@
 
   python3 evolution/evo.py criar     # cria a instância com grupos ignorados e sem histórico
   python3 evolution/evo.py qr        # mostra o QR no terminal (e salva evolution/qr.png) para ler no celular
+  python3 evolution/evo.py codigo 5548999990000   # código de 8 letras para digitar no celular (sem QR)
   python3 evolution/evo.py estado    # conectado? qual número? configurações
   python3 evolution/evo.py sair      # desconecta o WhatsApp (logout)
 """
@@ -70,9 +71,28 @@ def qr():
     print('No celular: WhatsApp → Configurações → Aparelhos conectados → Conectar um aparelho.')
 
 
+def codigo(numero=''):
+    numero = ''.join(c for c in numero if c.isdigit())
+    if len(numero) < 12:
+        sys.exit('use: evo.py codigo 55DDDNUMERO (com 55 e DDD, só dígitos)')
+    chamar('DELETE', f'/instance/logout/{INST}')  # zera a tentativa de QR pendente
+    s, d = chamar('GET', f'/instance/connect/{INST}?number={numero}')
+    pc = d.get('pairingCode')
+    if not pc:
+        print('sem código:', s, d)
+        return
+    print('\n   CÓDIGO:', pc[:4] + '-' + pc[4:], '\n')
+    print('No celular: WhatsApp → Configurações → Aparelhos conectados → Conectar um aparelho →')
+    print('"Conectar com número de telefone" (embaixo do leitor de QR) → digite o código. Vale ~2 min.')
+
+
 def sair():
     print('logout:', chamar('DELETE', f'/instance/logout/{INST}')[0])
 
 
 if __name__ == '__main__':
-    {'criar': criar, 'qr': qr, 'estado': estado, 'sair': sair}.get(sys.argv[1] if len(sys.argv) > 1 else '', lambda: print(__doc__))()
+    cmd = sys.argv[1] if len(sys.argv) > 1 else ''
+    if cmd == 'codigo':
+        codigo(sys.argv[2] if len(sys.argv) > 2 else '')
+    else:
+        {'criar': criar, 'qr': qr, 'estado': estado, 'sair': sair}.get(cmd, lambda: print(__doc__))()
