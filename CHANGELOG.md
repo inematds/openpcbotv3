@@ -1,5 +1,9 @@
 # CHANGELOG — openpcbotv3
 
+## 3.35.17 — 2026-11-15
+
+**WhatsApp pela Evolution API** (Nei, 15/11: "ativa o evolution no v3"). Substitui o plano do whatsapp-web.js. `evolution/docker-compose.yml` (evoapicloud/evolution-api v2.3.7 + Postgres + Redis, só `127.0.0.1:18095`, nenhuma mensagem/contato/histórico gravado, log só erro), `evolution/evo.py` (criar/qr/estado/sair). Adaptador `src/canais/whatsapp.ts` + filtro `whatsapp-filtro.ts`: **fase 1 só a conversa "eu comigo"** entra (fromMe + próprio número, aceita `@lid` com `remoteJidAlt`), eco das respostas barrado por id e prefixo `🤖`, webhook repetido entra 1 vez, envio recusado para qualquer chat que não seja o do dono. Ouvinte próprio em `10.95.31.1:3144` (gateway da rede docker, rota com segredo, origem só da rede docker), tenta de novo a cada 30 s se a rede não estiver de pé. Guarda do v2 agora olha o `WHATSAPP_ENABLED` do `.env` dele, não se o serviço está ativo. 15 testes novos (grupo, outro contato, Nei falando com outro, eu comigo, eco, repetida, sem dono, ponta a ponta com Evolution simulada).
+
 ## 3.34.17 — 2026-11-14
 
 Painel **instalável no celular** (Nei, 14/11: "no celular poderá ser instalado ou via web também"). É a mesma página: `/manifest.webmanifest` (standalone, início em `/`, ícones 192/512 + maskable em `assets/painel/`, grade 2×2 preto/amarelo), `/sw.js` mínimo (sem cache: dado ao vivo; sem rede mostra "Sem conexão com o painel"), tags no head do painel, Jarvis e login; CSP com `manifest-src`/`worker-src 'self'`. Rotas do app são públicas (não têm dado). Conferido no Chromium: `Page.getInstallabilityErrors` vazio, SW ativo. No Android: Chrome → ⋮ → Instalar app.

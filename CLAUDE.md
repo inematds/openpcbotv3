@@ -21,7 +21,7 @@ Fase 8 (corte) **não** começa sem ordem explícita. O v2 (`openpcbot`) continu
 - **Mesmas tags de modelo do v2** em `config/ollama.yaml` (`qwen3.8:27b`, `llama3.2`, `bge-m3`). Mudar a tag do `geral` = dois modelões residentes = OOM.
 - **Nunca descarregar modelo que o v3 não carregou** (`descarregar_alheios: false`). Tier `pesado` fica desligado.
 - **Banco próprio** (`store/openpcbotv3.db`). O banco do v2 só é lido por snapshot (`src/cli/importar.ts`).
-- **WhatsApp e Slack desligados** aqui: o v2 é dono da sessão e do token.
+- **Slack desligado** aqui (token do v2). **WhatsApp ligado pela Evolution (3.35.17)**, fase 1 só "eu comigo"; ver README §10. Nunca abrir contato/grupo sem o Nei pedir.
 - Restart: `bash scripts/instalar-servico.sh` (rebuild + `systemctl --user restart openpcbotv3`). Sem sudo.
 - Diagnóstico: `npm run doctor`; logs `journalctl --user -u openpcbotv3 -n 50 --no-pager -o cat`.
 
@@ -34,6 +34,8 @@ Remote `inematds/openpcbotv3`; autor `inematds <inematds@gmail.com>` (regra glob
 When I correct you, or you catch yourself making a mistake: before continuing, add the lesson as a one-line rule under ## Lessons, so it never happens again.
 
 ## Lessons
+
+- Comunidade VIP (e-mail/Telegram): preparar no TLGruposVIP para envio manual; no e-mail reutilizar o HTML completo e os banners das campanhas anteriores, nunca substituir por HTML simples. Divulgação aponta para https://inema.club. Ler COMUNIDADE-VIP-ENVIOS.md. (19/09/2026)
 
 - `keep_alive` do Ollama: `-1` é número, não string; durações são `"10m"`. Validar contra a API antes de assumir o formato do plano.
 - Em `execSync('pgrep -f ...')` o próprio `sh -c` entra na contagem; usar `pgrep -x` ou filtrar. `grep -c` sem match sai com código 1: `|| true`.

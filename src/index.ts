@@ -1,7 +1,6 @@
 // Ponto de entrada: monta o App, liga canais, workers da fila, timers
 // (probe do Ollama, cron, heartbeat) e o desligamento gracioso (drain com
 // lease renovado, timeout, abort). Nenhuma lógica de domínio aqui.
-import { execSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
@@ -43,7 +42,7 @@ import { ligarTelegram } from './canais/telegram.js';
 import { ligarHttp } from './canais/http.js';
 import { ligarCli } from './canais/cli.js';
 import { ligarSlack } from './canais/slack.js';
-import { ligarWhatsApp } from './canais/whatsapp.js';
+import { ligarWhatsApp, v2UsaWhatsApp } from './canais/whatsapp.js';
 import { montarCronPadrao } from './tarefas/padrao.js';
 
 const agora = (): number => Math.floor(Date.now() / 1000);
@@ -91,10 +90,6 @@ export function montarApp(): App {
   };
 }
 
-function v2Ativo(): boolean {
-  try { return execSync('systemctl --user is-active openpcbot', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() === 'active'; } catch { return false; }
-}
-
 async function main(): Promise<void> {
   const app = montarApp();
   const { log, bus, fila, cfg } = app;
@@ -137,7 +132,8 @@ async function main(): Promise<void> {
   if (process.stdin.isTTY || process.argv.includes('--cli')) { desligarCli = ligarCli(bus, agora); app.canaisAtivos.push('cli'); }
   const slackOff = cfg.slackAtivo ? ligarSlack({ token: process.env.SLACK_USER_TOKEN, canais: (process.env.SLACK_CHANNELS ?? '').split(',').filter(Boolean), bus, log, agora }) : null;
   if (slackOff) app.canaisAtivos.push('slack');
-  const wa = ligarWhatsApp({ ativo: cfg.whatsappAtivo, v2Ativo, bus, log });
+  const wa = ligarWhatsApp({ ativo: cfg.whatsappAtivo, v2UsaWhatsApp: () => v2UsaWhatsApp(), bus, log, agora });
+  if (wa.ligado) app.canaisAtivos.push('whatsapp');
   log(`[whatsapp] ${wa.ligado ? 'ligado' : 'desligado'}: ${wa.motivo}`);
 
   // Timers: probe do Ollama, cron, heartbeat, orçamento
@@ -171,7 +167,7 @@ async function main(): Promise<void> {
     encerrando = true;
     log(`[main] ${sinal}: drenando…`);
     for (const t of [batidas, tProbe, tCron, tHb, tNotif]) clearInterval(t);
-    desligarCli?.(); slackOff?.();
+    desligarCli?.(); slackOff?.(); wa.parar();
     await tg?.parar().catch(() => {});
     http.close();
     const prazo = new Promise<'prazo'>((r) => setTimeout(() => r('prazo'), 110_000));

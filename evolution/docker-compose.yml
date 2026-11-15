@@ -1,0 +1,77 @@
+# Evolution API v2 (WhatsApp pessoal do Nei) para o canal whatsapp do v3 — 3.35.17.
+#   cd evolution && docker compose up -d        (segredos em evolution/.env, fora do git)
+# Base: atende-leads (mesma imagem e o mesmo bloco "não guardar nada").
+# - Evolution só em 127.0.0.1:18095; Postgres e Redis sem porta no host.
+# - Nenhuma mensagem, contato, conversa ou histórico gravado no banco da Evolution.
+# - Webhook vai para o ouvinte próprio do v3 no gateway desta rede (10.95.31.1:3144),
+#   que só aceita POST /webhook/evolution/<segredo>. A porta 3142 do v3 continua no loopback.
+services:
+  evolution-api:
+    image: evoapicloud/evolution-api:v2.3.7
+    restart: unless-stopped
+    depends_on: [evolution-postgres, evolution-redis]
+    environment:
+      SERVER_URL: http://127.0.0.1:18095
+      SERVER_PORT: "8080"
+      AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY:?defina no .env}
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://evolution:${EVOLUTION_DB_SENHA:?defina no .env}@evolution-postgres:5432/evolution?schema=evolution_api
+      DATABASE_CONNECTION_CLIENT_NAME: evolution_v3
+      DATABASE_SAVE_DATA_INSTANCE: "true"
+      DATABASE_SAVE_DATA_NEW_MESSAGE: "false"
+      DATABASE_SAVE_MESSAGE_UPDATE: "false"
+      DATABASE_SAVE_DATA_CONTACTS: "false"
+      DATABASE_SAVE_DATA_CHATS: "false"
+      DATABASE_SAVE_DATA_LABELS: "false"
+      DATABASE_SAVE_DATA_HISTORIC: "false"
+      DATABASE_SAVE_IS_ON_WHATSAPP: "false"
+      CACHE_REDIS_ENABLED: "true"
+      CACHE_REDIS_URI: redis://evolution-redis:6379/6
+      CACHE_REDIS_PREFIX_KEY: evolution_v3
+      CACHE_REDIS_SAVE_INSTANCES: "false"
+      CACHE_LOCAL_ENABLED: "false"
+      # Log sem corpo de mensagem: só erro/aviso, Baileys só erro.
+      LOG_LEVEL: ERROR,WARN
+      LOG_BAILEYS: error
+      WEBHOOK_GLOBAL_ENABLED: "true"
+      WEBHOOK_GLOBAL_URL: http://10.95.31.1:3144/webhook/evolution/${WHATSAPP_WEBHOOK_SEGREDO:?defina no .env}
+      WEBHOOK_GLOBAL_WEBHOOK_BY_EVENTS: "false"
+      WEBHOOK_EVENTS_MESSAGES_UPSERT: "true"
+      CONFIG_SESSION_PHONE_CLIENT: openpcbot v3
+      TZ: America/Sao_Paulo
+    volumes:
+      - evolution_instances:/evolution/instances
+    ports:
+      - "127.0.0.1:18095:8080"
+    networks: [evo]
+
+  evolution-postgres:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: evolution
+      POSTGRES_USER: evolution
+      POSTGRES_PASSWORD: ${EVOLUTION_DB_SENHA:?defina no .env}
+    volumes:
+      - evolution_postgres:/var/lib/postgresql/data
+    networks: [evo]
+
+  evolution-redis:
+    image: redis:7
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - evolution_redis:/data
+    networks: [evo]
+
+networks:
+  evo:
+    ipam:
+      config:
+        - subnet: 10.95.31.0/24
+          gateway: 10.95.31.1
+
+volumes:
+  evolution_instances: {}
+  evolution_postgres: {}
+  evolution_redis: {}

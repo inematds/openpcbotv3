@@ -247,7 +247,13 @@ No `agents/<id>/agent.yaml`, `mcp_config: mcp.json` (caminho relativo à pasta) 
 - **CLI**: stdin/stdout quando há TTY ou `--cli`.
 - **HTTP**: `127.0.0.1` por padrão (`POST /mensagem` dispara agente com permissões). Expor na LAN só com `HTTP_BIND_V3=0.0.0.0` **e** `DASHBOARD_TOKEN_V3`. Rotas do painel em `src/painel/http-painel.ts` (`/painel`, `/api/painel[/<grupo>]`, `/api/painel/falha`, `POST /api/vagas`).
 - **Slack**: Web API via fetch, probe de OAuth no doctor; desligado até o corte (token é do v2).
-- **WhatsApp**: stub que recusa enquanto o v2 está ativo (sessão única do número; whatsapp-web.js sobe um Chromium). Implementação real na fase 8, em daemon separado.
+- **WhatsApp** (3.35.17, Evolution API v2 em Docker — `evolution/`): o número pessoal do Nei entra como aparelho conectado. **Fase 1: só a conversa "eu comigo" vira comando**, e só ela recebe resposta (prefixo `🤖`). Contatos, grupos, status e o que o Nei manda a outras pessoas são descartados no filtro (`whatsapp-filtro.ts`) sem log de texto nem nome; a Evolution não grava mensagens (`DATABASE_SAVE_*=false`) e ignora grupos (`groupsIgnore`). Entrada por webhook num ouvinte próprio (`10.95.31.1:3144`, só `POST /webhook/evolution/<segredo>`, só da rede docker); a 3142 continua no loopback. Recusa ligar se o v2 tiver `WHATSAPP_ENABLED` ligado.
+  - O processo, do início ao fim:
+    1. ⚙️ `cd evolution && docker compose -p evolution-v3 up -d` (Evolution em `127.0.0.1:18095`, segredos em `evolution/.env`).
+    2. ⚙️ `python3 evolution/evo.py criar` (instância `pessoal`, grupos ignorados, sem histórico).
+    3. 🧠 `python3 evolution/evo.py qr` → o Nei lê o QR no celular (Aparelhos conectados).
+    4. ⚙️ `WHATSAPP_ENABLED=1` no `.env` do v3 + `bash scripts/instalar-servico.sh`.
+    5. 🧠 O Nei escreve na conversa com ele mesmo; o bot responde ali. `evo.py estado` confere; `evo.py sair` desconecta.
 
 ---
 
@@ -363,7 +369,7 @@ Regras: nenhum módulo acima de 500 linhas; toda chamada de LLM passa por `custo
 
 - **Fase 8 (corte)**: trocar o token de produção, v2 só leitura por 30 dias, arquivar. Só com ordem explícita.
 - **Fase 10 (anotada)**: cliente MCP nativo no caminho Ollama, servidor MCP do inemavox, voz no Telegram ([docs/VOZ-TELEGRAM.md](docs/VOZ-TELEGRAM.md) — hoje só o v2 tem), `/retry` `/undo`, rodapé de uso, saúde de skills ([docs/INCORPORAR-V3.md](docs/INCORPORAR-V3.md)).
-- WhatsApp real (daemon separado), Slack ligado.
+- WhatsApp fase 2+ (resumo de grupos escolhidos, listas de contatos, envio com confirmação), Slack ligado.
 - `steer` não injeta no agente em execução (ver 9b).
 - Retenção da tabela `jobs` (hoje nunca purga; ~1,5 k linhas/dia com o cron de lembretes).
 - Memória guarda a frase inteira, não um fato extraído.
