@@ -3,6 +3,7 @@
 
   python3 evolution/evo.py criar     # cria a instância com grupos ignorados e sem histórico
   python3 evolution/evo.py qr        # mostra o QR no terminal (e salva evolution/qr.png) para ler no celular
+  python3 evolution/evo.py qrvivo    # abre evolution/qr.html, que troca o QR a cada 15 s até conectar (3 min)
   python3 evolution/evo.py codigo 5548999990000   # código de 8 letras para digitar no celular (sem QR)
   python3 evolution/evo.py estado    # conectado? qual número? configurações
   python3 evolution/evo.py sair      # desconecta o WhatsApp (logout)
@@ -86,6 +87,31 @@ def codigo(numero=''):
     print('"Conectar com número de telefone" (embaixo do leitor de QR) → digite o código. Vale ~2 min.')
 
 
+def qrvivo():
+    import time
+    html = os.path.join(AQUI, 'qr.html')
+    def pagina(corpo):
+        open(html, 'w').write('<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="3">'
+                              '<body style="background:#fff;font:20px sans-serif;text-align:center;padding:24px">' + corpo)
+    pagina('Gerando o QR…')
+    subprocess.Popen(['xdg-open', html], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    fim = time.time() + 180
+    while time.time() < fim:
+        _, lista = chamar('GET', f'/instance/fetchInstances?instanceName={INST}')
+        i = lista[0] if isinstance(lista, list) and lista else {}
+        if i.get('connectionStatus') == 'open':
+            pagina('<h1>✅ Conectado!</h1>Pode fechar esta página.')
+            print('Conectado.')
+            return
+        _, d = chamar('GET', f'/instance/connect/{INST}')
+        if d.get('base64'):
+            pagina(f'<p>WhatsApp → Configurações → Aparelhos conectados → Conectar um aparelho</p>'
+                   f'<img src="{d["base64"]}" style="width:420px;height:420px"><p>O QR troca sozinho a cada 15 s.</p>')
+        time.sleep(15)
+    pagina('Tempo esgotado. Rode <code>evo.py qrvivo</code> de novo.')
+    print('Tempo esgotado.')
+
+
 def sair():
     print('logout:', chamar('DELETE', f'/instance/logout/{INST}')[0])
 
@@ -95,4 +121,4 @@ if __name__ == '__main__':
     if cmd == 'codigo':
         codigo(sys.argv[2] if len(sys.argv) > 2 else '')
     else:
-        {'criar': criar, 'qr': qr, 'estado': estado, 'sair': sair}.get(cmd, lambda: print(__doc__))()
+        {'criar': criar, 'qr': qr, 'qrvivo': qrvivo, 'estado': estado, 'sair': sair}.get(cmd, lambda: print(__doc__))()
