@@ -1,5 +1,10 @@
 # CHANGELOG — openpcbotv3
 
+## Documentação — 16/11/2026
+
+Guia e README PT/EN/ES agora explicam seleção manual Claude/Codex, configuração atual, continuidade por job e limites. Nova explicação da proposta de chaveamento automático por código: decisão sem tokens, consumo no motor de destino e reconciliação antes de repetir efeitos externos. Não habilita troca automática nem APIs novas.
+
+
 ## 3.36.17 — 15/11/2026
 
 Agentes por Codex/Claude pela assinatura, com padrão Codex gpt-6.1-sol/medium e escolha por `/motor`. Perfil congelado no job; sessões por motor (migração 12 preserva legado Claude); JSONL do Codex com resposta final, retomada e tokens; execução pelo gateway e credenciais de modelo isoladas. Especialistas Codex só leem, sem herdar MCPs pessoais. Sessão nova recebe contexto recente; sem troca automática nem novas APIs habilitadas. Validação real de arquivo, retomada e entrega pelo bus HTTP em banco isolado. Plano completo documentado, exige aprovação em nova sessão; apoio Astra só se o usuário autorizar.

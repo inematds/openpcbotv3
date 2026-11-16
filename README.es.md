@@ -2,13 +2,64 @@
 
 **🇧🇷 [Português](README.md) · 🇺🇸 [English](README.en.md) · 🇪🇸 [Español](README.es.md)**
 
-Asistente personal multicanal (Telegram, CLI, HTTP) con cola duradera en SQLite, gestor de Ollama con preflight de RAM, costo por llamada con presupuesto, cerebro con memoria PT-BR y consolidación nocturna. Sucesor de `openpcbotv2`, funcionando **junto a** él (estrangulamiento, no corte).
+## Qué es
+
+openpcbotv3 es un asistente personal que puedes usar por Telegram, el panel Jarvis u otros canales habilitados. Organiza los pedidos en una cola, mantiene la memoria y ejecuta tareas con herramientas. Puedes elegir entre las suscripciones de Claude Code y Codex por chat, con Codex como configuración predeterminada actual. Para usar la ejecución mediante suscripción, hay que instalar el sistema y autenticar los CLI que quieras usar.
 
 Plan y arquitectura: [PLANO-MIGRACAO-V3.md](PLANO-MIGRACAO-V3.md). Estado por fase: [CHANGELOG.md](CHANGELOG.md). Fallas: [FALHAS.md](FALHAS.md).
 
 Bot en Telegram: **@inemav3bot** (el v2 continúa en @inemaclaudebot).
 
 **Conectar correos electrónicos, agendas y Telegram al cerebro:** [docs/CONECTORES.md](docs/CONECTORES.md).
+
+## Jarvis con varias suscripciones: Claude y Codex
+
+openpcbotv3 ya permite elegir el agente ejecutor por chat. La configuración predeterminada es **Codex mediante suscripción, modelo `gpt-6.1-sol`, esfuerzo `medium`**. Claude Code mediante suscripción es la alternativa, con modelo/esfuerzo definidos por agente. Cada suscripción necesita un inicio de sesión válido y cuota disponible.
+
+| Comando en el chat | Resultado |
+|---|---|
+| `/motor` | Muestra el motor, el modelo y el esfuerzo seleccionados. |
+| `/motor codex` | Los próximos pedidos usarán la suscripción de Codex. |
+| `/motor claude` | Los próximos pedidos usarán la suscripción de Claude Code. |
+| `/motor padrao` | Vuelve a la configuración predeterminada de `config/agentes-ia.yaml`, actualmente Codex. |
+| `/status 12345` | Comprueba el estado y el motor del job. |
+| `/job 12345 continue de onde parou` | Crea una continuación con el motor seleccionado ahora; sustituye el ID por el real. |
+
+Si Codex alcanza el límite, comprueba el pedido y selecciona Claude:
+
+```text
+/status 12345
+/motor claude
+/job 12345 continue de onde parou
+```
+
+El cambio no requiere reiniciar y no afecta a los pedidos ya creados. Las sesiones de Claude y Codex están separadas; el cambio abre una sesión en el otro motor y lleva el contexto reciente disponible. La continuación mediante `/job` también lleva el pedido original. Esto no transfiere toda la conversación ni garantiza que todos los conectores estén disponibles en ambos motores. Comprueba el resultado de la publicación, el envío o la generación antes de repetirlos.
+
+Configuración predeterminada actual:
+
+```yaml
+motor: codex
+codex:
+  modelo: gpt-6.1-sol
+  esforco: medium
+```
+
+```bash
+npm run ia -- ver
+npm run ia -- validar
+```
+
+Estos comandos son locales y no llaman a modelos ni comprueban el inicio de sesión o la cuota. Una preferencia definida con `/motor` en el chat prevalece sobre el YAML; `/motor padrao` elimina esa preferencia.
+
+### Cambio automático por límite: cómo podría funcionar
+
+**Propuesta, todavía no implementada.** El propio código detectaría el rechazo explícito por límite, marcaría el motor como no disponible, comprobaría las capacidades de la alternativa y reanudaría desde el progreso guardado. **Esta decisión mediante reglas no consume tokens de IA ni requiere que quede cuota en Codex.**
+
+Continuar en Claude consume su suscripción, incluso para recibir el contexto. La llamada anterior puede haber consumido cuota antes de detenerse; una nueva llamada para probar la disponibilidad también puede consumirla. Si hubo un efecto externo o el estado es incierto, es necesario comprobarlo antes de reanudar para no duplicar una publicación o un envío. Si ambos motores están limitados, el bot debe esperar o solicitar intervención.
+
+El registro duradero del progreso, el cambio automático controlado y las API como agentes completos forman parte de la adaptación completa, que está pendiente de aprobación. En esta etapa no se habilitó ninguna API nueva.
+
+[Paso a paso en la guía](https://inematds.github.io/openpcbotv3/guia/es/#motores) · [Operación y límites (en portugués)](docs/MOTORES-ASSINATURA.md) · [Plan completo (en portugués)](docs/PLANO-MULTIPROVEDORES.md)
 
 ## Jev para observar el enrutamiento
 
@@ -67,7 +118,7 @@ ORQUESTRADOR
    │           guarda turno + memoria; si es un hecho duradero, propone una entrada en el vault
    │
    └─ agente → job en la COLA (lane `agente`, 1 a la vez)
-               worker ejecuta `claude -p --output-format json` con un prompt por capas
+               worker ejecuta `codex exec --json` / `claude -p --output-format json` con un prompt por capas
                (identidad + agente + memoria + skills + mensaje)
                el resultado vuelve por el bus al chat de origen; se registra el costo real
    ▼

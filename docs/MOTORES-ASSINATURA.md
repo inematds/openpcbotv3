@@ -47,3 +47,13 @@ Por chat: `/motor claude`. Para todos os chats sem preferência: editar `motor: 
 - Health local retornou `ok: true`, versão 3.36.17, canais Telegram/HTTP/WhatsApp. v2 permaneceu ativo.
 - Backup íntegro anterior à migração: `store/backups/pre-codex-3.36.17-20261115T193945Z.db` (ignorado pelo git).
 - Não foram testados todos os conectores/skills, publicação, geração de mídia ou indisponibilidade real do Codex. A troca automática permanece fora desta etapa.
+
+## Como poderia funcionar a troca automática sem tokens para decidir
+
+Proposta explicativa, não implementação. O processo do bot permanece ativo mesmo sem cota no Codex. Ao receber erro explícito de limite, código determinístico pode classificar a recusa, suspender temporariamente o motor, conferir capacidades da alternativa e retomar com o estado salvo. A decisão em código não chama LLM e não exige tokens restantes no motor recusado.
+
+A execução no Claude consome a assinatura Claude; receber o contexto também consome tokens. O Codex pode ter executado/consumido parte do pedido antes da falha. Testar disponibilidade com outra chamada de modelo também pode consumir cota. Não confundir decisão sem inferência com execução gratuita ou saldo compartilhado.
+
+Antes de repetir um pedido com efeito externo, reconciliar o resultado: consultar identificador de publicação/envio/geração já iniciado, registrar a etapa concluída e retomar apenas o que falta. Se o resultado for incerto ou ambos os motores estiverem limitados, aguardar ou pedir intervenção. Retentativa sem essa conferência pode duplicar ações.
+
+Hoje o procedimento é manual: `/status <id>` → `/motor claude` ou `/motor codex` → `/job <id> <continuação>`. A etapa completa continua aguardando aprovação.

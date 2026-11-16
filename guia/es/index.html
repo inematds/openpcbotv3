@@ -90,6 +90,18 @@
   .phase .d span{color:var(--mut);font-size:.92rem}
   footer{padding:46px 0;text-align:center;color:var(--mut);font-size:.9rem}
   .pill{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:.3em .8em;font-size:.78rem;color:var(--mut);margin:0 4px}
+  .grid > *, .step > *, .ex > *{min-width:0}
+  #motores h3{font-size:1.2rem;margin:1.5em 0 .75em}
+  #motores li{margin:.65em 0}
+  #motores p,#motores li{max-width:75ch}
+  .motor-table{overflow-x:auto;margin:1.4rem 0}
+  .motor-table table{width:100%;border-collapse:collapse;text-align:left}
+  .motor-table th,.motor-table td{padding:14px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  .motor-table th{color:var(--amb)}
+  #motores details{padding:18px 0;border-block:1px solid var(--line)}
+  #motores summary{cursor:pointer;font-weight:600}
+  #motores a:focus-visible,#motores summary:focus-visible{outline:2px solid var(--amb);outline-offset:4px}
+  @media(max-width:600px){nav .wrap{height:auto;min-height:60px;flex-wrap:wrap;gap:8px;padding-top:10px;padding-bottom:10px}nav .links{gap:8px}nav .links>.btn{display:none}nav .brand{font-size:.9rem}}
 </style>
 <link href="https://inematds.github.io/openpcbotv3/guia/" hreflang="pt-BR" rel="alternate"/><link href="https://inematds.github.io/openpcbotv3/guia/en/" hreflang="en" rel="alternate"/><link href="https://inematds.github.io/openpcbotv3/guia/es/" hreflang="es" rel="alternate"/></head>
 <body><div class="inema-lang" style="position:fixed;right:14px;bottom:14px;z-index:9999;display:flex;gap:2px;padding:4px;border-radius:10px;background:rgba(12,12,16,.82);border:1px solid rgba(226,162,59,.45);font:600 12px/1 Sora,Inter,system-ui,sans-serif;backdrop-filter:blur(8px)" translate="no"><a href="../" hreflang="pt-BR" style="padding:6px 8px;border-radius:7px;text-decoration:none;color:#e9e9ee">PT</a><a href="../en/" hreflang="en" style="padding:6px 8px;border-radius:7px;text-decoration:none;color:#e9e9ee">EN</a><a href="./" hreflang="es" style="padding:6px 8px;border-radius:7px;text-decoration:none;color:#1a1206;background:#E2A23B">ES</a></div>
@@ -106,7 +118,7 @@
 <a class="sec" href="#fluxo">Cómo funciona</a>
 <a class="sec" href="#guia">Guía de uso</a>
 <a class="sec" href="#exemplos">Ejemplos</a>
-<a class="sec" href="#roadmap">Roadmap</a>
+<a class="sec" href="#motores">Motores</a>
 <button aria-label="Cambiar tema" class="tgl" id="themeToggle" title="Cambiar tema">🌙</button>
 <a class="btn" href="https://github.com/inematds/openpcbotv3" rel="noopener" target="_blank">GitHub</a>
 </div>
@@ -126,12 +138,14 @@
 <figure><img alt="Ilustración de openpcbot v3: asistente personal ejecutándose localmente" src="../assets/hero.jpg"/></figure>
 </div>
 </header>
+<section id="resumo"><div class="wrap"><h2>En resumen</h2><p class="sub">openpcbotv3 es un asistente personal que puedes usar por Telegram, el panel Jarvis u otros canales habilitados. Organiza los pedidos en una cola, mantiene la memoria y ejecuta tareas con herramientas. Puedes elegir entre las suscripciones de Claude Code y Codex por chat, con Codex como configuración predeterminada actual. Para usar la ejecución mediante suscripción, hay que instalar el sistema y autenticar los CLI que quieras usar.</p></div></section>
+<!-- VIDEO: entra o explicavideo do projeto quando publicado -->
 <section id="oque"><div class="wrap">
 <span class="chip">Qué es</span>
 <h2>Sucesor de openpcbot v2, diseñado a partir de problemas reales</h2>
 <p class="sub">v2 funciona, pero es un monolito sin cola, sin costo por llamada y sin gestión de Ollama, con dos bloqueos por falta de RAM en agosto. v3 toma lo que ya estaba listo y probado en otros repos locales y lo organiza por capas.</p>
 <div class="grid g3">
-<div class="card"><h3>🧱 Cola real</h3><p>Claim atómico, lease con heartbeat, backoff, idempotencia y drain gradual, portados de inemaccbot con las 107 pruebas originales. Lanes por tipo de trabajo, un <code>claude -p</code> a la vez.</p></div>
+<div class="card"><h3>🧱 Cola real</h3><p>Claim atómico, lease con heartbeat, backoff, idempotencia y drain gradual, portados de inemaccbot con las 107 pruebas originales. Lanes por tipo de trabajo, un <code>Claude / Codex</code> a la vez.</p></div>
 <div class="card"><h3>🧠 Cerebro en PT-BR</h3><p>Memorias con salience y decaimiento, búsqueda por FTS5 más vector bge-m3, consolidación nocturna que detecta contradicciones y un vault curado que solo guarda con tu aprobación.</p></div>
 <div class="card"><h3>💸 Costo y RAM bajo control</h3><p>Todas las llamadas de LLM pasan por un único gateway: tier local → barato → premium, presupuesto mensual con bloqueo y preflight que rechaza cargar un modelo grande si no hay 40 GB libres.</p></div>
 </div>
@@ -145,17 +159,65 @@
 <span>Bus</span><span class="arr">→</span>
 <span>Enrutador (llama3.2)</span><span class="arr">→</span>
 <span>Memoria (3 capas)</span><span class="arr">→</span>
-<span>Respuesta directa (qwen3.8) o job de agente (claude -p)</span><span class="arr">→</span>
+<span>Respuesta directa local o agente mediante Claude/Codex</span><span class="arr">→</span>
 <span>Protección de secretos</span><span class="arr">→</span>
 <span>Chat</span>
 </div>
 <div class="grid g4" style="margin-top:26px">
 <div class="card"><span class="num">1</span><h3>Enrutador</h3><p>Devuelve JSON con ruta, agente y tier. "directo" para conversar; "agente" cuando necesita archivo, shell, repo, web o skill.</p></div>
 <div class="card"><span class="num">2</span><h3>Gateway de LLM</h3><p>Presupuesto → proveedor → preflight de RAM → llamada → costo en <code>chamadas_llm</code>. Ollama cuesta cero, pero cuenta tokens y tiempo.</p></div>
-<div class="card"><span class="num">3</span><h3>Cola</h3><p>El job de agente se ejecuta <code>claude -p --output-format json</code> en la lane <code>agente</code>. El resultado y el costo real vuelven al chat de origen.</p></div>
+<div class="card"><span class="num">3</span><h3>Cola</h3><p>El job se ejecuta en la cola con Claude Code o Codex mediante suscripción, según la elección del chat. La respuesta y el uso registrado vuelven al canal de origen.</p></div>
 <div class="card"><span class="num">4</span><h3>Aprendizaje</h3><p>Cada turno se convierte en memoria. Un hecho duradero genera una propuesta para <code>MEMORY.md</code> / <code>USER.md</code>; lo apruebas con un comando.</p></div>
 </div>
 </div></section>
+<section id="motores"><div class="wrap">
+<h2>Tu Jarvis con varias suscripciones</h2>
+<p class="sub">Si una suscripción alcanza el límite de uso, puedes elegir la otra para los próximos pedidos. openpcbotv3 ya admite Claude Code y Codex mediante suscripción, con selección manual por chat.</p>
+<div class="flow" aria-label="Flujo de selección del motor"><span>Eliges el motor</span><span class="arr" aria-hidden="true">→</span><span>El pedido entra en la cola</span><span class="arr" aria-hidden="true">→</span><span>Claude o Codex lo ejecuta</span><span class="arr" aria-hidden="true">→</span><span>La respuesta vuelve al mismo chat</span></div>
+<h3 style="margin-top:32px">Qué está configurado</h3>
+<ul>
+<li><strong>Predeterminado:</strong> Codex mediante suscripción, modelo <code>gpt-6.1-sol</code>, esfuerzo <code>medium</code>.</li>
+<li><strong>Alternativa:</strong> Claude Code mediante suscripción, con modelo y esfuerzo definidos para cada agente.</li>
+<li><strong>Alcance:</strong> la elección se aplica a este chat y a los pedidos creados después del cambio. El trabajo que ya está en la cola conserva el motor original.</li>
+<li><strong>Continuidad:</strong> cada motor tiene su propia sesión. Al cambiar, una nueva sesión recibe el pedido original mediante la continuación por job y el contexto reciente disponible. No se transfiere toda la conversación.</li>
+</ul>
+<h3>Cómo cambiar desde el chat</h3>
+<div class="motor-table"><table><thead><tr><th>Comando</th><th>Qué sucede</th></tr></thead><tbody>
+<tr><td><code>/motor</code></td><td>Muestra el motor, el modelo y el esfuerzo de este chat.</td></tr>
+<tr><td><code>/motor codex</code></td><td>Selecciona Codex mediante suscripción para los próximos pedidos.</td></tr>
+<tr><td><code>/motor claude</code></td><td>Selecciona Claude Code mediante suscripción para los próximos pedidos.</td></tr>
+<tr><td><code>/motor padrao</code></td><td>Vuelve a la configuración predeterminada del proyecto, actualmente Codex.</td></tr>
+<tr><td><code>/status 12345</code></td><td>Muestra el estado y el motor del job 12345.</td></tr>
+<tr><td><code>/job 12345 continue de onde parou</code></td><td>Crea una continuación del pedido usando el motor seleccionado ahora. Sustituye 12345 por el ID real.</td></tr>
+</tbody></table></div>
+<p>Ejemplo: Codex se quedó sin cuota. Espera a que termine el pedido actual o confirma su estado; después selecciona Claude y continúa con el ID del job.</p>
+<pre><code>/status 12345
+/motor claude
+/job 12345 continue de onde parou</code></pre>
+<p>No es necesario reiniciar el bot para cambiar de motor. Cada suscripción necesita su propio inicio de sesión válido y disponibilidad. Los comandos, archivos y conectores dependen de las herramientas habilitadas en cada ejecutor.</p>
+<details><summary>Configuración y comprobación local</summary>
+<p>El archivo <code>config/agentes-ia.yaml</code> guarda la configuración predeterminada. La preferencia del chat tiene prioridad; usa <code>/motor padrao</code> para volver a seguir el archivo.</p>
+<pre><code>motor: codex
+codex:
+  modelo: gpt-6.1-sol
+  esforco: medium</code></pre>
+<pre><code>npm run ia -- ver
+npm run ia -- validar</code></pre>
+<p>Estos dos comandos solo leen y validan la configuración: no llaman a modelos, no prueban el inicio de sesión ni comprueban el saldo. Los CLI usan suscripciones; la adaptación no habilitó nuevas API de modelos.</p>
+</details>
+<h3 style="margin-top:32px">¿Y si el cambio fuera automático?</h3>
+<p><strong>Es una propuesta para la próxima etapa; todavía no está implementada.</strong> El código del bot puede detectar un error explícito de límite de Codex y elegir Claude sin pedirle a Codex que tome esa decisión. La decisión mediante reglas no consume tokens de IA ni requiere que quede cuota en Codex.</p>
+<ol>
+<li>El ejecutor recibe el rechazo por límite de uso y clasifica el error por código, tipo o mensaje conocido.</li>
+<li>El bot marca ese motor como temporalmente no disponible y comprueba si la alternativa está configurada y cuenta con las herramientas necesarias.</li>
+<li>Antes de reanudar, comprueba el progreso y los efectos externos ya realizados. Una publicación o un envío completados no se pueden repetir solo porque hubo un fallo después.</li>
+<li>El bot abre una sesión en el otro motor con el contexto guardado, registra el cambio y avisa en el chat.</li>
+</ol>
+<p><strong>Decidir sin consumir tokens no significa ejecutar sin consumo.</strong> La llamada rechazada puede haber ejecutado ya parte del trabajo; comprobar la disponibilidad con una nueva llamada también puede consumir cuota. Claude usará su propia suscripción para continuar y recibir el contexto guardado. Si ambos motores están limitados, o el estado de una acción externa es incierto, el flujo debe esperar o solicitar intervención.</p>
+<p>La reanudación automática requiere un registro del progreso independiente del modelo. Actualmente no hay cambio automático por cuota. La API como agente ejecutor, con shell y conectores, tampoco está lista; los adaptadores antiguos de mensajes no equivalen a ese agente completo.</p>
+<p><a href="https://github.com/inematds/openpcbotv3/blob/main/docs/MOTORES-ASSINATURA.md" target="_blank" rel="noopener">Operación y límites (en portugués)</a> · <a href="https://github.com/inematds/openpcbotv3/blob/main/docs/PLANO-MULTIPROVEDORES.md" target="_blank" rel="noopener">Plan completo, sujeto a aprobación (en portugués)</a></p>
+</div></section>
+
 <section id="pre"><div class="wrap">
 <span class="chip">Requisitos previos</span>
 <h2>Lo que debe estar en producción</h2>
@@ -165,8 +227,9 @@
 <span class="k">ollama</span> pull qwen3.8:27b
 <span class="k">ollama</span> pull llama3.2
 <span class="k">ollama</span> pull bge-m3</pre></div>
-<div class="card"><h3>Node 20+ y Claude Code</h3><p>El agente se ejecuta mediante un subproceso de la CLI, no con el SDK.</p><pre><span class="k">node</span> -v          <span class="c"># v20+</span>
-<span class="k">claude</span> --version <span class="c"># CLI en el PATH del usuario</span></pre></div>
+<div class="card"><h3>Node 20+ y suscripción de agente</h3><p>Instala y autentica Codex y/o Claude Code. La ejecución se hace mediante la suscripción del CLI; comprueba el inicio de sesión antes de usar el bot.</p><pre><code>node -v
+codex --version
+claude --version</code></pre></div>
 <div class="card"><h3>Bot propio en Telegram</h3><p>Créalo en BotFather. El token de v2 se rechaza al iniciar (dos <code>getUpdates</code> = 409 y bot sordo).</p><pre><span class="c"># ~/projetos/openpcbotv3/.env</span>
 TELEGRAM_BOT_TOKEN_V3=<span class="s">123456:AAH...</span>
 PORT_V3=3142
@@ -261,7 +324,7 @@ PISO_RAM_GB=40</pre></div>
 </div></section>
 <footer>
 <div class="wrap">
-<div class="pill">TypeScript · Node 20</div><div class="pill">SQLite · FTS5</div><div class="pill">Ollama · qwen3.8 · bge-m3</div><div class="pill">grammy</div><div class="pill">Claude Code CLI</div><div class="pill">systemd --user</div>
+<div class="pill">TypeScript · Node 20</div><div class="pill">SQLite · FTS5</div><div class="pill">Ollama · qwen3.8 · bge-m3</div><div class="pill">grammy</div><div class="pill">Claude Code · Codex CLI</div><div class="pill">systemd --user</div>
 <p style="margin-top:18px">openpcbot v3 · proyecto de investigación y educación de INEMA ·
       <a href="https://github.com/inematds/openpcbotv3">inematds/openpcbotv3</a> ·
       <a href="https://inema.club">INEMA.CLUB</a></p>

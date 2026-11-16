@@ -2,13 +2,64 @@
 
 **🇧🇷 [Português](README.md) · 🇺🇸 [English](README.en.md) · 🇪🇸 [Español](README.es.md)**
 
-Multichannel personal assistant (Telegram, CLI, HTTP) with a durable SQLite queue, Ollama manager with RAM preflight, per-call costs with a budget, a brain with PT-BR memory and nightly consolidation. Successor to `openpcbotv2`, running **alongside** it (strangler pattern, not a cutover).
+## What it is
+
+openpcbotv3 is a personal assistant you use through Telegram, the Jarvis dashboard, or other enabled channels. It organizes requests in a queue, maintains memory, and performs tasks with tools. You can choose between Claude Code and Codex subscriptions per chat, with Codex as the current default. To use subscription-based execution, you need to install the system and authenticate the desired CLIs.
 
 Plan and architecture: [PLANO-MIGRACAO-V3.md](PLANO-MIGRACAO-V3.md). Status by phase: [CHANGELOG.md](CHANGELOG.md). Failures: [FALHAS.md](FALHAS.md).
 
 Telegram bot: **@inemav3bot** (v2 continues at @inemaclaudebot).
 
 **Connect email, calendars, and Telegram to the brain:** [docs/CONECTORES.md](docs/CONECTORES.md).
+
+## Jarvis with multiple subscriptions: Claude and Codex
+
+openpcbotv3 already lets you choose the executing agent per chat. The configured default is **Codex through its subscription, model `gpt-6.1-sol`, effort `medium`**. Claude Code through its subscription is the alternative, with model/effort defined per agent. Each subscription needs a valid login and available quota.
+
+| Chat command | Result |
+|---|---|
+| `/motor` | Shows the selected engine, model, and effort. |
+| `/motor codex` | Future requests use the Codex subscription. |
+| `/motor claude` | Future requests use the Claude Code subscription. |
+| `/motor padrao` | Returns to the default in `config/agentes-ia.yaml`, currently Codex. |
+| `/status 12345` | Checks the job status and engine. |
+| `/job 12345 continue de onde parou` | Creates a continuation on the currently selected engine; replace the ID with the actual one. |
+
+If Codex reaches its limit, check the request and select Claude:
+
+```text
+/status 12345
+/motor claude
+/job 12345 continue de onde parou
+```
+
+The change requires no restart and does not affect requests already created. Claude and Codex sessions are separate; switching opens a session on the other engine and carries over the available recent context. Continuation through `/job` also carries over the original request. This does not transfer the entire conversation or guarantee that all connectors are available on both engines. Check the result of any publication, delivery, or generation before repeating it.
+
+Current default configuration:
+
+```yaml
+motor: codex
+codex:
+  modelo: gpt-6.1-sol
+  esforco: medium
+```
+
+```bash
+npm run ia -- ver
+npm run ia -- validar
+```
+
+These commands run locally and do not call models or check login/quota. A preference set with `/motor` in chat overrides the YAML; `/motor padrao` removes that preference.
+
+### Automatic switch on limit: how it could work
+
+**Proposal; it has not been implemented yet.** The code itself would detect an explicit limit refusal, mark the engine as unavailable, check the alternative's capabilities, and resume from saved progress. **This rule-based decision uses no AI tokens and does not require remaining Codex quota.**
+
+Continuing with Claude uses its subscription, including to receive the context. The previous call may already have used quota before stopping; a new call to test availability may also consume quota. If an external effect occurred or the state is uncertain, it must be checked before resuming to avoid duplicate publication or delivery. If both engines are limited, the bot should wait or request intervention.
+
+Durable progress tracking, controlled automatic switching, and APIs as complete agents are part of the full adaptation, which is awaiting approval. No new APIs have been enabled at this stage.
+
+[Step-by-step guide](https://inematds.github.io/openpcbotv3/guia/en/#motores) · [Operations and limitations (in Portuguese)](docs/MOTORES-ASSINATURA.md) · [Complete plan (in Portuguese)](docs/PLANO-MULTIPROVEDORES.md)
 
 ## Jev for observing routing
 
@@ -67,7 +118,7 @@ ORCHESTRATOR
    │           records turn + memory; if it's a durable fact, proposes an entry in the vault
    │
    └─ agent → job in the QUEUE (`agente` lane, 1 at a time)
-               worker runs `claude -p --output-format json` with a layered prompt
+               worker runs `codex exec --json` / `claude -p --output-format json` with a layered prompt
                (identity + agent + memory + skills + message)
                result returns through the bus to the originating chat; actual cost is recorded
    ▼

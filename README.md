@@ -2,15 +2,64 @@
 
 **🇧🇷 [Português](README.md) · 🇺🇸 [English](README.en.md) · 🇪🇸 [Español](README.es.md)**
 
-Assistente pessoal multicanal (Telegram, CLI, HTTP) com fila durável em SQLite, gestor do Ollama com preflight de RAM, custo por chamada com orçamento, cérebro com memória PT-BR e consolidação noturna. Sucessor do `openpcbotv2`, rodando **ao lado** dele (estrangulamento, não corte).
+## O que é
+
+O openpcbotv3 é um assistente pessoal que você usa pelo Telegram, pelo painel Jarvis ou por outros canais habilitados. Ele organiza pedidos em uma fila, mantém memória e executa tarefas com ferramentas. Você pode escolher entre as assinaturas Claude Code e Codex por chat, mantendo o Codex como padrão atual. Para usar a execução por assinatura, é preciso instalar o sistema e autenticar os CLIs desejados.
 
 Plano e arquitetura: [PLANO-MIGRACAO-V3.md](PLANO-MIGRACAO-V3.md). Estado por fase: [CHANGELOG.md](CHANGELOG.md). Falhas: [FALHAS.md](FALHAS.md).
 
 Bot no Telegram: **@inemav3bot** (o v2 continua no @inemaclaudebot).
 
-**Agentes por assinatura (3.36.17):** padrão Codex; `/motor codex|claude|padrao` seleciona o motor por chat. Configuração em `config/agentes-ia.yaml`. [Operação e limites](docs/MOTORES-ASSINATURA.md) · [Plano completo, sujeito a aprovação](docs/PLANO-MULTIPROVEDORES.md).
-
 **Conectar e-mails, agendas e o Telegram ao cérebro:** [docs/CONECTORES.md](docs/CONECTORES.md).
+
+## Jarvis com várias assinaturas: Claude e Codex
+
+O openpcbotv3 já permite escolher o agente executor por chat. O padrão configurado é **Codex pela assinatura, modelo `gpt-6.1-sol`, esforço `medium`**. Claude Code pela assinatura é a alternativa, com modelo/esforço definidos por agente. Cada assinatura precisa de login válido e cota disponível.
+
+| Comando no chat | Resultado |
+|---|---|
+| `/motor` | Mostra motor, modelo e esforço selecionados. |
+| `/motor codex` | Próximos pedidos usam a assinatura Codex. |
+| `/motor claude` | Próximos pedidos usam a assinatura Claude Code. |
+| `/motor padrao` | Volta ao padrão de `config/agentes-ia.yaml`, atualmente Codex. |
+| `/status 12345` | Confere o estado e o motor do job. |
+| `/job 12345 continue de onde parou` | Cria uma continuação no motor selecionado agora; substitua o ID pelo real. |
+
+Se o Codex atingir o limite, confira o pedido e selecione Claude:
+
+```text
+/status 12345
+/motor claude
+/job 12345 continue de onde parou
+```
+
+A mudança não exige restart e não altera pedidos já criados. Sessões de Claude e Codex ficam separadas; uma troca abre sessão no outro motor e leva o contexto recente disponível. A continuação por `/job` também leva o pedido original. Isso não transfere integralmente a conversa nem garante que todos os conectores estejam disponíveis nos dois motores. Confira o resultado de publicação, envio ou geração antes de repetir.
+
+Configuração padrão atual:
+
+```yaml
+motor: codex
+codex:
+  modelo: gpt-6.1-sol
+  esforco: medium
+```
+
+```bash
+npm run ia -- ver
+npm run ia -- validar
+```
+
+Esses comandos são locais e não chamam modelos nem verificam login/cota. Uma preferência definida por `/motor` no chat vence o YAML; `/motor padrao` remove essa preferência.
+
+### Troca automática por limite: como poderia funcionar
+
+**Proposta, ainda não implementada.** O próprio código detectaria a recusa explícita por limite, marcaria o motor como indisponível, conferiria as capacidades da alternativa e retomaria a partir do progresso salvo. **Essa decisão por regras não gasta tokens de IA e não precisa de cota restante no Codex.**
+
+Continuar no Claude consome a assinatura dele, inclusive para receber o contexto. A chamada anterior pode já ter consumido cota antes de parar; uma nova chamada para testar disponibilidade também pode consumir. Se houve efeito externo ou o estado estiver incerto, é necessário conferir antes de retomar para não duplicar publicação ou envio. Se ambos estiverem limitados, o bot deve aguardar ou pedir intervenção.
+
+O registro durável de progresso, a troca automática controlada e APIs como agentes completos pertencem à adaptação completa, que aguarda aprovação. Nenhuma API nova foi habilitada nesta etapa.
+
+[Passo a passo no guia](https://inematds.github.io/openpcbotv3/guia/#motores) · [Operação e limites](docs/MOTORES-ASSINATURA.md) · [Plano completo](docs/PLANO-MULTIPROVEDORES.md)
 
 ## Jev para observar o roteamento
 
@@ -72,7 +121,7 @@ ORQUESTRADOR
    │           grava turno + memória; se for fato durável, propõe entrada no vault
    │
    └─ agente → job na FILA (lane `agente`, 1 por vez)
-               worker roda `claude -p --output-format json` com prompt em camadas
+               worker roda `codex exec --json` ou `claude -p --output-format json` com prompt em camadas
                (identidade + agente + memória + skills + mensagem)
                resultado volta pelo bus ao chat de origem; custo real registrado
    ▼
