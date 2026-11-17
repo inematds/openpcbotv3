@@ -2,6 +2,7 @@
 
 | data | o que quebrou | menor correção | prompt \| infra |
 |---|---|---|---|
+| 2026-11-17 | Recusa de cota do Claude chegava como 'claude saiu com código 1' (JSON da recusa no stdout ignorado) e nada impedia a próxima chamada | ler a recusa estruturada no gateway, gravar a trava compartilhada (tabela pools) e conferir antes de abrir o programa (3.37.17) | infra |
 | 2026-11-16 | guia ultrapassava viewport por largura mínima de células com blocos de código | min-width:0 nos filhos de grid/step para rolagem ficar dentro do pre | infra |
 | 2026-11-15 | lock ainda em 3.26.14: troca textual por 3.35.17 não atualizou a versão | ler os dois marcadores reais do lock e alinhar a 3.36.17 | prompt |
 | 2026-11-15 | teste legado de modelo Codex fornece contexto parcial sem vars | normalizar vars ausente para objeto vazio na tradução de argumentos | prompt |
