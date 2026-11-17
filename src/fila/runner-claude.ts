@@ -167,7 +167,9 @@ export class ClaudeRunner implements Runner {
           return reject(new Error(`${this.binario}: morto (SIGKILL) — provável falta de memória (teto ${this.memoriaMax} do escopo do agente)`));
         }
         const cauda = stderr.texto.trim().slice(0, 500);
-        reject(new Error(`${this.binario} saiu com código ${code}: ${cauda}`));
+        // `saida`: o Claude Code devolve a recusa de cota em JSON no STDOUT (código 1);
+        // o gateway lê daqui para gravar a trava (fila/cota.ts). Não vai para a mensagem.
+        reject(Object.assign(new Error(`${this.binario} saiu com código ${code}: ${cauda}`), { saida: stdout.texto }));
       });
     });
     // Marca a promessa como observada desde o nascimento: ela pode rejeitar (via `close`)

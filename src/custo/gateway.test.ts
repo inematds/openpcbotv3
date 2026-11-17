@@ -10,6 +10,10 @@ import { Orcamento } from './orcamento.js';
 import { calcularCusto } from './precos.js';
 import { RegistroCusto } from './registro.js';
 import { FakeRunner } from '../fila/runner.js';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { RECUSA_CLAUDE } from '../fila/cota.test.js';
 
 function fake(nome: Provedor['nome'], tokensOut = 10, custo?: number): Provedor & { chamadas: number } {
   const p = { nome, chamadas: 0, async chamar() { p.chamadas += 1; return { texto: `resp-${nome}`, tokensIn: 100, tokensOut, custoUsdInformado: custo }; } };
@@ -159,5 +163,32 @@ describe('gateway Jev — orçamento e custo',()=>{
   it('falha de decisão gera registro de chamada sem vazar erro externo',async()=>{
     const {gw,registro,barato}=montar();Object.assign(barato,{decidirJev:async()=>{throw new Error('segredo');}});
     await expect(gw.decidirJev(pedido)).rejects.toThrow('custo não confirmado');expect(registro.hoje().chamadas).toBe(1);
+  });
+});
+
+describe('gateway — trava de cota da assinatura', () => {
+  const ctxClaude = (dir: string) => ({ prompt: 'teste', cwd: '/tmp', vars: { INEMA_COTA_DB: join(dir, 's.sqlite'), CLAUDE_CONFIG_DIR: '/x/.claude' },
+    perfil: { motor: 'claude', modelo: 'opus', esforco: 'low' }, chamada: { jobId: 1, chatId: 'teste', agente: 'lead' } });
+  it('recusa real do Claude grava a trava e a próxima chamada nem abre o programa', async () => {
+    const { gw } = montar();
+    const dir = mkdtempSync(join(tmpdir(), 'gw-cota-'));
+    let aberturas = 0;
+    const base = { nome: 'claude', iniciar: () => { aberturas += 1; return {
+      aguardar: async () => { throw Object.assign(new Error('claude saiu com código 1: '), { saida: RECUSA_CLAUDE }); },
+      cancelar: async () => {}, limpar: async () => {} }; } };
+    const r = gw.runnerAssinatura(base);
+    await expect(r.iniciar(ctxClaude(dir)).aguardar()).rejects.toThrow(/claude sem cota \(até/);
+    expect(() => r.iniciar(ctxClaude(dir))).toThrow(/claude sem cota/);
+    expect(aberturas).toBe(1);
+  });
+  it('erro comum do Claude não trava', async () => {
+    const { gw } = montar();
+    const dir = mkdtempSync(join(tmpdir(), 'gw-cota-'));
+    const base = { nome: 'claude', iniciar: () => ({
+      aguardar: async () => { throw Object.assign(new Error('claude saiu com código 1: boom'), { saida: '{"is_error":true,"result":"x"}' }); },
+      cancelar: async () => {}, limpar: async () => {} }) };
+    const r = gw.runnerAssinatura(base);
+    await expect(r.iniciar(ctxClaude(dir)).aguardar()).rejects.toThrow(/boom/);
+    await expect(r.iniciar(ctxClaude(dir)).aguardar()).rejects.toThrow(/boom/);
   });
 });

@@ -11,6 +11,8 @@ import type { MensagemLLM, Provedor, RespostaLLM } from '../provedores/tipos.js'
 import type { Runner } from '../fila/runner.js';
 import { interpretarSaidaCli } from '../fila/saida-claude.js';
 import { interpretarSaidaCodex } from '../fila/saida-codex.js';
+import { ambienteAssinatura } from '../fila/ambiente-assinatura.js';
+import { cotaConferir, cotaRegistrar, CotaEsgotada, recusaCotaClaude } from '../fila/cota.js';
 
 export interface PedidoGateway {
   tier: Tier;
@@ -66,15 +68,31 @@ export class GatewayLLM {
         tokensCache: uso.tokensCache, custoUsd: uso.custoUsd ?? 0, latenciaMs: Date.now() - t0,
         ok, erro: ok ? undefined : 'Execução da assinatura falhou; consulte o erro saneado do job', motivoTier: 'agente CLI pela assinatura',
       });
+      // Trava de cota compartilhada (fila/cota.ts): conta sem cota falha na hora, sem abrir o programa.
+      const envCota = ambienteAssinatura(ctx.perfil.motor, { ...process.env, ...ctx.vars });
       let exec;
-      try { exec = base.iniciar(ctx); } catch (e) { registrar(false); throw e; }
+      try { cotaConferir(ctx.perfil.motor, envCota); exec = base.iniciar(ctx); } catch (e) { registrar(false); throw e; }
+      /** Recusa estruturada do Claude (stdout JSON) → grava a trava e troca o erro por um claro. */
+      const recusa = (saida: string | undefined): CotaEsgotada | undefined => {
+        if (ctx.perfil.motor !== 'claude') return undefined;   // Codex: sem recusa real registrada (17/11/2026)
+        const ate = recusaCotaClaude(saida);
+        if (!ate) return undefined;
+        cotaRegistrar('claude', envCota, ate);
+        return new CotaEsgotada('claude', ate);
+      };
       return { cancelar: () => exec.cancelar(), limpar: () => exec.limpar(), aguardar: async () => {
         let bruto: string;
         try {
           bruto = await exec.aguardar();
+          const r = recusa(bruto);
+          if (r) throw r;
           const uso = ctx.perfil.motor === 'codex' ? interpretarSaidaCodex(bruto) : interpretarSaidaCli(bruto);
           registrar(true, uso);
-        } catch (e) { registrar(false); throw e; }
+        } catch (e) {
+          registrar(false);
+          if (e instanceof CotaEsgotada) throw e;
+          throw recusa((e as { saida?: string })?.saida) ?? e;
+        }
         return bruto;
       } };
     } };

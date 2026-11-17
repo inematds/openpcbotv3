@@ -49,3 +49,8 @@ Permissões: APIs de modelo/serviço novas continuam desativadas até autorizaç
 ## Preservação de trabalho alheio
 
 Já existiam alterações em `agents/comms/CLAUDE.md`, `config/ollama.yaml`, `evolution/docker-compose.yml`, `src/painel/fontes/producao.ts` e `docs/projetos-n8n/`. Não são parte desta adaptação e não devem entrar nos commits dela. Não reiniciar Evolution, não alterar v2, não mudar modelos do Ollama.
+
+
+## Trava de cota (3.37.17, 17/11/2026)
+
+Implementada a parte de *detectar a recusa explícita por limite e marcar o motor como indisponível*, compartilhada com os crons (`src/fila/cota.ts`, tabela `pools` do EngineBridge). A troca automática para a alternativa continua proposta: hoje o job falha com mensagem clara e o Nei troca com `/motor`.
