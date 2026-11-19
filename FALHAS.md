@@ -2,6 +2,7 @@
 
 | data | o que quebrou | menor correção | prompt \| infra |
 |---|---|---|---|
+| 2026-11-19 | Telegram passou a devolver 502 (16 s) a todo getMe do @inemav3bot desde 18/11 23:17, inclusive com token revogado/novo; v3 morria e reiniciava em loop (139×), levando painel e WhatsApp junto | bot novo @inemav3xbot no TELEGRAM_BOT_TOKEN_V3 do .env; falta tornar falha do Telegram não fatal | infra |
 | 2026-11-17 | Recusa de cota do Claude chegava como 'claude saiu com código 1' (JSON da recusa no stdout ignorado) e nada impedia a próxima chamada | ler a recusa estruturada no gateway, gravar a trava compartilhada (tabela pools) e conferir antes de abrir o programa (3.37.17) | infra |
 | 2026-11-16 | guia ultrapassava viewport por largura mínima de células com blocos de código | min-width:0 nos filhos de grid/step para rolagem ficar dentro do pre | infra |
 | 2026-11-15 | lock ainda em 3.26.14: troca textual por 3.35.17 não atualizou a versão | ler os dois marcadores reais do lock e alinhar a 3.36.17 | prompt |
