@@ -1,3 +1,4 @@
+| 2026-11-20 | Painel acusou erro no v3 por job #133315 (pergunta do Nei no chat do painel) cortado no reinício do serviço às 03:02 | falhas_24h ignora "interrompido no encerramento do serviço" (a2d6fea) | infra |
 | 2026-11-20 | Placar conservava falha antiga após confirmação de publicação | aceitar retificação por unidade e edição sem duplicar a rodada | infra |
 # Falhas — openpcbotv3
 
