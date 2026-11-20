@@ -38,7 +38,8 @@ export function lerV3(db: Database.Database, agora: number) {
   const porEstado = Object.fromEntries((db.prepare('SELECT status, count(*) n FROM jobs WHERE id > ? GROUP BY status').all(piso) as { status: string; n: number }[]).map((r) => [r.status, r.n]));
   const ativos = (db.prepare("SELECT status, count(*) n FROM jobs WHERE id > ? AND status IN ('queued','running') GROUP BY status").all(piso) as { status: string; n: number }[]);
   const hojeN = (db.prepare('SELECT count(*) n FROM jobs WHERE id > ? AND criado_em >= ?').get(piso, hoje) as { n: number }).n;
-  const falhas = (db.prepare("SELECT id, tarefa, fila, terminado_em, erro, resultado FROM jobs WHERE id > ? AND status = 'failed' AND coalesce(terminado_em, criado_em) >= ? ORDER BY id DESC LIMIT 20").all(piso, agora - 86400) as { id: number; tarefa: string; fila: string; terminado_em: number | null; erro: string | null; resultado: string | null }[])
+  // Job cortado porque o serviço reiniciou não é falha do trabalho: não vira alerta (Nei 20/11: "só quero notificação quando erra definitivo").
+  const falhas = (db.prepare("SELECT id, tarefa, fila, terminado_em, erro, resultado FROM jobs WHERE id > ? AND status = 'failed' AND coalesce(erro, '') <> 'interrompido no encerramento do serviço' AND coalesce(terminado_em, criado_em) >= ? ORDER BY id DESC LIMIT 20").all(piso, agora - 86400) as { id: number; tarefa: string; fila: string; terminado_em: number | null; erro: string | null; resultado: string | null }[])
     .map((f): Falha => ({ id: f.id, tarefa: f.tarefa, fila: f.fila, quando: f.terminado_em, erro: corta(f.erro || f.resultado || '', 240) }));
   const sessoes = (db.prepare('SELECT count(*) n FROM sessions WHERE ultimo_uso >= ?').get(agora - 3600) as { n: number }).n;
   const custo = db.prepare('SELECT count(*) chamadas, coalesce(sum(custo_usd),0) usd FROM chamadas_llm WHERE created_at >= ?').get(hoje) as { chamadas: number; usd: number };
