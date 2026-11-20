@@ -82,6 +82,20 @@ describe('parser tolerante do histórico do yt-pubx', () => {
 });
 
 describe('rodadas', () => {
+  it('retifica espera na fila sem manter o falso erro nem duplicar a rodada', () => {
+    const r = montarRodadas([
+      { ts: '2026-11-09T08:00:00', unidade: 'clima', fase: 'inicio', edicao: 'e1' },
+      { ts: '2026-11-09T08:40:00', unidade: 'clima', fase: 'fim', edicao: 'e1', resultado: 'falhou' },
+      { ts: '2026-11-09T09:00:00', unidade: 'clima', fase: 'retificacao', edicao: 'e1', resultado: 'ok', motivo: 'x3 pendente: item 1' },
+      { ts: '2026-11-09T10:00:00', unidade: 'clima', fase: 'retificacao', edicao: 'e1', resultado: 'publicado', url: 'https://youtube.com/watch?v=x' },
+      { ts: '2026-11-09T10:01:00', unidade: 'clima', fase: 'retificacao', edicao: 'outra', resultado: 'falhou' },
+    ], AGORA);
+    expect(r).toHaveLength(1);
+    expect(r[0].resultado).toBe('publicado');
+    expect(r[0].url).toBe('https://youtube.com/watch?v=x');
+    expect(r[0].motivo).toBeNull();
+  });
+
   it('junta início/fim, marca presa > 90 min e falhou', () => {
     const r = montarRodadas([
       { ts: '2026-11-09T08:00:00', unidade: 'clima', fase: 'inicio', edicao: 'e1' },

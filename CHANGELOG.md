@@ -1,5 +1,9 @@
 # CHANGELOG — openpcbotv3
 
+## 3.37.18 · 20/11/2026
+
+- Painel aplica retificações de resultados após a fila publicar, sem conservar falsos alertas nem duplicar a rodada.
+
 ## 3.37.17 — 17/11/2026 — Trava de cota compartilhada
 
 Os agentes por assinatura passam a respeitar a mesma trava de cota dos crons (`ia_motor.py`) e do EngineBridge: tabela `pools` em `~/.local/state/enginebridge/state.sqlite`. `src/fila/cota.ts` + `GatewayLLM.runnerAssinatura`: antes de abrir o Claude/Codex confere a conta; a recusa ESTRUTURADA de cota do Claude (JSON `is_error` + `api_error: usage_limit_reached` no stdout, código 1) grava o horário de volta ("resets 9pm (America/Sao_Paulo)"; ilegível = 1 h; 429 momentâneo = 5 min) e o job falha com "claude sem cota (até DD/MM HH:MM) — use /motor para trocar de assinatura ou aguarde", em vez de "claude saiu com código 1". Próximas chamadas falham na hora, sem abrir o programa. Codex: sem recusa real registrada, ainda não trava sozinho (bloqueio manual pelo EngineBridge vale). Sem troca automática de motor nesta versão. 400 testes passaram (9 novos).

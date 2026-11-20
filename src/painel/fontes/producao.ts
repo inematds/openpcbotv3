@@ -27,6 +27,16 @@ export function montarRodadas(linhas: LinhaRodada[], agora: number, boot: number
   const abertas = new Map<string, Rodada[]>();
   for (const l of ev) {
     const ed = typeof l.edicao === 'string' && l.edicao ? l.edicao : null;
+    // Retificação do resultado após a fila concluir: atualiza a edição sem duplicar alertas.
+    if (l.fase === 'retificacao' && ed) {
+      const r = [...out].reverse().find((x) => x.unidade === l.unidade && x.edicao === ed && x.fim !== null);
+      if (r) {
+        r.resultado = l.resultado ?? r.resultado;
+        r.motivo = l.motivo ? corta(l.motivo, 200) : null;
+        r.url = l.url ?? null;
+      }
+      continue;
+    }
     if (l.fase === 'inicio') {
       const r: Rodada = { unidade: l.unidade, edicao: ed, inicio: l.t, fim: null, resultado: null, motivo: null, url: null, dur_s: null, presa: false, aberta_min: null, interrompida: false };
       out.push(r);

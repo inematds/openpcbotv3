@@ -1,3 +1,4 @@
+| 2026-11-20 | Placar conservava falha antiga após confirmação de publicação | aceitar retificação por unidade e edição sem duplicar a rodada | infra |
 # Falhas — openpcbotv3
 
 | data | o que quebrou | menor correção | prompt \| infra |
