@@ -26,6 +26,9 @@ describe('CPU das VPS', () => {
     h = somarHistorico(h, { '1.1.1.1': ok(AGORA, 30), '2.2.2.2': { ...ok(AGORA, 9), ok: false } }, AGORA);
     expect(h['1.1.1.1']).toHaveLength(2);
     expect(h['2.2.2.2']).toBeUndefined();
+    // segunda instância do painel mede 8 s depois: não duplica o ponto
+    h = somarHistorico(h, { '1.1.1.1': ok(AGORA + 8, 31) }, AGORA + 8);
+    expect(h['1.1.1.1']).toHaveLength(2);
   });
 });
 

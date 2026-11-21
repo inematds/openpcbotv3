@@ -1,5 +1,9 @@
 # CHANGELOG — openpcbotv3
 
+## 3.39.22 · 20/11/2026
+
+- CPU das VPS: as duas instâncias do painel (3142 e 3143) sondam cada uma; ponto a menos de 2 min do anterior não entra no histórico (dobrava os pontos).
+
 ## 3.39.21 · 20/11/2026 — CPU das VPS e só o Jarvis
 
 - **CPU das VPS em gráfico** (pedido do Nei): a sonda SSH de 10 em 10 min lê `/proc/stat` duas vezes (1 s) e calcula o % real de CPU; histórico de 24 h por VPS em `~/.local/share/inema/painel-vps-cpu.json` (sobrevive ao restart). Jarvis ganha "VPS · CPU nas últimas 24 h" (linha por VPS, tracejado em 80 %).

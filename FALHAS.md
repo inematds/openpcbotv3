@@ -4,6 +4,7 @@
 
 | data | o que quebrou | menor correção | prompt \| infra |
 |---|---|---|---|
+| 2026-11-20 | histórico de CPU das VPS ganhava 2 pontos a cada sonda (3142 e 3143 sondam cada uma) | ponto a menos de 2 min do último é ignorado em `somarHistorico` | infra |
 | 2026-11-19 | Telegram passou a devolver 502 (16 s) a todo getMe do @inemav3bot desde 18/11 23:17, inclusive com token revogado/novo; v3 morria e reiniciava em loop (139×), levando painel e WhatsApp junto | bot novo @inemav3xbot no TELEGRAM_BOT_TOKEN_V3 do .env; falta tornar falha do Telegram não fatal | infra |
 | 2026-11-17 | Recusa de cota do Claude chegava como 'claude saiu com código 1' (JSON da recusa no stdout ignorado) e nada impedia a próxima chamada | ler a recusa estruturada no gateway, gravar a trava compartilhada (tabela pools) e conferir antes de abrir o programa (3.37.17) | infra |
 | 2026-11-16 | guia ultrapassava viewport por largura mínima de células com blocos de código | min-width:0 nos filhos de grid/step para rolagem ficar dentro do pre | infra |

@@ -44,7 +44,9 @@ export function somarHistorico(hist: Record<string, [number, number][]>, med: Re
   for (const ip of ips) {
     const l = (Array.isArray(hist[ip]) ? hist[ip] : []).filter((p) => Array.isArray(p) && p[0] > agora - JANELA_HIST_S);
     const m = med[ip];
-    if (m?.ok && typeof m.cpu_pct === 'number' && !l.some((p) => p[0] === m.medido_em)) l.push([m.medido_em, m.cpu_pct]);
+    // Duas instâncias do painel (3142 e 3143) sondam cada uma: ponto a menos de 2 min do último é o mesmo instante.
+    const ult = l.length ? l[l.length - 1][0] : -Infinity;
+    if (m?.ok && typeof m.cpu_pct === 'number' && m.medido_em - ult >= 120) l.push([m.medido_em, m.cpu_pct]);
     if (l.length) out[ip] = l.slice(-200);
   }
   return out;
