@@ -154,7 +154,7 @@ export async function coletarCreditos(d: DepsPainel) {
     const lim = lerLimitesClaude(j);
     if (!lim.length) continue;
     const email = (lerJson<{ oauthAccount?: { emailAddress?: string } }>(c.cfg))?.oauthAccount?.emailAddress;
-    contas.push({ servico: 'Claude', conta: rotuloConta(email, c.reserva), limites: lim.map((l) => ({ ...l, dias: diasAte(l.reset_em, agora) })), idade_s: idadeArquivo(c.arquivo, agora) });
+    contas.push({ servico: 'Claude', conta: rotuloConta(email, c.reserva), limites: lim.map((l) => ({ ...l, dias: l.nome === '5 horas' ? null : diasAte(l.reset_em, agora) })), idade_s: idadeArquivo(c.arquivo, agora) });
   }
   for (const ch of d.caminhos.codexHomes) {
     const x = await d.cache.obter(`cred:codex:${ch}`, 60_000, () => lerCodex(join(ch, 'sessions'), agora));

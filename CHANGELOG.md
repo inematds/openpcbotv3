@@ -1,5 +1,9 @@
 # CHANGELOG — openpcbotv3
 
+## 3.38.20 · 20/11/2026
+
+- Cotas por conta: a janela de 5 horas do Claude mostra a hora em que zera, não "1 dia" (zerava à 01:00 e parecia faltar um dia).
+
 ## 3.38.19 · 20/11/2026
 
 - Cotas por conta: tile mais curto (agrupa por serviço, "3 d"); janela do Codex já vencida aparece como "(zerou)" com 0 % em vez de "zera hoje" com o uso antigo.

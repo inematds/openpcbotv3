@@ -63,6 +63,7 @@ describe('cotas por conta', () => {
     const { dados } = await coletarCreditos(d);
     expect(dados.contas.map((c) => `${c.servico} ${c.conta}`)).toEqual(['Claude nei', 'Claude inematds', 'Codex nei']);
     expect(dados.contas[0].limites[0]).toMatchObject({ nome: 'Semana (todos)', pct: 30, dias: 6 });
+    expect(dados.contas[0].limites[1]).toMatchObject({ nome: '5 horas', dias: null }); // 5 h mostra a hora, não dias
     expect(dados.contas[2].limites[0]).toMatchObject({ nome: 'Janela de 5 h', pct: 12, dias: 0 });
     expect(dados.contas[2].plano).toBe('pro');
     expect(dados.claude.limites[0].pct).toBe(30); // campo antigo continua
