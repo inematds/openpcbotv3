@@ -1,5 +1,9 @@
 # CHANGELOG — openpcbotv3
 
+## 3.40.23 · 21/11/2026
+
+- Jarvis, modo Ícones: "Claude e Codex" vira dois ícones — **Cota uso** (maior % e cada conta) e **Cota dias** (o reset mais próximo e os dias de cada conta). Pedido do Nei.
+
 ## 3.39.23 · 21/11/2026
 
 - Jarvis: as cotas por conta (com dias até zerar) aparecem também nos modos **Lista** e **Ícones** — antes só no modo Gráficos, e o Nei não via no ccc.inema.pro. `/jarvis` da porta 3143 sai com `Cache-Control: no-store`.
