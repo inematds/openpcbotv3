@@ -165,8 +165,9 @@ G.v2={tile:function(d){var b=d.bot;
 function faltam(x){if(x.dias==null)return'';if(x.dias===0)return'zera hoje '+hm(x.reset_em);if(x.dias===1)return'falta 1 dia';return'faltam '+x.dias+' dias'}
 function principal(c){return c.limites.filter(function(x){return/todos/.test(x.nome)})[0]||c.limites[0]}
 G.creditos={tile:function(d){if(d.contas&&d.contas.length){
-  var fr='<p class="frase">'+d.contas.map(function(c){var p=principal(c);return esc(c.servico+' '+c.conta)+' '+(p?p.pct+'%':'–')}).join(' · ')+'</p>';
-  var h=d.contas.map(function(c){return c.limites.map(function(x){return'<div class="linha"><span class="k">'+esc(c.servico+' '+c.conta+' · '+x.nome)+'</span>'+barra(x.pct,80)+'<span class="v">'+x.pct+'%'+(faltam(x)?' · '+faltam(x):'')+'</span></div>'}).join('')}).join('');
+  var por={};d.contas.forEach(function(c){var p=principal(c);(por[c.servico]=por[c.servico]||[]).push(esc(c.conta)+' '+(p?p.pct+'%':'–'))});
+  var fr='<p class="frase">'+Object.keys(por).map(function(k){return esc(k)+' '+por[k].join(' · ')}).join(' | ')+'</p>';
+  var h=d.contas.map(function(c){return c.limites.map(function(x){return'<div class="linha"><span class="k">'+esc(c.servico+' '+c.conta+' · '+x.nome)+'</span>'+barra(x.pct,80)+'<span class="v">'+x.pct+'%'+(x.dias==null?'':' · '+(x.dias===0?'hoje':x.dias+' d'))+'</span></div>'}).join('')}).join('');
   return{frase:fr,corpo:h}}
   var l=d.claude.limites,sem7=l.filter(function(x){return/todos/.test(x.nome)})[0]||l[0];
   var fr=(sem7||d.codex)?'<p class="frase">Claude '+(sem7?sem7.pct+'%':'–')+' · Codex '+(d.codex?d.codex.pct+'%':'–')+'</p>':'<p class="frase vazia">sem leitura dos limites</p>';

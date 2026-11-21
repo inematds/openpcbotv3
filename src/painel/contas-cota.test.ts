@@ -67,4 +67,16 @@ describe('cotas por conta', () => {
     expect(dados.contas[2].plano).toBe('pro');
     expect(dados.claude.limites[0].pct).toBe(30); // campo antigo continua
   });
+
+  it('janela do Codex que já passou aparece zerada', async () => {
+    const home = mkdtempSync(join(tmpdir(), 'cotas-home2-'));
+    const cx = join(home, '.codex', 'sessions', '2026', '10', '01');
+    mkdirSync(cx, { recursive: true });
+    writeFileSync(join(cx, 's.jsonl'), JSON.stringify({ payload: { rate_limits: { primary: { used_percent: 40, window_minutes: 10080, resets_at: AGORA - 86400 * 20 } } } }) + '\n');
+    const caminhos = caminhosPadrao(home, home);
+    caminhos.ccLimitesPasta = mkdtempSync(join(tmpdir(), 'cotas-vazio-'));
+    const d = { versao: 't', caminhos, exec: semExec, agora: () => AGORA, cache: new Cache(), concorrenciaV3: {}, fetch: fetch, sitesLigado: false } as unknown as DepsPainel;
+    const { dados } = await coletarCreditos(d);
+    expect(dados.contas[0].limites[0]).toMatchObject({ nome: 'Janela de 168 h (zerou)', pct: 0, dias: null });
+  });
 });

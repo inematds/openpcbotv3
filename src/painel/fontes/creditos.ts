@@ -160,7 +160,9 @@ export async function coletarCreditos(d: DepsPainel) {
     const x = await d.cache.obter(`cred:codex:${ch}`, 60_000, () => lerCodex(join(ch, 'sessions'), agora));
     if (!x) continue;
     const nome = rotuloConta(emailCodex(lerJson(join(ch, 'auth.json'))), ch.split('/').pop() || ch);
-    contas.push({ servico: 'Codex', conta: nome, limites: [{ nome: x.janela_h ? `Janela de ${x.janela_h} h` : 'Janela', pct: x.pct, reset_em: x.reset_em, dias: diasAte(x.reset_em, agora) }], idade_s: x.idade_s, plano: x.plano });
+    // Leitura velha cuja janela já passou: a cota zerou e não houve uso depois (Codex parado há dias).
+    const zerou = x.reset_em !== null && x.reset_em < agora;
+    contas.push({ servico: 'Codex', conta: nome, limites: [{ nome: (x.janela_h ? `Janela de ${x.janela_h} h` : 'Janela') + (zerou ? ' (zerou)' : ''), pct: zerou ? 0 : x.pct, reset_em: zerou ? null : x.reset_em, dias: zerou ? null : diasAte(x.reset_em, agora) }], idade_s: x.idade_s, plano: x.plano });
   }
   return { dados: { claude, codex, contas, custo_hoje: porProvedor, avisos: lerAvisos(avj, agora) }, ausentes };
 }
