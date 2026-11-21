@@ -58,7 +58,7 @@ function json(res: ServerResponse, status: number, body: unknown): void {
   res.end(JSON.stringify(body));
 }
 function html(res: ServerResponse, status: number, corpo: string): void {
-  res.writeHead(status, { 'Content-Type': 'text/html; charset=utf-8' });
+  res.writeHead(status, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
   res.end(corpo);
 }
 function ir(res: ServerResponse, para: string, extra: Record<string, string> = {}): void {

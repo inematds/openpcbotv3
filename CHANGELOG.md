@@ -1,5 +1,9 @@
 # CHANGELOG — openpcbotv3
 
+## 3.39.23 · 21/11/2026
+
+- Jarvis: as cotas por conta (com dias até zerar) aparecem também nos modos **Lista** e **Ícones** — antes só no modo Gráficos, e o Nei não via no ccc.inema.pro. `/jarvis` da porta 3143 sai com `Cache-Control: no-store`.
+
 ## 3.39.22 · 20/11/2026
 
 - CPU das VPS: as duas instâncias do painel (3142 e 3143) sondam cada uma; ponto a menos de 2 min do anterior não entra no histórico (dobrava os pontos).
