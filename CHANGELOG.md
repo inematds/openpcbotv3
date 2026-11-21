@@ -1,5 +1,9 @@
 # CHANGELOG — openpcbotv3
 
+## 3.38.18 · 20/11/2026 — Cotas por conta
+
+- Painel (clássico, quadro e Jarvis) mostra a cota de **cada conta**: todos os logins do Claude (um cache `/tmp/cc_limits_<uid>[_<pasta>].json` por `CLAUDE_CONFIG_DIR`) e cada `CODEX_HOME` (`~/.codex`, `~/.codex-2`), com o nome curto da conta e **quantos dias faltam para zerar**. Novo campo `creditos.contas`; `claude`/`codex` antigos continuam. Do `auth.json` do Codex lê só o e-mail do payload do id_token. 5 testes novos (`contas-cota.test.ts`).
+
 ## 3.37.18 · 20/11/2026
 
 - Painel aplica retificações de resultados após a fila publicar, sem conservar falsos alertas nem duplicar a rodada.

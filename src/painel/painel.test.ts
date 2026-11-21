@@ -27,6 +27,7 @@ const semExec: Executor = async () => ({ ok: false, stdout: '', stderr: '', codi
 function deps(p: Partial<DepsPainel> = {}): DepsPainel {
   const caminhos = caminhosPadrao(vazio, vazio);
   caminhos.ccLimites = join(vazio, 'cc_limits.json');
+  caminhos.ccLimitesPasta = vazio;
   return {
     versao: '0.0.0-teste', caminhos, exec: semExec, agora: () => AGORA, cache: new Cache(),
     concorrenciaV3: { chat: 2 }, fetch: (async () => { throw new Error('sem rede no teste'); }) as unknown as typeof fetch,

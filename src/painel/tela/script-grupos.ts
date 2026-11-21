@@ -65,7 +65,7 @@ function filaSec(f){var p=f.por_estado,ch=['publicando','pendente','erro','retir
   var cab='<div class="filacab">'+(ch||'<span class="fraco">vazia</span>')+(f.problema?' <span class="s-erro">'+simb('erro')+' '+esc(f.problema)+'</span>':'')+'</div><div class="fraco filaonde">'+esc(f.quem)+' · <code>'+esc(pastaCurta(f.onde))+'</code>'+(p.feito>5?' · mostrando os 5 feitos mais recentes':'')+'</div>';
   return sec(esc(f.nome)+' <span class="fraco">('+f.total+')</span>',cab+(f.itens.length?tabela(['Estado','Item','Canal','Quando','Tent.','Erro'],f.itens.map(function(i){return[simb(EST_SIMB[i.estado])+' '+EST_ROT[i.estado]+(i.original&&i.original!==i.estado&&EST_ROT[i.estado]!==i.original?' <span class="fraco">('+esc(i.original)+')</span>':''),esc(i.nome)+(i.arquivo&&i.arquivo!==i.nome?'<br><span class="fraco">'+esc(i.arquivo)+'</span>':''),esc(i.canal||'–'),quando(i.quando),i.tentativas==null?'–':i.tentativas,i.erro?'<span class="mut">'+esc(i.erro)+'</span>':''] })):''),1)}
 G.radar={tile:function(d){var fi=d.fila||[],lib=fi.filter(function(i){return i.estado==='liberado'});
-  var fr='<p class="frase'+(d.erros_24h?' s-erro':'')+'">'+plural(d.hoje||0,'publicado hoje','publicados hoje')+' · '+fi.length+' na fila'+(d.erros_24h?' · '+plural(d.erros_24h,'erro','erros')+' em 24 h':'')+'</p>';
+  var fr='<p class="frase'+(d.erros_24h?' s-erro':'')+'">'+plural(d.hoje||0,'publicado hoje','publicados hoje')+' · '+(fi.length+(d.no_x3||0))+' na fila'+(d.erros_24h?' · '+plural(d.erros_24h,'erro','erros')+' em 24 h':'')+'</p>';
   var EST={publicado:['ok','publicado'],na_fila:['aviso','na fila'],erro:['erro','erro'],nada:['','ainda não']};
   var c=(d.nichos||[]).map(function(x){var e=EST[x.hoje]||EST.nada;return linhaTx(simb(e[0])+' <b>'+esc(x.nome)+'</b> <span class="fraco">gera '+esc(x.gera)+' · sai ≥ '+esc(x.a_partir)+'</span>',e[1]+(x.quando&&x.hoje==='publicado'?' '+hm(x.quando):''),e[0]==='erro'?'s-erro':'mut')}).join('');
   c+=linha('Próxima rodada',hm(d.proxima)+(lib.length?' · sai '+esc(lib[0].nome):' · nada liberado'));
@@ -162,7 +162,13 @@ G.v2={tile:function(d){var b=d.bot;
   return{frase:fr,corpo:h}},
  detalhe:function(d){var b=d.bot||{};return sec('Bot v2 (openpcbotv2)',tabela(['Medida','Valor'],[['Serviço',d.servico==='active'?'<span class="s-ok">✓ ativo</span>':'<span class="s-erro">✕ '+esc(d.servico)+'</span>'],['Última conversa',b.ultima_msg?quando(b.ultima_msg):'–'],['Mensagens 24 h / 7 dias',(b.msgs_24h||0)+' / '+(b.msgs_7d||0)],['Custo em 7 dias',usd(b.custo_7d_usd)],['Tarefas agendadas ativas',b.tarefas_agendadas!=null?b.tarefas_agendadas:'–'],['Vídeos por estado',Object.keys(b.videos||{}).map(function(k){return esc(k)+' '+b.videos[k]}).join(' · ')||'–'],['Último vídeo',b.ultimo_video?'#'+b.ultimo_video.id+' '+esc(b.ultimo_video.skill)+' · '+esc(b.ultimo_video.status)+' · '+quando(b.ultimo_video.quando)+(b.ultimo_video.erro?'<div class="mut">'+esc(b.ultimo_video.erro)+'</div>':''):'–']]))+'<p class="nota">Lido do banco do v2 (store/openpcbot.db) só para consulta.</p>'}};
 
-G.creditos={tile:function(d){var l=d.claude.limites,sem7=l.filter(function(x){return/todos/.test(x.nome)})[0]||l[0];
+function faltam(x){if(x.dias==null)return'';if(x.dias===0)return'zera hoje '+hm(x.reset_em);if(x.dias===1)return'falta 1 dia';return'faltam '+x.dias+' dias'}
+function principal(c){return c.limites.filter(function(x){return/todos/.test(x.nome)})[0]||c.limites[0]}
+G.creditos={tile:function(d){if(d.contas&&d.contas.length){
+  var fr='<p class="frase">'+d.contas.map(function(c){var p=principal(c);return esc(c.servico+' '+c.conta)+' '+(p?p.pct+'%':'–')}).join(' · ')+'</p>';
+  var h=d.contas.map(function(c){return c.limites.map(function(x){return'<div class="linha"><span class="k">'+esc(c.servico+' '+c.conta+' · '+x.nome)+'</span>'+barra(x.pct,80)+'<span class="v">'+x.pct+'%'+(faltam(x)?' · '+faltam(x):'')+'</span></div>'}).join('')}).join('');
+  return{frase:fr,corpo:h}}
+  var l=d.claude.limites,sem7=l.filter(function(x){return/todos/.test(x.nome)})[0]||l[0];
   var fr=(sem7||d.codex)?'<p class="frase">Claude '+(sem7?sem7.pct+'%':'–')+' · Codex '+(d.codex?d.codex.pct+'%':'–')+'</p>':'<p class="frase vazia">sem leitura dos limites</p>';
   var h=l.map(function(x){return'<div class="linha"><span class="k">'+esc(x.nome)+'</span>'+barra(x.pct,80)+'<span class="v">'+x.pct+'%</span></div>'}).join('');
   if(d.codex)h+='<div class="linha"><span class="k">Codex</span>'+barra(d.codex.pct,80)+'<span class="v">'+d.codex.pct+'%</span></div>';
@@ -170,7 +176,8 @@ G.creditos={tile:function(d){var l=d.claude.limites,sem7=l.filter(function(x){re
   if(d.codex&&d.codex.reset_em)h+=linha('Codex volta a zero',quando(d.codex.reset_em));
   var r7=l.filter(function(x){return/todos/.test(x.nome)})[0];if(r7&&r7.reset_em)h+=linha('Claude volta a zero',quando(r7.reset_em));
   return{frase:fr,corpo:h}},
- detalhe:function(d){return sec('Claude',tabela(['Limite','Usado','Volta a zero'],d.claude.limites.map(function(x){return[esc(x.nome),x.pct+'%',quando(x.reset_em)]}))+'<p class="nota">Medida gravada pela statusline '+(d.claude.idade_s!=null?'há '+dur(d.claude.idade_s):'(sem arquivo)')+'.</p>')
+ detalhe:function(d){if(d.contas&&d.contas.length)return d.contas.map(function(c){return sec(esc(c.servico+' · '+c.conta),tabela(['Limite','Usado','Volta a zero','Faltam'],c.limites.map(function(x){return[esc(x.nome),x.pct+'%',quando(x.reset_em),x.dias==null?'–':x.dias===0?'hoje':x.dias===1?'1 dia':x.dias+' dias']}))+'<p class="nota">Lido '+(c.idade_s!=null?'há '+dur(c.idade_s):'(sem data)')+(c.plano?' · plano '+esc(c.plano):'')+'.</p>')}).join('')+'<p class="nota">Uso pela assinatura (nunca API). O uso por provedor e os avisos de login estão no quadro Outras APIs.</p>';
+  return sec('Claude',tabela(['Limite','Usado','Volta a zero'],d.claude.limites.map(function(x){return[esc(x.nome),x.pct+'%',quando(x.reset_em)]}))+'<p class="nota">Medida gravada pela statusline '+(d.claude.idade_s!=null?'há '+dur(d.claude.idade_s):'(sem arquivo)')+'.</p>')
   +sec('Codex',d.codex?tabela(['Medida','Valor'],[['Usado',d.codex.pct+'%'+(d.codex.janela_h?' da janela de '+d.codex.janela_h+' h':'')],['Volta a zero',quando(d.codex.reset_em)],['Plano',esc(d.codex.plano||'–')],['Registro lido','há '+dur(d.codex.idade_s)]]):'<p class="sem">sem dados</p>')
   +'<p class="nota">Uso pela assinatura (nunca API). O uso por provedor e os avisos de login estão no quadro Outras APIs.</p>'}};
 

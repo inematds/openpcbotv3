@@ -1,13 +1,54 @@
 // Créditos e logins: limites do Claude (gravados pela statusline), limite do
 // Codex (fim do registro mais novo de ~/.codex-2/sessions), custo do dia por
-// provedor e avisos manuais (`painel-avisos.json`). Não lê credencial nenhuma.
+// provedor e avisos manuais (`painel-avisos.json`). `contas` traz cada login do
+// Claude e cada CODEX_HOME com os dias até zerar. Do auth.json do Codex só lê o
+// e-mail do payload do id_token; nenhum token é usado nem sai daqui.
 import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 import type { DepsPainel } from '../tipos.js';
 import { idadeArquivo, inicioDoDia, lerFim, lerJson, paraEpoch } from '../util.js';
 
-export interface Limite { nome: string; pct: number; reset_em: number | null }
+export interface Limite { nome: string; pct: number; reset_em: number | null; dias?: number | null }
+
+/** Dias de calendário até o reset (0 = hoje), como nos avisos com prazo. */
+export function diasAte(resetEm: number | null, agora: number): number | null {
+  return resetEm === null ? null : Math.max(0, Math.round((inicioDoDia(resetEm) - inicioDoDia(agora)) / 86400));
+}
+
+/** "nei.maldaner2014@…" → "nei"; "inematds@…" → "inematds". */
+export function rotuloConta(email: string | null | undefined, reserva: string): string {
+  if (!email) return reserva;
+  return email.split('@')[0].split('.')[0] || reserva;
+}
+
+export interface ContaCota { servico: 'Claude' | 'Codex'; conta: string; limites: Limite[]; idade_s: number | null; plano?: string | null }
+
+/** Um cache de cota por pasta de login: cc_limits_<uid>.json (~/.claude) e cc_limits_<uid>_<pasta>.json. */
+export function descobrirContasClaude(pasta: string, uid: number, home: string): { arquivo: string; cfg: string; reserva: string }[] {
+  let nomes: string[] = [];
+  try { nomes = readdirSync(pasta); } catch { return []; }
+  const re = new RegExp(`^cc_limits_${uid}(?:_([A-Za-z0-9._-]+))?\\.json$`);
+  const out: { arquivo: string; cfg: string; reserva: string }[] = [];
+  for (const n of nomes.sort()) {
+    const m = re.exec(n);
+    if (!m) continue;
+    const dir = m[1];
+    if (dir && (dir.includes('..') || dir.includes('/'))) continue;
+    out.push({ arquivo: join(pasta, n), cfg: dir ? join(home, dir, '.claude.json') : join(home, '.claude.json'), reserva: dir ? dir.replace(/^\.claude-?/, '') || dir : 'padrão' });
+  }
+  return out;
+}
+
+/** E-mail do id_token do Codex (só o payload público; nenhum token sai daqui). */
+export function emailCodex(authJson: unknown): string | null {
+  try {
+    const t = (authJson as { tokens?: { id_token?: string } })?.tokens?.id_token;
+    if (typeof t !== 'string') return null;
+    const p = JSON.parse(Buffer.from(t.split('.')[1], 'base64url').toString('utf8')) as { email?: unknown };
+    return typeof p.email === 'string' ? p.email : null;
+  } catch { return null; }
+}
 
 export function lerLimitesClaude(j: Record<string, unknown> | null): Limite[] {
   if (!j) return [];
@@ -105,5 +146,21 @@ export async function coletarCreditos(d: DepsPainel) {
   } else ausentes.push('custo do v3');
   const avj = lerJson(d.caminhos.avisos);
   if (avj === null) ausentes.push('painel-avisos.json');
-  return { dados: { claude, codex, custo_hoje: porProvedor, avisos: lerAvisos(avj, agora) }, ausentes };
+  // Todas as contas (20/11): cada login do Claude e cada CODEX_HOME, com os dias até zerar.
+  const contas: ContaCota[] = [];
+  const uid = process.getuid?.() ?? 1000;
+  for (const c of descobrirContasClaude(d.caminhos.ccLimitesPasta, uid, d.caminhos.home)) {
+    const j = lerJson<Record<string, unknown>>(c.arquivo);
+    const lim = lerLimitesClaude(j);
+    if (!lim.length) continue;
+    const email = (lerJson<{ oauthAccount?: { emailAddress?: string } }>(c.cfg))?.oauthAccount?.emailAddress;
+    contas.push({ servico: 'Claude', conta: rotuloConta(email, c.reserva), limites: lim.map((l) => ({ ...l, dias: diasAte(l.reset_em, agora) })), idade_s: idadeArquivo(c.arquivo, agora) });
+  }
+  for (const ch of d.caminhos.codexHomes) {
+    const x = await d.cache.obter(`cred:codex:${ch}`, 60_000, () => lerCodex(join(ch, 'sessions'), agora));
+    if (!x) continue;
+    const nome = rotuloConta(emailCodex(lerJson(join(ch, 'auth.json'))), ch.split('/').pop() || ch);
+    contas.push({ servico: 'Codex', conta: nome, limites: [{ nome: x.janela_h ? `Janela de ${x.janela_h} h` : 'Janela', pct: x.pct, reset_em: x.reset_em, dias: diasAte(x.reset_em, agora) }], idade_s: x.idade_s, plano: x.plano });
+  }
+  return { dados: { claude, codex, contas, custo_hoje: porProvedor, avisos: lerAvisos(avj, agora) }, ausentes };
 }

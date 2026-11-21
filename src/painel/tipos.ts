@@ -17,7 +17,12 @@ export interface Caminhos {
   filaAventuras: string;
   raizProjetos: string;
   ccLimites: string;
+  /** Pasta dos caches de cota da statusline: um cc_limits_<uid>[_<pasta-de-login>].json por conta. */
+  ccLimitesPasta: string;
+  home: string;
   codexSessoes: string;
+  /** Uma pasta por conta do Codex (CODEX_HOME). */
+  codexHomes: string[];
   avisos: string;
   sites: string;
   vagasJson: string;
@@ -54,7 +59,10 @@ export function caminhosPadrao(home = homedir(), raizBot = process.cwd()): Camin
     filaAventuras: h('projetos/aventurasinemavideo/privado/fila_publicar.txt'),
     raizProjetos: h('projetos'),
     ccLimites: `/tmp/cc_limits_${process.getuid?.() ?? 1000}.json`,
+    ccLimitesPasta: '/tmp',
+    home,
     codexSessoes: h('.codex-2/sessions'),
+    codexHomes: [h('.codex'), h('.codex-2')],
     avisos: h('.config/inema/painel-avisos.json'),
     sites: h('.config/inema/painel-sites.json'),
     // Mesmo override do comando `vagas` (VAGAS_ARQ troca o arquivo).
