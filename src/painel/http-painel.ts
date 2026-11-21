@@ -67,9 +67,11 @@ export function painelEmCache(d: DepsPainel): Promise<Painel> {
 /** Trata as rotas do painel. Devolve `true` se a rota era dele. */
 export async function tratarPainel(req: IncomingMessage, res: ServerResponse, url: URL, d: DepsPainel): Promise<boolean> {
   const p = url.pathname;
+  // Clássico desativado (Nei, 20/11: "só estou usando o painel jarvis"): /painel leva ao Jarvis.
+  // Para voltar, sirva PAINEL_HTML aqui de novo.
   if (p === '/painel' && req.method === 'GET') {
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
-    res.end(PAINEL_HTML);
+    res.writeHead(302, { Location: '/jarvis' + url.search, 'Cache-Control': 'no-store' });
+    res.end();
     return true;
   }
   if ((p === '/bombando' || p.startsWith('/bombando/')) && req.method === 'GET') {
@@ -151,7 +153,7 @@ export function servidorPainel(d: DepsPainel): Server {
   return createServer(async (req, res) => {
     const url = new URL(req.url ?? '/', 'http://x');
     try {
-      if (url.pathname === '/') { res.writeHead(302, { Location: '/painel' }); res.end(); return; }
+      if (url.pathname === '/') { res.writeHead(302, { Location: '/jarvis' + url.search }); res.end(); return; }
       if (!(await tratarPainel(req, res, url, d))) json(res, 404, { erro: 'rota' });
     } catch (e) { json(res, 500, { erro: (e as Error).message }); }
   });

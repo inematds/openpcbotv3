@@ -89,6 +89,12 @@ header,footer,.contas{transition:opacity .8s}
 .aneis{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
 .g-anel{position:relative;text-align:center}
 .g-anel svg{width:84px;height:84px;transform:rotate(-90deg)}
+.cpus{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px 16px}
+.cpus .cpu{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;color:var(--ciano)}
+.cpus .cpu span{font:12px var(--mono);color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cpus .cpu b{font:600 13px var(--mono);color:var(--gelo)}.cpus .cpu b.al{color:var(--alerta)}.cpus .cpu b.cr{color:var(--erro)}
+.cpus .spk{grid-column:1/3;width:100%;height:44px;display:block}
+.cpus small{grid-column:1/-1}
 .g-anel circle{fill:none;stroke-width:7}.g-anel .trilho{stroke:rgba(95,227,255,.12)}.g-anel .val{stroke-linecap:round;filter:drop-shadow(0 0 4px currentColor)}
 .g-anel b{position:absolute;left:0;right:0;top:28px;font:700 16px var(--mono)}
 .g-anel span{display:block;font-size:11px;color:var(--mut);margin-top:-2px}
@@ -244,6 +250,9 @@ function anel(pct,rot,gr,centro,cor){var p=Math.max(0,Math.min(100,Number(pct)||
   return'<div class="g-anel" data-det="sis:'+gr+'" tabindex="0" title="'+esc(rot)+' '+esc(txt)+'"><svg viewBox="0 0 84 84" aria-hidden="true"><circle cx="42" cy="42" r="34" class="trilho"></circle><circle cx="42" cy="42" r="34" class="val" style="color:'+cor+';stroke:'+cor+';stroke-dasharray:'+(C*p/100).toFixed(1)+' '+C.toFixed(1)+'"></circle></svg><b>'+esc(txt)+'</b><span>'+esc(rot)+'</span></div>'}
 // Dias até a cota zerar: anel cheio = 7 dias (semana inteira pela frente).
 function anelDias(dias,rot){return anel(dias==null?0:100*Math.min(7,dias)/7,rot,'creditos',dias==null?'–':dias===0?'hoje':dias+' d','#a98bff')}
+function sparkCpu(hist,agora){var W=240,H=44,ini=agora-86400,pts=(hist||[]).filter(function(p){return p[0]>=ini});if(pts.length<2)return'<svg class="spk" viewBox="0 0 '+W+' '+H+'" aria-hidden="true"><line x1="0" y1="'+(H-1)+'" x2="'+W+'" y2="'+(H-1)+'" stroke="currentColor" stroke-opacity=".25"/></svg>';
+  var xy=pts.map(function(p){return(W*(p[0]-ini)/86400).toFixed(1)+','+(H-2-(H-4)*Math.min(100,p[1])/100).toFixed(1)}).join(' ');
+  return'<svg class="spk" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true"><line x1="0" y1="'+(H-2-(H-4)*.8).toFixed(1)+'" x2="'+W+'" y2="'+(H-2-(H-4)*.8).toFixed(1)+'" stroke="#ffb020" stroke-opacity=".35" stroke-dasharray="3 3"/><polyline points="'+xy+'" fill="none" stroke="currentColor" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>'}
 function graficos(){var h='',m=dg('maquina'),cr=dg('creditos'),pb=dg('publicacao'),vg=dg('vagas'),pr=dg('producao'),st=dg('sites'),an=[];
   if(m){var me=m.memoria||{};if(me.total_gb)an.push(anel(100*(1-(me.disponivel_gb||0)/me.total_gb),'memória usada','maquina'));if(m.disco)an.push(anel(m.disco.usado_pct,'disco','maquina'));if(m.carga&&m.carga.nucleos)an.push(anel(100*m.carga.m5/m.carga.nucleos,'carga 5 min','maquina'))}
   var acota=[],adias=[];
@@ -263,7 +272,9 @@ function graficos(){var h='',m=dg('maquina'),cr=dg('creditos'),pb=dg('publicacao
   // VPS, bots, APIs e radar também nos gráficos (Nei, 11/11: "vps e outros card tem aparecer nos gráficos do jarvis").
   var vp=dg('vps');if(vp&&(vp.vps||[]).length){var barV=function(rot,campo){return'<div class="gbox barras" data-det="sis:vps" tabindex="0"><small>'+rot+'</small>'+vp.vps.map(function(x){var m=x.medida,v=!m||!m.ok?null:campo==='disco'?m.disco_pct:(m.ram_total_mb?Math.round(100*m.ram_mb/m.ram_total_mb):null);
       return'<div class="bl" title="'+esc(x.id.toUpperCase()+' · '+x.nome+(m&&!m.ok?' · sem resposta':''))+'"><span>'+esc(x.id.toUpperCase()+' '+x.nome)+'</span><span class="tr"><i style="width:'+Math.max(2,v||0)+'%;'+(v==null?'background:#ff5d6c':v>=90?'background:#ff5d6c':v>=75?'background:#ffb020':'')+'"></i></span><b>'+(v!=null?v+'%':(m?'fora':'…'))+'</b></div>'}).join('')+'</div>'};
-    h+='<h3>VPS · disco e memória</h3>'+barV('disco usado','disco')+barV('memória usada','ram')}
+    h+='<h3>VPS · disco e memória</h3>'+barV('disco usado','disco')+barV('memória usada','ram');
+    var ag2=Date.now()/1000;h+='<h3>VPS · CPU nas últimas 24 h</h3><div class="gbox cpus" data-det="sis:vps" tabindex="0">'+vp.vps.map(function(x){var m=x.medida,c=m&&m.ok&&m.cpu_pct!=null?m.cpu_pct:null;
+      return'<div class="cpu" title="'+esc(x.id.toUpperCase()+' · '+x.nome)+'"><span>'+esc(x.id.toUpperCase()+' '+x.nome)+'</span><b class="'+(c>=90?'cr':c>=75?'al':'')+'">'+(c!=null?c+'%':(m&&!m.ok?'fora':'…'))+'</b>'+sparkCpu(x.cpu_hist,ag2)+'</div>'}).join('')+'<small>linha tracejada = 80 % · ponto a cada 10 min</small></div>'}
   var bl=['v3','inemaccbot','v2'].filter(function(b){return dg(b)});if(bl.length){var al=alertasAbertos();
     h+='<h3>Bots</h3><div class="gbox"><div class="tlleg">'+bl.map(function(b){var g=D.grupos[b],st=estadoGrupo(b,g,al),fr='';try{fr=FRASE[b](g.dados||{})}catch(e){fr='–'}
       return'<span data-det="sis:'+b+'" tabindex="0" style="cursor:pointer"><b class="'+(st==='erro'?'er':st==='aviso'?'al':'')+'">'+esc(NOMES[b])+'</b> '+esc(fr)+'</span>'}).join('')+'</div></div>'}

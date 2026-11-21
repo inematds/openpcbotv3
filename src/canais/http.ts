@@ -77,7 +77,8 @@ export function ligarHttp(app: App): Server {
       if (!autorizado(req, url)) { json(res, 401, { erro: 'token' }); return; }
 
       if (url.pathname === '/') {
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(PAINEL_HTML); return;
+        // Clássico desativado (20/11): a raiz leva ao Jarvis, com o mesmo token na URL.
+        res.writeHead(302, { Location: '/jarvis' + url.search, 'Cache-Control': 'no-store' }); res.end(); return;
       }
       if (url.pathname === '/dashboard') {
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(DASHBOARD_HTML); return;

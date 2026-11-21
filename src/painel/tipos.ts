@@ -36,6 +36,7 @@ export interface Caminhos {
   inemaccbotFilas: string;
   estadoTelegram: string;
   vpsInventario: string;
+  vpsCpuHist: string;
   sshDir: string;
   apisLista: string;
   v2Db: string;
@@ -77,6 +78,7 @@ export function caminhosPadrao(home = homedir(), raizBot = process.cwd()): Camin
     inemaccbotFilas: h('projetos/inemaccbot/src/fila/filas.ts'),
     estadoTelegram: resolve(raizBot, 'store/painel-avisados.json'),
     vpsInventario: h('projetos/ccdashboard/telemetria/painel/vps.json'),
+    vpsCpuHist: h('.local/share/inema/painel-vps-cpu.json'),
     sshDir: h('.ssh'),
     apisLista: h('.config/inema/painel-apis.json'),
     v2Db: h('projetos/openpcbotv2/store/openpcbot.db'),

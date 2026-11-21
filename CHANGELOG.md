@@ -1,5 +1,11 @@
 # CHANGELOG — openpcbotv3
 
+## 3.39.21 · 20/11/2026 — CPU das VPS e só o Jarvis
+
+- **CPU das VPS em gráfico** (pedido do Nei): a sonda SSH de 10 em 10 min lê `/proc/stat` duas vezes (1 s) e calcula o % real de CPU; histórico de 24 h por VPS em `~/.local/share/inema/painel-vps-cpu.json` (sobrevive ao restart). Jarvis ganha "VPS · CPU nas últimas 24 h" (linha por VPS, tracejado em 80 %).
+- **Painel clássico desativado** (Nei: "só estou usando o painel jarvis"): `/`, `/painel` (3142, 3143/ccc.inema.pro e o HTTP do bot) redirecionam para `/jarvis` com a mesma query. O código do clássico continua no repo; para voltar, servir `PAINEL_HTML` de novo nas três rotas.
+- 5 testes novos (`vps-cpu.test.ts`); suíte inteira 413/413.
+
 ## 3.38.21 · 20/11/2026
 
 - Cotas por conta em dois visuais (pedido do Nei): **Cota usada** (% de cada conta) e **Dias para zerar** (anel/barra cheia = 7 dias), no Jarvis e no quadro clássico.

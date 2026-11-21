@@ -170,7 +170,8 @@ export function criarServidorPainel(o: OpcoesServidor): Server {
         json(res, 401, { erro: 'entre no painel', login: true }); return;
       }
       if (ehBombando) { await tratarPainel(req, res, url, o.deps); return; }
-      if (ehTela) { html(res, 200, p === '/jarvis' ? JARVIS_HTML : PAINEL_HTML); return; }
+      // Clássico desativado (20/11): / e /painel levam ao Jarvis.
+      if (ehTela) { if (p !== '/jarvis') { res.writeHead(302, { Location: '/jarvis' + url.search, 'Cache-Control': 'no-store' }); res.end(); return; } html(res, 200, JARVIS_HTML); return; }
       if (ehEnviar) {
         if (m !== 'POST') { json(res, 405, { erro: 'use POST' }); return; }
         if (req.headers['x-painel'] !== '1' || !mesmaOrigem(req)) { json(res, 403, { erro: 'pedido sem a marca do painel (CSRF)' }); return; }

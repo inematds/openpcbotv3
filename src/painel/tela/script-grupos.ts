@@ -185,14 +185,17 @@ G.creditos={tile:function(d){if(d.contas&&d.contas.length){
 
 // VPS (10/11/2026): as 6 máquinas, disco/memória/carga por SSH só leitura (fontes/vps.ts).
 function vpsNome(x){return x.id.toUpperCase()+' '+x.nome}
+function sparkCpu(hist,agora){var W=240,H=44,ini=agora-86400,pts=(hist||[]).filter(function(p){return p[0]>=ini});if(pts.length<2)return'<svg class="spk" style="width:100%;height:44px;color:#5fe3ff" viewBox="0 0 '+W+' '+H+'" aria-hidden="true"><line x1="0" y1="'+(H-1)+'" x2="'+W+'" y2="'+(H-1)+'" stroke="currentColor" stroke-opacity=".25"/></svg>';
+  var xy=pts.map(function(p){return(W*(p[0]-ini)/86400).toFixed(1)+','+(H-2-(H-4)*Math.min(100,p[1])/100).toFixed(1)}).join(' ');
+  return'<svg class="spk" style="width:100%;height:44px;color:#5fe3ff" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true"><line x1="0" y1="'+(H-2-(H-4)*.8).toFixed(1)+'" x2="'+W+'" y2="'+(H-2-(H-4)*.8).toFixed(1)+'" stroke="#ffb020" stroke-opacity=".35" stroke-dasharray="3 3"/><polyline points="'+xy+'" fill="none" stroke="currentColor" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>'}
 G.vps={tile:function(d){var v=d.vps||[],ok=v.filter(function(x){return x.medida&&x.medida.ok}).length,med=v.some(function(x){return x.medida});
   var fr=!v.length?'<p class="frase vazia">sem inventário</p>':!med?'<p class="frase vazia">medindo…</p>':'<p class="frase">'+ok+' de '+v.length+' respondendo</p>';
   var h=v.map(function(x){var m=x.medida;if(!m)return linha(esc(x.id.toUpperCase()),'medindo…');
     if(!m.ok)return linhaTx(simb('erro')+' '+esc(x.id.toUpperCase()),'fora','s-erro');
-    var p=m.disco_pct;return'<div class="linha"><span class="k" title="'+esc(vpsNome(x)+' — '+(x.papel||[]).join(' · '))+'">'+esc(x.id.toUpperCase())+'</span><span class="v '+(p>=95?'s-erro':p>=90?'s-aviso':'')+'">disco '+(p!=null?p+'%':'?')+'</span></div>'}).join('');
+    var p=m.disco_pct;return'<div class="linha"><span class="k" title="'+esc(vpsNome(x)+' — '+(x.papel||[]).join(' · '))+'">'+esc(x.id.toUpperCase())+'</span><span class="v '+(p>=95?'s-erro':p>=90?'s-aviso':'')+'">disco '+(p!=null?p+'%':'?')+(m.cpu_pct!=null?' · cpu '+m.cpu_pct+'%':'')+'</span></div>'}).join('');
   return{frase:fr,corpo:h||'<div class="sem">nenhuma VPS no inventário</div>'}},
- detalhe:function(d){var gb=function(mb){return mb==null?'–':(mb/1024).toFixed(1)};
-  return sec('As VPS',tabela(['VPS','Onde','Disco','Memória (GB)','Carga','Containers','No ar há','O que roda'],(d.vps||[]).map(function(x){var m=x.medida||{},ok=x.medida&&m.ok;
+ detalhe:function(d){var gb=function(mb){return mb==null?'–':(mb/1024).toFixed(1)},ag=Date.now()/1000;
+  return sec('CPU nas últimas 24 h',tabela(['VPS','Agora','24 h (tracejado = 80 %)'],(d.vps||[]).map(function(x){var m=x.medida||{};return[esc(vpsNome(x)),m.ok&&m.cpu_pct!=null?m.cpu_pct+'%':'–',sparkCpu(x.cpu_hist,ag)]})))+sec('As VPS',tabela(['VPS','Onde','Disco','Memória (GB)','Carga','Containers','No ar há','O que roda'],(d.vps||[]).map(function(x){var m=x.medida||{},ok=x.medida&&m.ok;
     return[esc(vpsNome(x)),esc(x.local||'–'),ok?esc(m.disco||'')+' ('+m.disco_pct+'%)':(x.medida?'<span class="s-erro">'+esc(m.erro||'sem resposta')+'</span>':'medindo…'),
       ok?gb(m.ram_mb)+' / '+gb(m.ram_total_mb):'–',ok&&m.carga!=null?m.carga+(m.cpus?' em '+m.cpus+' CPU':''):'–',ok&&m.containers!=null?m.containers:'–',ok?esc(m.uptime||'–'):'–',esc((x.papel||[]).join(' · '))]})),true)
     +'<p class="nota">Leitura por SSH só de consulta (df, free, carga, docker ps) a cada 10 min, tentando as chaves padrão, _inema e _vps. Inventário: vps.json da telemetria; detalhes e acessos em wifi/VPS.md.</p>'}};
