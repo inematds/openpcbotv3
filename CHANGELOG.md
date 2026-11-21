@@ -1,5 +1,9 @@
 # CHANGELOG — openpcbotv3
 
+## 3.38.21 · 20/11/2026
+
+- Cotas por conta em dois visuais (pedido do Nei): **Cota usada** (% de cada conta) e **Dias para zerar** (anel/barra cheia = 7 dias), no Jarvis e no quadro clássico.
+
 ## 3.38.20 · 20/11/2026
 
 - Cotas por conta: a janela de 5 horas do Claude mostra a hora em que zera, não "1 dia" (zerava à 01:00 e parecia faltar um dia).

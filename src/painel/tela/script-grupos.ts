@@ -167,7 +167,8 @@ function principal(c){return c.limites.filter(function(x){return/todos/.test(x.n
 G.creditos={tile:function(d){if(d.contas&&d.contas.length){
   var por={};d.contas.forEach(function(c){var p=principal(c);(por[c.servico]=por[c.servico]||[]).push(esc(c.conta)+' '+(p?p.pct+'%':'–'))});
   var fr='<p class="frase">'+Object.keys(por).map(function(k){return esc(k)+' '+por[k].join(' · ')}).join(' | ')+'</p>';
-  var h=d.contas.map(function(c){return c.limites.map(function(x){return'<div class="linha"><span class="k">'+esc(c.servico+' '+c.conta+' · '+x.nome)+'</span>'+barra(x.pct,80)+'<span class="v">'+x.pct+'%'+(x.dias==null?'':' · '+(x.dias===0?'hoje':x.dias+' d'))+'</span></div>'}).join('')}).join('');
+  var h='<p class="nota">Cota usada</p>'+d.contas.map(function(c){return c.limites.map(function(x){return'<div class="linha"><span class="k">'+esc(c.servico+' '+c.conta+' · '+x.nome)+'</span>'+barra(x.pct,80)+'<span class="v">'+x.pct+'%</span></div>'}).join('')}).join('');
+  h+='<p class="nota">Dias para zerar</p>'+d.contas.map(function(c){var p=principal(c);if(!p)return'';var dd=c.servico==='Claude'?p.dias:c.limites[0].dias;return'<div class="linha"><span class="k">'+esc(c.servico+' '+c.conta)+'</span>'+barra(dd==null?0:100*Math.min(7,dd)/7,1000)+'<span class="v">'+(dd==null?'–':dd===0?'hoje':dd===1?'1 dia':dd+' dias')+'</span></div>'}).join('');
   return{frase:fr,corpo:h}}
   var l=d.claude.limites,sem7=l.filter(function(x){return/todos/.test(x.nome)})[0]||l[0];
   var fr=(sem7||d.codex)?'<p class="frase">Claude '+(sem7?sem7.pct+'%':'–')+' · Codex '+(d.codex?d.codex.pct+'%':'–')+'</p>':'<p class="frase vazia">sem leitura dos limites</p>';
