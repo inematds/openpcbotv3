@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -14,6 +14,19 @@ const uid = process.getuid?.() ?? 1000;
 const jwt = (payload: object) => `x.${Buffer.from(JSON.stringify(payload)).toString('base64url')}.y`;
 
 describe('cotas por conta', () => {
+  it('conta sem leitura há mais de 7 dias some (fora do ar)', async () => {
+    const home = mkdtempSync(join(tmpdir(), 'cotas-parada-'));
+    const cx = join(home, '.codex', 'sessions', '2026', '10', '01');
+    mkdirSync(cx, { recursive: true });
+    const arq = join(cx, 's.jsonl');
+    writeFileSync(arq, JSON.stringify({ payload: { rate_limits: { primary: { used_percent: 5, window_minutes: 10080, resets_at: AGORA + 86400 } } } }) + '\n');
+    const velho = AGORA - 8 * 86400; utimesSync(arq, velho, velho);
+    const caminhos = caminhosPadrao(home, home);
+    caminhos.ccLimitesPasta = mkdtempSync(join(tmpdir(), 'cotas-vazio2-'));
+    const d = { versao: 't', caminhos, exec: semExec, agora: () => AGORA, cache: new Cache(), concorrenciaV3: {}, fetch: fetch, sitesLigado: false } as unknown as DepsPainel;
+    expect((await coletarCreditos(d)).dados.contas).toEqual([]);
+  });
+
   it('diasAte conta dias de calendário até o reset', () => {
     expect(diasAte(null, AGORA)).toBeNull();
     expect(diasAte(AGORA + 3600, AGORA)).toBe(1); // 23:00 + 1 h = amanhã 00:00

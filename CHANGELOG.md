@@ -1,5 +1,9 @@
 # CHANGELOG — openpcbotv3
 
+## 3.43.23 · 21/11/2026
+
+- Jarvis, modo Ícones: um quadro por conta (**Claude nei**, **Claude inematds**, **Codex inematds**) com a cota e os dias até zerar no mesmo quadro (pedido do Nei). Conta sem leitura há mais de 7 dias some do painel (fora do ar — hoje o Codex nei) e volta quando for usada.
+
 ## 3.42.23 · 21/11/2026 — Quadro vermelho só com sistema fora
 
 - Pedido do Nei: falha de um vídeo/job (inemaccbot, v3), rodada de produção que falhou ou foi interrompida e espera que falhou **não pintam mais o quadro** — vão à lista de erros (Esperando você), ao detalhe do quadro e ao Telegram como antes. O quadro fica vermelho só quando o serviço cai (não está ativo) ou uma rodada trava (começou e não terminou). Novo campo `quadro: false` em `AlertaPainel`; teste `quadro-erro.test.ts`.

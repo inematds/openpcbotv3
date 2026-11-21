@@ -22,6 +22,9 @@ export function rotuloConta(email: string | null | undefined, reserva: string): 
   return email.split('@')[0].split('.')[0] || reserva;
 }
 
+/** Leitura mais velha que isso = conta fora do ar: some do painel e volta quando for usada. */
+export const CONTA_PARADA_S = 7 * 86400;
+
 export interface ContaCota { servico: 'Claude' | 'Codex'; conta: string; limites: Limite[]; idade_s: number | null; plano?: string | null }
 
 /** Um cache de cota por pasta de login: cc_limits_<uid>.json (~/.claude) e cc_limits_<uid>_<pasta>.json. */
@@ -153,12 +156,16 @@ export async function coletarCreditos(d: DepsPainel) {
     const j = lerJson<Record<string, unknown>>(c.arquivo);
     const lim = lerLimitesClaude(j);
     if (!lim.length) continue;
+    const idade = idadeArquivo(c.arquivo, agora);
+    if (idade !== null && idade > CONTA_PARADA_S) continue;
     const email = (lerJson<{ oauthAccount?: { emailAddress?: string } }>(c.cfg))?.oauthAccount?.emailAddress;
     contas.push({ servico: 'Claude', conta: rotuloConta(email, c.reserva), limites: lim.map((l) => ({ ...l, dias: l.nome === '5 horas' ? null : diasAte(l.reset_em, agora) })), idade_s: idadeArquivo(c.arquivo, agora) });
   }
   for (const ch of d.caminhos.codexHomes) {
     const x = await d.cache.obter(`cred:codex:${ch}`, 60_000, () => lerCodex(join(ch, 'sessions'), agora));
     if (!x) continue;
+    // Conta sem uso há mais de 7 dias não está no ar (Nei, 21/11: "o codex nei não está no ar").
+    if (x.idade_s !== null && x.idade_s > CONTA_PARADA_S) continue;
     const nome = rotuloConta(emailCodex(lerJson(join(ch, 'auth.json'))), ch.split('/').pop() || ch);
     // Leitura velha cuja janela já passou: a cota zerou e não houve uso depois (Codex parado há dias).
     const zerou = x.reset_em !== null && x.reset_em < agora;
