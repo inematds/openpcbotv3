@@ -34,7 +34,7 @@ function okId(v){return/^[\w-]{11}$/.test(String(v||''))}
 export const JS_LACO = String.raw`
 var NOMES={esperando:'Esperando você',maquina:'Máquina',bots:'Bots',v3:'Bot v3',inemaccbot:'inemaccbot',v2:'Bot v2',producao:'Produção',publicacao:'Publicação',creditos:'Claude e Codex',sites:'Sites',vagas:'Vagas',radar:'Radar Viral',escada:'Minha escada',tendencias:'Tendências de rede',pay:'Pay e bancos',inemapro:'INEMA.PRO',portal:'Portal',terminais:'Terminais',vps:'VPS',apis:'Outras APIs'};
 var ROT={ok:'✓ ok',erro:'✕ erro',aviso:'! atenção',semdados:'– sem dados'};
-function estadoGrupo(nome,g,al){if(!g||!g.ok)return'semdados';var e=al.filter(function(a){return a.grupo===nome});if(e.some(function(a){return a.nivel==='erro'}))return'erro';if(e.length)return'aviso';if(nome==='esperando'&&g.dados){var it=g.dados.itens;if(it.some(function(i){return i.nivel==='erro'}))return'erro';if(it.some(function(i){return i.nivel==='aviso'}))return'aviso'}return'ok'}
+function estadoGrupo(nome,g,al){if(!g||!g.ok)return'semdados';var e=al.filter(function(a){return a.grupo===nome&&a.quadro!==false});if(e.some(function(a){return a.nivel==='erro'}))return'erro';if(e.length)return'aviso';if(nome==='esperando'&&g.dados){var it=g.dados.itens;if(it.some(function(i){return i.nivel==='erro'}))return'erro';if(it.some(function(i){return i.nivel==='aviso'}))return'aviso'}return'ok'}
 function tok(){return LS.get('painel.token','')}
 function hdr(){var t=tok();return t?{Authorization:'Bearer '+t}:{}}
 function tile(nome){var d=E.dados,g=d.grupos[nome],st=estadoGrupo(nome,g,d.alertas),r;

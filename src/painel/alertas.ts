@@ -75,17 +75,17 @@ export const REGRAS: Regra[] = [
   } })),
   ...([['v3', 'v3'], ['inemaccbot', 'inemaccbot']] as const).map(([bot, grupo]): Regra => ({ id: `job-falhou-${grupo}`, grupo, avaliar: (g) => {
     const l: Falha[] = (bot === 'v3' ? g.bots.dados?.v3?.falhas_24h : g.bots.dados?.inemaccbot?.falhas_24h) ?? [];
-    return l.map((j) => ({ chave: `job-falhou:${bot}:${j.id}`, nivel: 'erro' as const, texto: `${bot}: job #${j.id} (${j.tarefa}) falhou às ${hora(j.quando)}` }));
+    return l.map((j) => ({ chave: `job-falhou:${bot}:${j.id}`, nivel: 'erro' as const, quadro: false, texto: `${bot}: job #${j.id} (${j.tarefa}) falhou às ${hora(j.quando)}` }));
   } })),
   { id: 'rodada-falhou', grupo: 'producao', avaliar: (g) => (g.producao.dados?.falhas ?? [])
-    .map((r) => ({ chave: `rodada-falhou:${r.unidade}:${r.edicao ?? r.fim}`, nivel: 'erro' as const, texto: `Rodada ${r.unidade} falhou às ${hora(r.fim)}${r.motivo ? ': ' + r.motivo : ''}` })) },
+    .map((r) => ({ chave: `rodada-falhou:${r.unidade}:${r.edicao ?? r.fim}`, nivel: 'erro' as const, quadro: false, texto: `Rodada ${r.unidade} falhou às ${hora(r.fim)}${r.motivo ? ': ' + r.motivo : ''}` })) },
   { id: 'rodada-presa', grupo: 'producao', avaliar: (g) => (g.producao.dados?.presas ?? [])
     .map((r) => ({ chave: `rodada-presa:${r.unidade}:${r.inicio}`, nivel: 'erro' as const, texto: `Rodada ${r.unidade} começou às ${hora(r.inicio)} e não terminou` })) },
   { id: 'rodada-interrompida', grupo: 'producao', avaliar: (g) => (g.producao.dados?.interrompidas ?? [])
-    .map((r) => ({ chave: `rodada-interrompida:${r.unidade}:${r.inicio}`, nivel: 'aviso' as const, texto: `${r.unidade} falhou hoje (a máquina reiniciou no meio)${r.proxima ? ' — vai rodar de novo ' + quando(r.proxima) : ''}` })) },
+    .map((r) => ({ chave: `rodada-interrompida:${r.unidade}:${r.inicio}`, nivel: 'aviso' as const, quadro: false, texto: `${r.unidade} falhou hoje (a máquina reiniciou no meio)${r.proxima ? ' — vai rodar de novo ' + quando(r.proxima) : ''}` })) },
   { id: 'espera', grupo: 'producao', avaliar: (g) => (g.producao.dados?.esperas ?? [])
     .filter((e) => e.passou_teto || (e.estado === 'falhou' && e.recente))
-    .map((e) => ({ chave: `espera:${e.chave}:${e.estado}`, nivel: 'aviso' as const, texto: e.estado === 'falhou' ? `Espera ${e.chave} falhou` : `Espera ${e.chave} passou do teto de ${e.teto_h} h` })) },
+    .map((e) => ({ chave: `espera:${e.chave}:${e.estado}`, nivel: 'aviso' as const, quadro: false, texto: e.estado === 'falhou' ? `Espera ${e.chave} falhou` : `Espera ${e.chave} passou do teto de ${e.teto_h} h` })) },
   { id: 'fila-erro', grupo: 'publicacao', avaliar: (g) => (g.publicacao.dados?.filas ?? [])
     .flatMap((f) => f.erros_recentes.map((e) => ({ chave: `fila-erro:${f.nome}:${e.id}`, nivel: 'aviso' as const, texto: `Fila ${f.nome}: "${e.nome}" deu erro` }))) },
   // continua com estado.json vazio/corrompido = vigia parado (10/11 00:29: disco cheio zerou o arquivo e ninguém viu).

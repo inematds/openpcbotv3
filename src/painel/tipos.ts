@@ -146,4 +146,7 @@ export interface AlertaPainel {
   nivel: Nivel;
   grupo: NomeGrupo;
   texto: string;
+  /** false = falha de um trabalho (vídeo, job, rodada): vai à lista de erros e ao Telegram, mas não pinta o quadro.
+   *  O quadro só fica vermelho quando o sistema cai ou trava (Nei, 21/11). */
+  quadro?: boolean;
 }

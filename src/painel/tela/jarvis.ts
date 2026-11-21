@@ -184,7 +184,7 @@ function plural(q,um,varios){return q+' '+(q===1?um:varios)}
 function idDe(s){s=String(s);var h=0;for(var i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return'i'+h.toString(36)}
 var NOMES={maquina:'Máquina',v3:'Bot v3',inemaccbot:'inemaccbot',v2:'Bot v2',producao:'Produção',publicacao:'Publicação',creditos:'Claude e Codex',sites:'Sites',vagas:'Vagas',radar:'Radar Viral',escada:'Minha escada',tendencias:'Tendências de rede',pay:'Pay e bancos',inemapro:'INEMA.PRO',portal:'Portal',terminais:'Terminais',vps:'VPS',apis:'Outras APIs'};
 var ROT={ok:'ok',erro:'erro',aviso:'atenção',semdados:'sem dados',rodando:'rodando'};
-function estadoGrupo(nome,g,al){if(!g||!g.ok)return'semdados';var e=al.filter(function(a){return a.grupo===nome});if(e.some(function(a){return a.nivel==='erro'}))return'erro';if(e.length)return'aviso';return'ok'}
+function estadoGrupo(nome,g,al){if(!g||!g.ok)return'semdados';var e=al.filter(function(a){return a.grupo===nome&&a.quadro!==false});if(e.some(function(a){return a.nivel==='erro'}))return'erro';if(e.length)return'aviso';return'ok'}
 // Uma frase curta por sistema, a partir dos dados de cada grupo.
 var FRASE={
   inemapro:function(d){var a=(d.acessos_7d||{}).pessoas,e=(d.rotinas||[]).filter(function(r){return r.estado==='erro'});return e.length?e[0].nome+' falhou':(a==null?'sem leitura':a+' pessoas logadas em 7 dias')},
