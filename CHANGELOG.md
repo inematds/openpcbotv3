@@ -1,5 +1,9 @@
 # CHANGELOG — openpcbotv3
 
+## 3.41.23 · 21/11/2026
+
+- Jarvis, modo Ícones: no lugar de "Cota uso"/"Cota dias" (reprovado pelo Nei), três quadros separados: **Claude cota** (% de cada conta), **Codex cota** (% e dias de cada conta) e **Claude dias** (dias até zerar de cada conta).
+
 ## 3.40.23 · 21/11/2026
 
 - Jarvis, modo Ícones: "Claude e Codex" vira dois ícones — **Cota uso** (maior % e cada conta) e **Cota dias** (o reset mais próximo e os dias de cada conta). Pedido do Nei.

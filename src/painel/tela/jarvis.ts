@@ -246,14 +246,21 @@ function projS(t){return(t.retrato&&t.retrato.ativo)||t.projeto||'?'}
 function emoS(t){var o=t.origem||{};return o.tipo==='fisica'?'👤':o.tipo==='agente'?'🤖':'·'}
 function atS(t){var r=t.retrato||{},x=t.transcript||{};return x.ultima_atividade||r.em||t.inicio}
 function subS(t){var r=t.retrato||{},x=t.transcript||{};return String(t.cwd||'').replace(/^\/home\/[^\/]+\//,'~/')+' · '+(r.modelo||x.modelo||'modelo ?')+(r.esforco?'/'+r.esforco:'')+' · ativo '+ha(atS(t))}
-// Claude e Codex vira dois ícones (Nei, 21/11: "nos ícones tem ter cota uso e cota dias").
+// Cotas no modo Ícones (Nei, 21/11: "um quadro para o claude e um para o codex cota e outro claude dias").
 function icCotas(s){var d=dg('creditos');if(!d||!d.contas||!d.contas.length)return null;
-  var pr=d.contas.map(function(k){var l=k.servico==='Claude'?(k.limites.filter(function(z){return/todos/.test(z.nome)})[0]||k.limites[0]):k.limites[0];return{nm:(k.servico==='Claude'?'Cl ':'Cx ')+k.conta,l:l}}).filter(function(x){return x.l});
-  if(!pr.length)return null;
-  var mx=pr.reduce(function(a,b){return b.l.pct>a.l.pct?b:a}),cd=pr.filter(function(x){return x.l.dias!=null}),mn=cd.length?cd.reduce(function(a,b){return b.l.dias<a.l.dias?b:a}):null;
+  var pri=function(k){return k.servico==='Claude'?(k.limites.filter(function(z){return/todos/.test(z.nome)})[0]||k.limites[0]):k.limites[0]};
+  var dd=function(x){return x==null?'–':x===0?'hoje':x+' d'};
   var bt=function(cls,gl,v,sm,nome,tit){return'<button type="button" class="ic '+cls+'" data-det="sis:creditos" title="'+esc(tit)+'"><span class="gl" aria-hidden="true">'+gl+'</span><b>'+esc(v)+'</b><small>'+esc(sm)+'</small><i>'+esc(nome)+'</i></button>'};
-  return bt(mx.l.pct>=90?'erro':mx.l.pct>=75?'aviso':s.estado,'◔',n(mx.l.pct,0)+'%',pr.map(function(x){return x.nm+' '+n(x.l.pct,0)+'%'}).join(' · '),'Cota uso','maior uso: '+mx.nm)
-    +bt('ok','◷',mn?(mn.l.dias===0?'hoje':mn.l.dias+' d'):'–',pr.map(function(x){return x.nm+' '+(x.l.dias==null?'–':x.l.dias===0?'hoje':x.l.dias+'d')}).join(' · '),'Cota dias',mn?'zera primeiro: '+mn.nm:'sem data de reset')}
+  var cor=function(p){return p>=90?'erro':p>=75?'aviso':'ok'};
+  var grupo=function(sv){return d.contas.filter(function(k){return k.servico===sv}).map(function(k){return{c:k.conta,l:pri(k)}}).filter(function(x){return x.l})};
+  var h='',cl=grupo('Claude'),cx=grupo('Codex');
+  if(cl.length){var mx=cl.reduce(function(a,b){return b.l.pct>a.l.pct?b:a});
+    h+=bt(cor(mx.l.pct),'◔',n(mx.l.pct,0)+'%',cl.map(function(x){return x.c+' '+n(x.l.pct,0)+'%'}).join(' · '),'Claude cota','semana (todos os modelos) · maior: '+mx.c);
+    var cd=cl.filter(function(x){return x.l.dias!=null}),mn=cd.length?cd.reduce(function(a,b){return b.l.dias<a.l.dias?b:a}):null;
+    h+=bt('ok','◷',mn?dd(mn.l.dias):'–',cl.map(function(x){return x.c+' '+dd(x.l.dias)}).join(' · '),'Claude dias','dias até a cota semanal zerar'+(mn?' · primeiro: '+mn.c:''))}
+  if(cx.length){var mc=cx.reduce(function(a,b){return b.l.pct>a.l.pct?b:a});
+    h+=bt(cor(mc.l.pct),'◔',n(mc.l.pct,0)+'%',cx.map(function(x){return x.c+' '+n(x.l.pct,0)+'%'+(x.l.dias!=null?' ('+dd(x.l.dias)+')':'')}).join(' · '),'Codex cota','janela do Codex · maior: '+mc.c)}
+  return h||null}
 function icones(){return'<div class="ics">'+sistemas().map(function(s){if(s.nome==='creditos'){var cc=icCotas(s);if(cc)return cc}var v=numero(s.nome);return'<button type="button" class="ic '+s.estado+'" data-det="sis:'+s.nome+'" title="'+esc(s.frase)+'"><span class="gl" aria-hidden="true">'+GLIFO[s.nome]+'</span><b>'+esc(v[0])+'</b><small>'+esc(v[1])+'</small><i>'+esc(NOMES[s.nome])+'</i></button>'}).join('')+'</div>'+(sesJ().length?'<h3>Sessões do Claude</h3><div class="ics">'+sesJ().map(function(t){var r=t.retrato||{};return'<button type="button" class="ic" data-det="term:'+esc(t.session_id)+'" title="'+esc(subS(t))+'"><span class="gl" aria-hidden="true">'+emoS(t)+'</span><b>'+esc(projS(t))+'</b><small>'+esc((r.modelo||'?')+(r.ctx_pct!=null?' · '+r.ctx_pct+'%':''))+'</small><i>'+esc(ha(atS(t)))+'</i></button>'}).join('')+'</div>':'')}
 function anel(pct,rot,gr,centro,cor){var p=Math.max(0,Math.min(100,Number(pct)||0)),C=2*Math.PI*34,txt=centro!=null?centro:n(pct,0)+'%';cor=cor||(p>=90?'#ff5d6c':p>=75?'#ffb020':'#5fe3ff');
   return'<div class="g-anel" data-det="sis:'+gr+'" tabindex="0" title="'+esc(rot)+' '+esc(txt)+'"><svg viewBox="0 0 84 84" aria-hidden="true"><circle cx="42" cy="42" r="34" class="trilho"></circle><circle cx="42" cy="42" r="34" class="val" style="color:'+cor+';stroke:'+cor+';stroke-dasharray:'+(C*p/100).toFixed(1)+' '+C.toFixed(1)+'"></circle></svg><b>'+esc(txt)+'</b><span>'+esc(rot)+'</span></div>'}
